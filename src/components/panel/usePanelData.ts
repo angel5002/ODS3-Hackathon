@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { browserDb, fetchAll } from "@/lib/supabase/browser";
-import { useHints } from "@/lib/realtime";
+import { useHints, useSingleFlight } from "@/lib/realtime";
 import type { Appointment, Patient, Status } from "@/lib/types";
 
 export type Row = Pick<
@@ -22,6 +22,7 @@ export type Row = Pick<
   | "reassigned_to_id"
   | "remote"
   | "is_base"
+  | "updated_at"
 > & {
   patient: Pick<Patient, "full_name" | "short_name" | "age" | "caregiver_name" | "caregiver_relation" | "demo_role" | "token">;
 };
@@ -29,7 +30,7 @@ export type Row = Pick<
 type Query<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
 
 export const ROW_SELECT =
-  "id,patient_id,specialty,time,risk,risk_rank,status,status_at,status_channel,origin,replaces_id,reassigned_to_id,remote,is_base," +
+  "id,patient_id,specialty,time,risk,risk_rank,status,status_at,status_channel,origin,replaces_id,reassigned_to_id,remote,is_base,updated_at," +
   "patient:patients(full_name,short_name,age,caregiver_name,caregiver_relation,demo_role,token)";
 
 type AnnounceEvent = {
@@ -62,6 +63,12 @@ function announce(e: AnnounceEvent) {
   if (e.to_status) messages[e.to_status]?.();
 }
 
+function maxUpdated(rows: { updated_at: string }[], current: string | null) {
+  let max = current;
+  for (const r of rows) if (!max || r.updated_at > max) max = r.updated_at;
+  return max;
+}
+
 export function usePanelData() {
   const [rows, setRows] = useState<Map<number, Row>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -70,6 +77,8 @@ export function usePanelData() {
   const [revision, setRevision] = useState(0);
   const rowsRef = useRef(rows);
   const lastEvent = useRef<number | null>(null);
+  // newest updated_at seen; "bulk" hints fetch only rows changed after it
+  const cursor = useRef<string | null>(null);
   useEffect(() => {
     rowsRef.current = rows;
   }, [rows]);
@@ -93,7 +102,7 @@ export function usePanelData() {
     }
   }, []);
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useSingleFlight(async () => {
     try {
       const data = await fetchAll<Row>((from, to) =>
         browserDb().from("appointments").select(ROW_SELECT).order("id").range(from, to) as unknown as Query<Row>,
@@ -103,6 +112,7 @@ export function usePanelData() {
       const stamp = Date.now();
       if (prev.size) for (const r of data) if (prev.get(r.id)?.status !== r.status) changed.set(r.id, stamp);
       setRows(new Map(data.map((r) => [r.id, r])));
+      cursor.current = maxUpdated(data, null);
       if (changed.size && changed.size < 200) setFlash((f) => new Map([...f, ...changed]));
       setError("");
     } catch (e) {
@@ -111,7 +121,32 @@ export function usePanelData() {
       setLoading(false);
       setRevision((v) => v + 1);
     }
-  }, []);
+  });
+
+  // Only what changed: ~a few KB instead of the 1.2 MB full list on every simulated burst
+  const loadChanged = useSingleFlight(async () => {
+    if (!cursor.current) return loadAll();
+    // overlap of 15 s: a transaction that started earlier may commit after our last read
+    const since = new Date(Date.parse(cursor.current) - 15000).toISOString();
+    const data = await fetchAll<Row>(
+      (from, to) =>
+        browserDb().from("appointments").select(ROW_SELECT).gt("updated_at", since).order("id").range(from, to) as unknown as Query<Row>,
+      2000,
+    ).catch(() => null);
+    if (!data) return;
+    const prev = rowsRef.current;
+    const stamp = Date.now();
+    const changed = data.filter((r) => prev.get(r.id)?.status !== r.status);
+    cursor.current = maxUpdated(data, cursor.current);
+    if (!changed.length) return;
+    setRows((m) => {
+      const next = new Map(m);
+      for (const r of data) next.set(r.id, r);
+      return next;
+    });
+    if (changed.length < 200) setFlash((f) => new Map([...f, ...changed.map((r) => [r.id, stamp] as [number, number])]));
+    setRevision((v) => v + 1);
+  });
 
   const loadSome = useCallback(async (ids: number[]) => {
     const { data } = await (browserDb().from("appointments").select(ROW_SELECT).in("id", ids) as unknown as Query<Row>);
@@ -141,12 +176,13 @@ export function usePanelData() {
       .then(({ data }) => {
         lastEvent.current = data?.[0]?.id ?? 0;
       });
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch from an external system
+     
     loadAll();
   }, [loadAll]);
 
   useHints((h) => {
-    if (h.kind === "bulk" || !h.appts.length) loadAll();
+    if (h.kind === "full") loadAll();
+    else if (h.kind === "bulk" || !h.appts.length) loadChanged();
     else loadSome(h.appts);
   });
 

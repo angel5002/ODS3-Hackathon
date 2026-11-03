@@ -6,10 +6,10 @@ import { toast } from "sonner";
 import { ArrowDown, ArrowUp, ExternalLink, PhoneCall, Smartphone, X } from "lucide-react";
 import { Button, RiskTag, StatusBadge } from "@/components/ui";
 import { post } from "@/lib/post";
-import { useHints, useNow } from "@/lib/realtime";
+import { useHints, useNow, useSingleFlight } from "@/lib/realtime";
 import { browserDb } from "@/lib/supabase/browser";
 import { CHANNEL, STATUS, days, demoNowMin, fmtMin, riskLevel, years } from "@/lib/labels";
-import type { Appointment, Call, DemoState, EventRow, Message, Offer, Patient, Status, WaitlistEntry } from "@/lib/types";
+import { isBroad, type Appointment, type Call, type DemoState, type EventRow, type Message, type Offer, type Patient, type Status, type WaitlistEntry } from "@/lib/types";
 import type { Row } from "./usePanelData";
 
 type Candidate = WaitlistEntry & { patient: Pick<Patient, "full_name" | "short_name" | "age" | "token" | "demo_role"> };
@@ -44,10 +44,11 @@ export function AppointmentDetail({
   const [d, setD] = useState<Detail | null>(null);
   const [busy, setBusy] = useState(false);
   const [manual, setManual] = useState<Status | "">("");
+  const [loadError, setLoadError] = useState(false);
   const now = useNow(1000);
   const nowMin = demoNowMin(state, now);
 
-  const load = useCallback(async () => {
+  const fetchDetail = useCallback(async () => {
     const db = browserDb();
     const related = [row.id, row.replaces_id, row.reassigned_to_id].filter((x): x is number => x != null);
     const needsWaitlist = row.is_base && (row.status === "liberada" || row.status === "reasignada");
@@ -73,7 +74,8 @@ export function AppointmentDetail({
       const { data } = await db.from("appointments").select("id,patient:patients(full_name)").eq("id", row.reassigned_to_id).single();
       newAppt = data as unknown as Detail["newAppt"];
     }
-    if (a.data && p.data) {
+    if (!a.data || !p.data) throw new Error(a.error?.message ?? p.error?.message ?? "detail not loaded");
+    {
       setD({
         appt: a.data,
         patient: p.data,
@@ -87,13 +89,24 @@ export function AppointmentDetail({
     }
   }, [row.id, row.patient_id, row.replaces_id, row.reassigned_to_id, row.is_base, row.status, row.specialty]);
 
+  // one request at a time; a failed load retries once after a moment
+  const load = useSingleFlight(async () => {
+    try {
+      await fetchDetail();
+    } catch {
+      await new Promise((r) => setTimeout(r, 1200));
+      await fetchDetail().catch(() => setLoadError(true));
+    }
+  });
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch from an external system
+     
     load();
   }, [load, row.status]);
 
   useHints((h) => {
-    if (h.kind === "bulk" || h.appts.includes(row.id) || h.patients.includes(row.patient_id)) load();
+    // status changes of this row already reload through row.status; bulk hints matter for open offers
+    if ((isBroad(h) && row.status === "liberada") || h.appts.includes(row.id) || h.patients.includes(row.patient_id)) load();
   });
 
   async function act(body: Record<string, unknown>, success?: string) {
@@ -307,7 +320,8 @@ export function AppointmentDetail({
 
       <section className="rounded-xl border border-line bg-surface p-4">
         <h3 className="font-semibold">Conversación por mensaje</h3>
-        {!d?.messages.length && <p className="mt-1 text-sm text-muted">Todavía no hay mensajes.</p>}
+        {!d && <p className="mt-1 text-sm text-muted">{loadError ? "No se pudo cargar. Cierre y vuelva a abrir la cita." : "Cargando…"}</p>}
+        {d && !d.messages.length && <p className="mt-1 text-sm text-muted">Todavía no hay mensajes.</p>}
         <ol className="mt-2 space-y-2">
           {d?.messages.map((m) => (
             <li key={m.id} className={`bubble-in flex ${m.direction === "entrante" ? "justify-end" : ""}`}>
@@ -329,7 +343,7 @@ export function AppointmentDetail({
 
       <section className="rounded-xl border border-line bg-surface p-4">
         <h3 className="font-semibold">Bitácora</h3>
-        {!d?.events.length && <p className="mt-1 text-sm text-muted">Sin movimientos todavía.</p>}
+        {d && !d.events.length && <p className="mt-1 text-sm text-muted">Sin movimientos todavía.</p>}
         <ol className="mt-2 space-y-2">
           {d?.events.map((e) => (
             <li key={e.id} className="bubble-in grid grid-cols-[48px_1fr] gap-2 text-sm">

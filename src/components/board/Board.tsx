@@ -8,7 +8,7 @@ import { browserDb, fetchAll } from "@/lib/supabase/browser";
 import { useDemoState, useHints, useStaffTick } from "@/lib/realtime";
 import { post } from "@/lib/post";
 import { STATUS, fmtMin, num, pct } from "@/lib/labels";
-import type { EventRow, Status } from "@/lib/types";
+import { isBroad, type EventRow, type Status } from "@/lib/types";
 
 type Lite = { id: number; status: Status; is_base: boolean; reminder_at_min: number | null };
 type Group = { group: string; citas: number; tasa: number; flag?: string | null; auc?: number | null; precision_lista?: number | null; share_poblacion?: number; share_lista?: number };
@@ -91,7 +91,7 @@ export function Board() {
   useHints((h) => {
     if (pending.current) clearTimeout(pending.current);
     pending.current = setTimeout(loadLive, 250); // coalesce bursts
-    if (h.kind === "bulk") loadStatic.current();
+    if (isBroad(h)) loadStatic.current();
   });
   const base = useMemo(() => rows.filter((r) => r.is_base), [rows]);
   const count = useMemo(() => {

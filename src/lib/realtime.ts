@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { browserDb } from "./supabase/browser";
-import type { DemoState, Hint } from "./types";
+import { isBroad, type DemoState, type Hint } from "./types";
 import { post } from "./post";
 
 // One Realtime subscription per tab, shared by every component. The database
@@ -23,16 +23,34 @@ function start() {
   let subscribedOnce = false;
   browserDb()
     .channel("demo")
-    .on("broadcast", { event: "change" }, ({ payload }) => emit(payload as Hint))
+    .on("broadcast", { event: "change" }, ({ payload }) => {
+      console.debug("[tiempo real] aviso", (payload as Hint).kind);
+      emit(payload as Hint);
+    })
     .subscribe((status) => {
+      console.debug("[tiempo real]", status);
       if (status === "SUBSCRIBED") {
-        if (subscribedOnce) emit({ kind: "bulk", appts: [], patients: [] });
+        // first join included: a change may have happened between the initial fetch and the join
+        emit({ kind: subscribedOnce ? "full" : "bulk", appts: [], patients: [] });
         subscribedOnce = true;
       }
     });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") emit({ kind: "bulk", appts: [], patients: [] });
+    if (document.visibilityState === "visible") emit({ kind: "full", appts: [], patients: [] });
   });
+  // Safety net: bulk actions bump demo_state.version. If their Realtime hint is late
+  // (a big transaction can delay it several seconds), this tiny poll catches it.
+  let version: number | null = null;
+  setInterval(async () => {
+    if (document.visibilityState !== "visible") return;
+    const { data } = await browserDb().from("demo_state").select("version").eq("id", 1).maybeSingle();
+    if (data == null) return;
+    if (version != null && data.version !== version) {
+      console.debug("[tiempo real] versión nueva por consulta");
+      emit({ kind: "bulk", appts: [], patients: [] });
+    }
+    version = data.version;
+  }, 2000);
 }
 
 export function useHints(onHint: Listener) {
@@ -60,7 +78,7 @@ export function useDemoState() {
     load.current();
   }, []);
   useHints((h) => {
-    if (h.kind === "bulk") load.current();
+    if (isBroad(h)) load.current();
   });
   return state;
 }
@@ -93,4 +111,43 @@ export function useStaffTick(active: boolean) {
     }, 3000);
     return () => clearInterval(id);
   }, [active]);
+}
+
+/**
+ * Wraps a loader so that at most one run is in flight; calls that arrive meanwhile
+ * collapse into a single follow-up run. Keeps bursts of hints from piling up requests.
+ */
+export function singleFlight(fn: () => Promise<void>) {
+  let running = false;
+  let again = false;
+  const run = async (): Promise<void> => {
+    if (running) {
+      again = true;
+      return;
+    }
+    running = true;
+    try {
+      await fn();
+    } finally {
+      running = false;
+      if (again) {
+        again = false;
+        void run();
+      }
+    }
+  };
+  return run;
+}
+
+/** Hook form of singleFlight; always runs the latest version of `fn`. */
+export function useSingleFlight(fn: () => Promise<void>) {
+  const fnRef = useRef(fn);
+  useEffect(() => {
+    fnRef.current = fn;
+  });
+  const flight = useRef<(() => Promise<void>) | null>(null);
+  return useCallback(() => {
+    flight.current ??= singleFlight(() => fnRef.current());
+    return flight.current();
+  }, []);
 }

@@ -174,6 +174,19 @@ Los QR están en `/demo` y cada uno lleva a `https://ods3-hackathon.vercel.app/t
 6. Probar el internet del local y tener datos móviles de respaldo.
 7. Detalle menor: Playwright mostró una advertencia de hidratación al entrar a `/demo` justo después del PIN. No se reproduce en un navegador normal ni afecta el funcionamiento.
 
+## Correcciones posteriores (3 de noviembre)
+
+- **El PIN se quedaba en "Verificando…".** Al entrar a una pantalla protegida, Next.js guardaba en su caché la redirección a `/acceso`. Después de validar el PIN, la navegación interna reutilizaba esa redirección. Ahora se hace una navegación completa. Se reprodujo antes del arreglo y se verificó después. Quedó como paso 0 de `tests/e2e/demo_flow.py`.
+- **Menos carga durante la demo.** Ante un aviso general (respuestas simuladas cada 3 s), el panel pedía otra vez las 1,473 citas. Ahora pide solo las que cambiaron (`updated_at`). "Reiniciar demo" emite un aviso `full` para recargar todo (migración `20261103043000_reset_notifies_full.sql`). Las recargas no se encadenan: hay como máximo una en curso y una pendiente.
+- **Avisos más robustos.** Después de las acciones masivas (recordatorios, adelantar el reloj, reiniciar), el servidor también envía el aviso por la API de difusión de Realtime. El aviso que sale desde la base viaja con miles de filas y a veces llega tarde. Como red de seguridad, cada pantalla consulta cada 2 s un número de versión de la demo.
+- **Latencia del primer paso en la prueba automática.** En la prueba completa con 6 navegadores headless en la misma laptop, el recordatorio tarda entre 8 y 10 s en aparecer en el teléfono; los demás pasos, entre 0.9 y 1.4 s. No se reproduce en otras condiciones:
+  - con los mismos teléfonos en una prueba aislada: 0.8–1.4 s;
+  - en la base: `send_reminders` tarda 0.5 s y las lecturas concurrentes, 0.12 s;
+  - en producción: 1.3 s.
+
+  Se atribuye a la carga de la máquina de pruebas, pero **conviene medirlo con los celulares reales** antes de la final.
+- Se ocultó el indicador de desarrollo de Next.js para que las capturas en local se vean como en producción.
+
 ## Lo que necesita la ejecución 2 (voz con IA)
 
 1. **Implementación nueva:** `GeminiLiveVoiceAgent implements VoiceAgent` en `src/lib/voice/`. El contrato ya existe en `src/lib/voice/agent.ts`: `start`, `choose`, `hangUp`, `transcript` y los callbacks `onTurn`, `onOptions`, `onEnd`.

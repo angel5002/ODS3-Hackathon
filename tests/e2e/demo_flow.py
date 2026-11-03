@@ -54,20 +54,31 @@ def main(base: str, pin: str):
         staff = staff_ctx.new_page()
         staff.on("console", lambda m: print("   [panel]", m.type, m.text[:300]) if m.type in ("error", "warning") else None)
         staff.on("requestfailed", lambda r: print("   [panel] falló", r.url[:120]))
-        staff.goto(f"{base}/acceso?volver=/demo")
+        # Regression: from the home page, the router used to keep a cached redirect to /acceso
+        # and the PIN form stayed on "Verificando…" after a correct PIN.
+        print("0. Ingreso con PIN desde la página de inicio")
+        staff.goto(f"{base}/")
+        expect(staff.get_by_role("link", name="Abrir el panel de citas")).to_be_visible()
+        staff.wait_for_timeout(1500)  # let the links prefetch, as a real visit does
+        shot(staff, "escritorio-inicio")
+        staff.get_by_role("link", name="Abrir el panel de citas").click()
+        staff.wait_for_url("**/acceso**")
+        expect(staff.get_by_label("PIN")).to_be_visible()
         shot(staff, "escritorio-acceso")
         staff.get_by_label("PIN").fill(pin)
         staff.get_by_role("button", name="Entrar").click()
-        staff.wait_for_url(lambda u: u.rstrip("/").endswith("/demo") and "acceso" not in u)
+        staff.wait_for_url(lambda u: u.rstrip("/").endswith("/panel") and "acceso" not in u, timeout=8000)
+        expect(staff.get_by_role("heading", name="Citas de mañana")).to_be_visible()
+        print("  el PIN lleva al panel: OK")
         res = staff.request.post(f"{base}/api/staff", data={"action": "reset"})
         assert res.ok, res.text()
-        staff.reload()
+        staff.goto(f"{base}/demo")
         expect(staff.get_by_text("Teléfono 5")).to_be_visible()
         shot(staff, "escritorio-demo-qr", full=True)
 
         phones = {}
         for token in ["rosa", "valeria", "carmen", "julio"]:
-            pg = phones_browser.new_context(**phone).new_page()
+            pg = p.chromium.launch(headless=True).new_context(**phone).new_page()  # each phone is its own device
             pg.goto(f"{base}/t/{token}")
             expect(pg.get_by_text("Teléfono simulado de")).to_be_visible()
             phones[token] = pg
@@ -116,7 +127,7 @@ def main(base: str, pin: str):
         print("6. Sin respuesta y llamada")
         staff.request.post(f"{base}/api/staff", data={"action": "advance", "minutes": 181})
         staff.get_by_role("tab", name="Sin respuesta").click()
-        rosa_row = staff.get_by_role("row").filter(has_text="Rosa Díaz")
+        rosa_row = staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz")
         expect(rosa_row.get_by_role("button", name="Llamar")).to_be_visible(timeout=8000)
         rosa = phones["rosa"]
         timed("llamada entrante en el celular", lambda: rosa_row.get_by_role("button", name="Llamar").click(),
@@ -128,9 +139,9 @@ def main(base: str, pin: str):
         expect(rosa.get_by_text("la cita queda confirmada")).to_be_visible()
         shot(rosa, "celular-llamada-agente")
         staff.get_by_role("tab", name="Todas las citas").click()
-        expect(staff.get_by_role("row").filter(has_text="Rosa Díaz").get_by_text("Confirmada")).to_be_visible(timeout=8000)
-        staff.get_by_role("row").filter(has_text="Rosa Díaz").get_by_role("button").first.click()
-        expect(staff.get_by_text("Última llamada")).to_be_visible()
+        expect(staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_text("Confirmada")).to_be_visible(timeout=8000)
+        staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_role("button").first.click()
+        expect(staff.get_by_text("Última llamada")).to_be_visible(timeout=10000)
         shot(staff, "escritorio-panel-detalle-llamada")
 
         print("7. El tablero lo refleja")
@@ -154,6 +165,22 @@ def main(base: str, pin: str):
         expect(mp.get_by_text("Tablero en vivo")).to_be_visible()
         mp.wait_for_timeout(1500)
         shot(mp, "celular-tablero")
+        mp.goto(f"{base}/panel")
+        expect(mp.get_by_text("Citas de mañana")).to_be_visible()
+        mp.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_role("button").first.click()
+        expect(mp.get_by_text("Lo que más pesa")).to_be_visible()
+        mp.wait_for_timeout(800)
+        shot(mp, "celular-panel-detalle")
+        mp.goto(f"{base}/demo")
+        expect(mp.get_by_text("Teléfono 5")).to_be_visible()
+        shot(mp, "celular-demo")
+        guest = phones_browser.new_context(**phone).new_page()  # no PIN cookie
+        guest.goto(f"{base}/")
+        expect(guest.get_by_role("link", name="Abrir el panel de citas")).to_be_visible()
+        shot(guest, "celular-inicio")
+        guest.goto(f"{base}/panel")
+        expect(guest.get_by_label("PIN")).to_be_visible()
+        shot(guest, "celular-acceso")
 
         print("8. Reiniciar demo")
         board.close()

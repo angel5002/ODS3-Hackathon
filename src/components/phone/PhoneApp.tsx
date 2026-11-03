@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Building2, CheckCheck, Info } from "lucide-react";
 import { toast } from "sonner";
 import { browserDb } from "@/lib/supabase/browser";
-import { useDemoState, useHints, useNow } from "@/lib/realtime";
+import { useDemoState, useHints, useNow, useSingleFlight } from "@/lib/realtime";
 import { post } from "@/lib/post";
 import { DISCLAIMER, demoNowMin, fmtMin } from "@/lib/labels";
-import type { Appointment, Call, Message, Offer, Patient } from "@/lib/types";
+import { isBroad, type Appointment, type Call, type Message, type Offer, type Patient } from "@/lib/types";
 import { CallScreen } from "./CallScreen";
 
 const REPLY_ID: Record<string, string> = {
@@ -26,7 +26,7 @@ export function PhoneApp({ token }: { token: string }) {
   const now = useNow(1000);
   const listRef = useRef<HTMLOListElement>(null);
 
-  const load = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     const db = browserDb();
     const { data: patient } = await db.from("patients").select("*").eq("token", token).maybeSingle<Patient>();
     if (!patient) {
@@ -47,15 +47,16 @@ export function PhoneApp({ token }: { token: string }) {
       call: ((c.data ?? []) as Call[])[0] ?? null,
     });
   }, [token]);
+  const load = useSingleFlight(fetchData);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch from an external system
+     
     load();
   }, [load]);
 
   const patientId = data?.patient.id;
   useHints((h) => {
-    if (h.kind === "bulk" || (patientId && h.patients.includes(patientId))) load();
+    if (isBroad(h) || (patientId && h.patients.includes(patientId))) load();
   });
 
   const count = data?.messages.length ?? 0;

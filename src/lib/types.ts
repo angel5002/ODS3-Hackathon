@@ -136,4 +136,7 @@ export type DemoState = {
   updated_at: string;
 };
 
-export type Hint = { kind: "appt" | "offer" | "bulk"; appts: number[]; patients: string[] };
+/** appt/offer: specific rows changed · bulk: many rows changed (refetch what changed) · full: reload everything (reset, reconnect) */
+export type Hint = { kind: "appt" | "offer" | "bulk" | "full"; appts: number[]; patients: string[] };
+
+export const isBroad = (h: Hint) => h.kind === "bulk" || h.kind === "full";

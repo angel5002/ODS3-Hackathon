@@ -2,7 +2,7 @@
 import { fail, ok } from "@/lib/api";
 import { messaging, voice } from "@/lib/channels";
 import { demoNowMin } from "@/lib/labels";
-import { rpc, serverDb } from "@/lib/supabase/server";
+import { broadcast, rpc, serverDb } from "@/lib/supabase/server";
 import type { DemoState, Status } from "@/lib/types";
 
 const STAFF = "Personal de citas";
@@ -12,8 +12,11 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   try {
     switch (body.action) {
-      case "reminders":
-        return ok({ sent: await messaging.sendReminders() });
+      case "reminders": {
+        const sent = await messaging.sendReminders();
+        await broadcast("bulk");
+        return ok({ sent });
+      }
       case "status": {
         if (!MANUAL.includes(body.to)) return fail("invalid status");
         await rpc("staff_set_status", { p_appt: Number(body.appointmentId), p_to: body.to, p_actor: STAFF });
@@ -23,13 +26,18 @@ export async function POST(req: Request) {
         return ok({ callId: await voice.startCall(Number(body.appointmentId), STAFF) });
       case "offer":
         return ok({ offerId: await messaging.sendSlotOffer(Number(body.slotId), Number(body.waitlistId), STAFF) });
-      case "tick":
-        return ok({ changes: await rpc<number>("demo_tick") });
+      case "tick": {
+        const changes = await rpc<number>("demo_tick");
+        if (changes > 0) await broadcast("bulk");
+        return ok({ changes });
+      }
       case "advance":
         await rpc("advance_clock", { p_minutes: Math.max(1, Math.min(600, Number(body.minutes) || 60)) });
+        await broadcast("bulk");
         return ok();
       case "reset":
         await rpc("reset_demo");
+        await broadcast("full");
         return ok();
       case "settings":
         await saveSettings(body.settings ?? {});
@@ -72,7 +80,7 @@ async function saveSettings(input: Record<string, unknown>) {
   }
   const { error } = await db.from("demo_state").update({ ...patch, version: data.version + 1 }).eq("id", 1);
   if (error) throw new Error(error.message);
-  await rpc("notify", { p_kind: "bulk" });
+  await broadcast("bulk");
 }
 
 // RF-37: reveal what really happened on the demo day (the outcome stays hidden until now)
@@ -108,6 +116,6 @@ async function reveal() {
   };
   await db.from("metrics").upsert({ key: "reveal", value });
   await db.from("demo_state").update({ revealed: true }).eq("id", 1);
-  await rpc("notify", { p_kind: "bulk" });
+  await broadcast("bulk");
   return value;
 }

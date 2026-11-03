@@ -1,13 +1,12 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui";
 import { post } from "@/lib/post";
 
 function AccessForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -21,8 +20,9 @@ function AccessForm() {
     setError("");
     try {
       await post("/api/access", { pin });
-      router.replace(target);
-      router.refresh();
+      // Full navigation: the client router cached the earlier redirect to this page,
+      // so a soft router.replace() would bounce back here and stay "Verificando…".
+      window.location.replace(target);
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);
