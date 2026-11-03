@@ -88,7 +88,7 @@ export function PanelApp() {
                 ? "Recordatorios enviados"
                 : sending
                   ? "Enviando…"
-                  : `Enviar recordatorios a ${num(pendingReminders)} citas`}
+                  : `Enviar recordatorios a ${num(pendingReminders)} ${pendingReminders === 1 ? "cita" : "citas"}`}
             </Button>
             {state?.reminders_sent_min != null && (
               <span className="text-xs text-muted">
@@ -119,6 +119,9 @@ export function PanelApp() {
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
               <input
                 type="search"
+                name="buscar"
+                autoComplete="off"
+                spellCheck={false}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por nombre…"
@@ -177,7 +180,7 @@ export function PanelApp() {
 
       <aside
         className={`lg:sticky lg:top-[76px] lg:block lg:max-h-[calc(100dvh-92px)] lg:self-start ${
-          selectedRow ? "fixed inset-0 z-40 overflow-y-auto bg-paper p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0" : "hidden"
+          selectedRow ? "fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-paper p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0" : "hidden"
         }`}
       >
         {selectedRow && state ? (

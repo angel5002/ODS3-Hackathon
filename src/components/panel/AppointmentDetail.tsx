@@ -8,7 +8,7 @@ import { Button, RiskTag, StatusBadge } from "@/components/ui";
 import { post } from "@/lib/post";
 import { useHints, useNow } from "@/lib/realtime";
 import { browserDb } from "@/lib/supabase/browser";
-import { CHANNEL, STATUS, demoNowMin, fmtMin, riskLevel, years } from "@/lib/labels";
+import { CHANNEL, STATUS, days, demoNowMin, fmtMin, riskLevel, years } from "@/lib/labels";
 import type { Appointment, Call, DemoState, EventRow, Message, Offer, Patient, Status, WaitlistEntry } from "@/lib/types";
 import type { Row } from "./usePanelData";
 
@@ -146,7 +146,7 @@ export function AppointmentDetail({
           <Info k="Hora" v={`${row.time} · ${state.day_label}`} />
           <Info k="Modalidad" v={row.remote ? "Teleconsulta" : "Presencial"} />
           {a && <Info k="Seguro de salud" v={a.insured ? "Sí" : "No"} />}
-          {a?.wait_days != null && <Info k="Pidió la cita" v={`hace ${a.wait_days} días`} />}
+          {a?.wait_days != null && <Info k="Pidió la cita" v={`hace ${days(a.wait_days)}`} />}
           {a?.prev_n != null && <Info k="Citas anteriores (2023)" v={`${a.prev_n}, faltó a ${a.prev_no_shows}`} />}
         </dl>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -234,7 +234,7 @@ export function AppointmentDetail({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{c.patient.full_name}</p>
                     <p className="text-xs text-muted">
-                      Espera {c.wait_days} días · {years(c.patient.age)}
+                      Espera {days(c.wait_days)} · {years(c.patient.age)}
                       {offer ? ` · ${OFFER_LABEL[offer.status]}` : c.status === "asignado" ? " · ya tiene cita" : ""}
                     </p>
                   </div>

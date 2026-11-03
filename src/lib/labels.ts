@@ -73,3 +73,7 @@ export function addresseeName(p: { first_name: string; caregiver_name: string | 
 export function years(n: number) {
   return n === 1 ? "1 año" : `${n} años`;
 }
+
+export function days(n: number) {
+  return n === 1 ? "1 día" : `${n} días`;
+}
