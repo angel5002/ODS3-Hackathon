@@ -150,12 +150,10 @@ def factor_text(g: str, r: pd.Series, up: bool, ctx: dict) -> str:
         return f"Pidió la cita hace {d} días" if d != 1 else "Pidió la cita hace 1 día"
     if g == "especialidad":
         rate = ctx["esp_rate"][r["ESPECIALIDAD"]]
-        word = "más" if up else "menos"
-        return f"En {title(r['ESPECIALIDAD'])} se falta {word} que en otras especialidades ({pct(rate)} en ene–sep)"
+        return f"En {title(r['ESPECIALIDAD'])} no se atendió el {pct(rate)} de las citas en ene–sep (promedio {pct(ctx['avg'])})"
     if g == "edad":
         a = int(r["edad"])
-        grp = str(r["grupo_edad"])
-        return f"Edad {a} años: en el grupo de {AGE_LABEL[grp]} años se falta {'más' if up else 'menos'}"
+        return f"Edad: {a} años" if a != 1 else "Edad: 1 año"
     if g == "seguro":
         return "No tiene seguro de salud" if r["seguro"] == 0 else "Tiene seguro de salud"
     if g == "modalidad":
@@ -236,7 +234,7 @@ def main(path: str) -> None:
     ref["prev_n"] = float(tr["prev_n"].median())
     d = d.sort_values("riesgo", ascending=False).reset_index(drop=True)
     d["rank"] = np.arange(1, len(d) + 1)
-    factors = explain(model, d, ref, {"esp_rate": esp_rate})
+    factors = explain(model, d, ref, {"esp_rate": esp_rate, "avg": float(tr["y"].mean())})
 
     rng = np.random.default_rng(SEED)
     fk = Faker(SEED)

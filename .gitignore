@@ -36,3 +36,6 @@ coverage/
 playwright-report/
 test-results/
 .pytest_cache/
+
+# Local preview config (uses a local-only test PIN)
+.claude/launch.json
