@@ -179,13 +179,17 @@ Los QR están en `/demo` y cada uno lleva a `https://ods3-hackathon.vercel.app/t
 - **El PIN se quedaba en "Verificando…".** Al entrar a una pantalla protegida, Next.js guardaba en su caché la redirección a `/acceso`. Después de validar el PIN, la navegación interna reutilizaba esa redirección. Ahora se hace una navegación completa. Se reprodujo antes del arreglo y se verificó después. Quedó como paso 0 de `tests/e2e/demo_flow.py`.
 - **Menos carga durante la demo.** Ante un aviso general (respuestas simuladas cada 3 s), el panel pedía otra vez las 1,473 citas. Ahora pide solo las que cambiaron (`updated_at`). "Reiniciar demo" emite un aviso `full` para recargar todo (migración `20261103043000_reset_notifies_full.sql`). Las recargas no se encadenan: hay como máximo una en curso y una pendiente.
 - **Avisos más robustos.** Después de las acciones masivas (recordatorios, adelantar el reloj, reiniciar), el servidor también envía el aviso por la API de difusión de Realtime. El aviso que sale desde la base viaja con miles de filas y a veces llega tarde. Como red de seguridad, cada pantalla consulta cada 2 s un número de versión de la demo.
-- **Latencia del primer paso en la prueba automática.** En la prueba completa con 6 navegadores headless en la misma laptop, el recordatorio tarda entre 8 y 10 s en aparecer en el teléfono; los demás pasos, entre 0.9 y 1.4 s. No se reproduce en otras condiciones:
-  - con los mismos teléfonos en una prueba aislada: 0.8–1.4 s;
-  - en la base: `send_reminders` tarda 0.5 s y las lecturas concurrentes, 0.12 s;
-  - en producción: 1.3 s.
-
-  Se atribuye a la carga de la máquina de pruebas, pero **conviene medirlo con los celulares reales** antes de la final.
+- **Latencia en la prueba automática.** Contra el servidor de desarrollo (`npm run dev`), el primer paso tardaba entre 8 y 10 s, porque React en modo desarrollo es mucho más lento al dibujar 1,473 filas. Contra una versión de producción local (`next build` + `next start`), que es lo que corre en Vercel, la prueba completa pasa con todos los pasos por debajo de 1.5 s. La prueba de punta a punta debe correrse contra producción.
 - Se ocultó el indicador de desarrollo de Next.js para que las capturas en local se vean como en producción.
+
+## Rediseño visual (3 de noviembre)
+
+- **Landing nueva en `/`:** primero el problema (una agenda de 100 cupos animada donde 26 quedan vacíos y algunos se recuperan como escenario) y luego la propuesta en cuatro pasos, la evidencia del modelo, los principios y un cierre. Todas las cifras se leen de los datos.
+- **Cabecera:** ya no queda fija ni muestra el reloj de la demo. Los avisos de pacientes ficticios y la atribución pasan a un pie oscuro, con enlaces y créditos.
+- **Panel:** el detalle no ocupa espacio hasta que se elige una cita. Entra deslizándose desde la derecha (en celular, como hoja inferior) y la lista se encoge con suavidad; se cierra con la X, con Esc o tocando fuera en celular.
+- **Indicadores:** fichas con ícono y color por estado, y números que se animan al cambiar.
+- **Menos texto:** pestañas más cortas, sin párrafos explicativos. El reloj de la demo queda como un chip junto al título.
+- **Estilo común:** el tablero, la demo y el acceso usan la misma tipografía de titulares (Bricolage Grotesque) y las mismas tarjetas.
 
 ## Lo que necesita la ejecución 2 (voz con IA)
 

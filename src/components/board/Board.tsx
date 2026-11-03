@@ -119,11 +119,11 @@ export function Board() {
       <section aria-labelledby="live">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 id="live" className="text-2xl font-bold tracking-tight">
+            <h1 id="live" className="font-display text-3xl font-bold tracking-tight">
               Tablero en vivo
             </h1>
             <p className="text-sm text-muted">
-              Citas de mañana ({state?.day_label ?? "…"} de 2023). Se actualiza solo con cada respuesta, llamada y reasignación.
+              Citas de mañana, {state?.day_label ?? "…"} de 2023. Se actualiza solo.
             </p>
           </div>
           {state?.reminders_sent_min != null && <p className="text-sm text-muted">Recordatorios enviados a las {fmtMin(state.reminders_sent_min)}</p>}
@@ -164,7 +164,7 @@ export function Board() {
         <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.3fr]">
           <Card className="p-4">
             <h2 className="font-semibold">Actividad reciente</h2>
-            <p className="text-xs text-muted">Acciones de pacientes con código QR, llamadas y del personal. Las respuestas simuladas se omiten.</p>
+            
             <ol className="mt-2 divide-y divide-line">
               {!feed.length && <li className="py-3 text-sm text-muted">Sin actividad todavía.</li>}
               {feed.map((e) => (
@@ -192,10 +192,10 @@ export function Board() {
 
 function Tile({ label, value, sub, strong }: { label: string; value: number; sub?: string; strong?: boolean }) {
   return (
-    <li className={`rounded-xl border p-3.5 ${strong ? "border-brand bg-brand-soft" : "border-line bg-surface"}`}>
+    <li className={`rounded-2xl p-4 ring-1 ${strong ? "bg-night text-white ring-night" : "bg-surface ring-line"}`}>
       <p className="text-sm font-medium">{label}</p>
-      <p className={`mt-1 text-3xl font-bold tabular-nums ${strong ? "text-brand" : ""}`}>{num(value)}</p>
-      {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
+      <p className={`mt-2 font-display text-4xl font-bold tabular-nums ${strong ? "text-mint" : ""}`}><span key={value} className="bump inline-block">{num(value)}</span></p>
+      {sub && <p className={`mt-1 text-xs ${strong ? "text-white/60" : "text-muted"}`}>{sub}</p>}
     </li>
   );
 }
@@ -268,7 +268,7 @@ function History({ hist, card }: { hist: Historical; card: ModelCard }) {
   return (
     <section aria-labelledby="hist" className="space-y-4">
       <div>
-        <h2 id="hist" className="text-xl font-bold tracking-tight">
+        <h2 id="hist" className="font-display text-2xl font-bold tracking-tight">
           Histórico 2023 y ficha del modelo
         </h2>
         <p className="max-w-[90ch] text-sm text-muted">

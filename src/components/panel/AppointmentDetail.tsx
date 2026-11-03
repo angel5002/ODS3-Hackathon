@@ -133,26 +133,27 @@ export function AppointmentDetail({
 
   return (
     <div className="space-y-3 pb-6">
-      <section className="rounded-xl border border-line bg-surface p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-muted">Cita {row.id}{row.origin === "lista_espera" ? " · desde la lista de espera" : ""}</p>
-            <h2 className="truncate text-xl font-bold">{row.patient.full_name}</h2>
+      <section className="relative overflow-hidden rounded-2xl bg-surface p-5 ring-1 ring-line">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-brand-soft/70 to-transparent" aria-hidden />
+        <div className="relative flex items-start gap-3">
+          <span className={`grid size-12 shrink-0 place-items-center rounded-2xl font-display text-lg font-bold ${level ? AVATAR_TONE[level] : "bg-st-done-soft text-st-done"}`} aria-hidden>
+            {row.patient.full_name.split(" ").slice(0, 2).map((w) => w[0]).join("")}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate font-display text-xl font-bold leading-tight">{row.patient.full_name}</h2>
             <p className="text-sm text-muted">
               {years(row.patient.age)}
               {p?.caregiver_name ? ` · responde ${p.caregiver_name} (${p.caregiver_relation})` : ""}
             </p>
-            {p && <p className="text-sm text-muted">Teléfono ficticio: {p.phone}</p>}
           </div>
-          <Button variant="ghost" onClick={onClose} aria-label="Cerrar detalle" className="min-h-9 px-2">
+          <Button variant="ghost" onClick={onClose} aria-label="Cerrar detalle" className="-mr-2 -mt-1 min-h-9 rounded-full px-2">
             <X className="size-5" />
           </Button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="relative mt-3 flex flex-wrap items-center gap-2">
           <StatusBadge status={row.status} />
-          {row.status_at && row.status_channel && (
-            <span className="text-xs text-muted">por {CHANNEL[row.status_channel].toLowerCase()}</span>
-          )}
+          {row.status_at && row.status_channel && <span className="text-xs text-muted">por {CHANNEL[row.status_channel].toLowerCase()}</span>}
+          {p && <span className="ml-auto text-xs text-faint">{p.phone} (ficticio)</span>}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <Info k="Especialidad" v={row.specialty} />
@@ -164,14 +165,14 @@ export function AppointmentDetail({
         </dl>
         <div className="mt-4 flex flex-wrap gap-2">
           {canCall && (
-            <Button variant="primary" disabled={busy} onClick={() => act({ action: "call", appointmentId: row.id }, "Llamada iniciada")}>
+            <Button variant="primary" className="rounded-full px-4" disabled={busy} onClick={() => act({ action: "call", appointmentId: row.id }, "Llamada iniciada")}>
               <PhoneCall className="size-4" aria-hidden /> Llamar con el asistente
             </Button>
           )}
           <Link
             href={`/t/${row.patient.token}`}
             target="_blank"
-            className="press inline-flex min-h-10 items-center gap-2 rounded-lg border border-line-strong bg-surface px-3.5 text-sm font-semibold hover:bg-sunken"
+            className="press inline-flex min-h-10 items-center gap-2 rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-sunken"
           >
             <Smartphone className="size-4" aria-hidden /> Ver su teléfono <ExternalLink className="size-3.5 text-muted" aria-hidden />
           </Link>
@@ -179,7 +180,7 @@ export function AppointmentDetail({
       </section>
 
       {row.origin === "agenda" && (
-        <section className="rounded-xl border border-line bg-surface p-4">
+        <section className="rounded-2xl bg-surface p-5 ring-1 ring-line">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-semibold">Riesgo de inasistencia</h3>
             <RiskTag level={level} risk={row.risk} />
@@ -214,7 +215,7 @@ export function AppointmentDetail({
       )}
 
       {row.is_base && (row.status === "liberada" || row.status === "reasignada") && (
-        <section className="rounded-xl border-2 border-st-free/30 bg-surface p-4">
+        <section className="rounded-2xl bg-surface p-5 ring-2 ring-st-free/40">
           <h3 className="font-semibold">Reasignar el cupo</h3>
           {row.status === "reasignada" && d?.newAppt && (
             <p className="mt-1 text-sm">
@@ -271,7 +272,7 @@ export function AppointmentDetail({
         </section>
       )}
 
-      <section className="rounded-xl border border-line bg-surface p-4">
+      <section className="rounded-2xl bg-surface p-5 ring-1 ring-line">
         <h3 className="font-semibold">Cambiar el estado a mano</h3>
         <div className="mt-2 flex flex-wrap gap-2">
           <select
@@ -300,7 +301,7 @@ export function AppointmentDetail({
       </section>
 
       {d?.call && (
-        <section className="rounded-xl border border-line bg-surface p-4">
+        <section className="rounded-2xl bg-surface p-5 ring-1 ring-line">
           <h3 className="font-semibold">Última llamada</h3>
           <p className="mt-1 text-sm text-muted">
             {CALL_LABEL[d.call.status]}
@@ -318,7 +319,7 @@ export function AppointmentDetail({
         </section>
       )}
 
-      <section className="rounded-xl border border-line bg-surface p-4">
+      <section className="rounded-2xl bg-surface p-5 ring-1 ring-line">
         <h3 className="font-semibold">Conversación por mensaje</h3>
         {!d && <p className="mt-1 text-sm text-muted">{loadError ? "No se pudo cargar. Cierre y vuelva a abrir la cita." : "Cargando…"}</p>}
         {d && !d.messages.length && <p className="mt-1 text-sm text-muted">Todavía no hay mensajes.</p>}
@@ -341,7 +342,7 @@ export function AppointmentDetail({
         </ol>
       </section>
 
-      <section className="rounded-xl border border-line bg-surface p-4">
+      <section className="rounded-2xl bg-surface p-5 ring-1 ring-line">
         <h3 className="font-semibold">Bitácora</h3>
         {d && !d.events.length && <p className="mt-1 text-sm text-muted">Sin movimientos todavía.</p>}
         <ol className="mt-2 space-y-2">
@@ -361,6 +362,12 @@ export function AppointmentDetail({
     </div>
   );
 }
+
+const AVATAR_TONE: Record<string, string> = {
+  alto: "bg-risk-alto-soft text-risk-alto",
+  medio: "bg-risk-medio-soft text-risk-medio",
+  bajo: "bg-risk-bajo-soft text-risk-bajo",
+};
 
 const OFFER_LABEL: Record<Offer["status"], string> = {
   enviada: "oferta enviada",

@@ -58,10 +58,10 @@ def main(base: str, pin: str):
         # and the PIN form stayed on "Verificando…" after a correct PIN.
         print("0. Ingreso con PIN desde la página de inicio")
         staff.goto(f"{base}/")
-        expect(staff.get_by_role("link", name="Abrir el panel de citas")).to_be_visible()
+        expect(staff.get_by_role("link", name="Ver la demo")).to_be_visible()
         staff.wait_for_timeout(1500)  # let the links prefetch, as a real visit does
         shot(staff, "escritorio-inicio")
-        staff.get_by_role("link", name="Abrir el panel de citas").click()
+        staff.get_by_role("link", name="Ver la demo").click()
         staff.wait_for_url("**/acceso**")
         expect(staff.get_by_label("PIN")).to_be_visible()
         shot(staff, "escritorio-acceso")
@@ -85,7 +85,7 @@ def main(base: str, pin: str):
         shot(phones["carmen"], "celular-sin-mensajes")
 
         staff.goto(f"{base}/panel")
-        send = staff.get_by_role("button", name="Enviar recordatorios a")
+        send = staff.get_by_role("button", name="Enviar recordatorios (")
         expect(send).to_be_enabled(timeout=15000)
         shot(staff, "escritorio-panel-inicio")
 
@@ -107,7 +107,7 @@ def main(base: str, pin: str):
               lambda: toast(staff, "liberó su cupo por mensaje"))
 
         print("4. El personal reasigna")
-        staff.get_by_role("tab", name="Cupos por reasignar").click()
+        staff.get_by_role("tab", name="Por reasignar").click()
         staff.get_by_role("button", name="Carmen").first.click()
         offer = staff.get_by_role("button", name="Ofrecer cupo")
         expect(offer).to_be_visible()
@@ -138,7 +138,7 @@ def main(base: str, pin: str):
         rosa.get_by_role("button", name="Sí, asistiré").click()
         expect(rosa.get_by_text("la cita queda confirmada")).to_be_visible()
         shot(rosa, "celular-llamada-agente")
-        staff.get_by_role("tab", name="Todas las citas").click()
+        staff.get_by_role("tab", name="Todas").click()
         expect(staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_text("Confirmada")).to_be_visible(timeout=8000)
         staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_role("button").first.click()
         expect(staff.get_by_text("Última llamada")).to_be_visible(timeout=10000)
@@ -176,7 +176,7 @@ def main(base: str, pin: str):
         shot(mp, "celular-demo")
         guest = phones_browser.new_context(**phone).new_page()  # no PIN cookie
         guest.goto(f"{base}/")
-        expect(guest.get_by_role("link", name="Abrir el panel de citas")).to_be_visible()
+        expect(guest.get_by_role("link", name="Ver la demo")).to_be_visible()
         shot(guest, "celular-inicio")
         guest.goto(f"{base}/panel")
         expect(guest.get_by_label("PIN")).to_be_visible()

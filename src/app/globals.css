@@ -4,6 +4,12 @@
    Every status has its own tone and always comes with a text label. */
 @theme {
   --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-public-sans), ui-sans-serif, sans-serif;
+
+  --color-night: #0f2a2c;
+  --color-night-2: #163a3c;
+  --color-mint: #5fd0b4;
+  --color-mint-soft: #c9f0e4;
 
   --color-paper: #eef2f0;
   --color-surface: #ffffff;
@@ -153,5 +159,226 @@ button:disabled {
   }
   .press:active:not(:disabled) {
     transform: none;
+  }
+}
+
+/* ---------- Landing ---------- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 700ms var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* agenda: 100 appointment slots */
+@keyframes slot-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes slot-empty {
+  to {
+    background-color: transparent;
+    border-color: rgb(255 255 255 / 0.55);
+  }
+}
+@keyframes slot-recover {
+  0% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    background-color: var(--color-mint);
+    border-color: var(--color-mint);
+    transform: scale(1);
+  }
+}
+.slot {
+  border: 1.5px solid transparent;
+  background-color: rgb(255 255 255 / 0.22);
+  animation: slot-in 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 9ms + 250ms);
+}
+.slot[data-kind="empty"],
+.slot[data-kind="recovered"] {
+  animation:
+    slot-in 420ms var(--ease-out) both calc(var(--i) * 9ms + 250ms),
+    slot-empty 500ms ease forwards calc(1500ms + var(--i) * 4ms);
+}
+.slot[data-kind="recovered"] {
+  animation:
+    slot-in 420ms var(--ease-out) both calc(var(--i) * 9ms + 250ms),
+    slot-empty 500ms ease forwards calc(1500ms + var(--i) * 4ms),
+    slot-recover 650ms var(--ease-out) forwards calc(2900ms + var(--r) * 260ms);
+}
+
+/* scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 700ms var(--ease-out),
+    transform 700ms var(--ease-out);
+  transition-delay: var(--d, 0ms);
+}
+.reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .slot,
+  .slot[data-kind="empty"],
+  .slot[data-kind="recovered"] {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+  .reveal {
+    transform: none;
+    transition: opacity 200ms ease;
+  }
+}
+
+/* ---------- Panel: detail pane slides in only when an appointment is picked ---------- */
+.panel-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0px;
+  column-gap: 0px;
+  transition:
+    grid-template-columns 460ms var(--ease-drawer),
+    column-gap 460ms var(--ease-drawer);
+}
+.panel-layout[data-open="true"] {
+  grid-template-columns: minmax(0, 1fr) 440px;
+  column-gap: 20px;
+}
+.detail-pane {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  min-width: 0;
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  border-radius: 20px;
+}
+.detail-inner {
+  width: 440px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  opacity: 0;
+  transform: translateX(40px);
+  transition:
+    opacity 260ms ease,
+    transform 460ms var(--ease-drawer);
+}
+.detail-pane[data-open="true"] .detail-inner {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 360ms ease 80ms,
+    transform 460ms var(--ease-drawer);
+}
+.detail-backdrop {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .panel-layout,
+  .panel-layout[data-open="true"] {
+    display: block;
+  }
+  .detail-pane {
+    position: fixed;
+    inset: auto 0 0 0;
+    top: auto;
+    z-index: 50;
+    max-height: 90dvh;
+    border-radius: 24px 24px 0 0;
+    background: var(--color-paper);
+    box-shadow: 0 -20px 60px -20px rgb(15 42 44 / 0.45);
+    transform: translateY(100%);
+    transition: transform 460ms var(--ease-drawer);
+  }
+  .detail-pane[data-open="true"] {
+    transform: none;
+  }
+  .detail-pane::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    margin-left: -20px;
+    border-radius: 9999px;
+    background: var(--color-line-strong);
+  }
+  .detail-inner,
+  .detail-pane[data-open="true"] .detail-inner {
+    width: auto;
+    max-height: 90dvh;
+    padding: 22px 12px calc(12px + env(safe-area-inset-bottom));
+    opacity: 1;
+    transform: none;
+  }
+  .detail-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgb(15 42 44 / 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+  .detail-backdrop[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* a number that just changed */
+@keyframes bump {
+  from {
+    opacity: 0.2;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bump {
+  animation: bump 380ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-layout,
+  .detail-inner,
+  .detail-pane,
+  .detail-backdrop {
+    transition-duration: 1ms !important;
+  }
+  .bump {
+    animation: none;
   }
 }

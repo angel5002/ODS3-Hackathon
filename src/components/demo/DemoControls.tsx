@@ -44,10 +44,9 @@ export function DemoControls({ cards, assumptions }: { cards: QrCard[]; assumpti
   return (
     <main className="mx-auto max-w-[1300px] space-y-5 px-4 py-5 sm:px-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Demo y códigos QR</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">Demo y códigos QR</h1>
         <p className="text-sm text-muted">
-          Cada código abre el teléfono simulado de un paciente preparado. Escanéelo con un celular real; ningún mensaje ni
-          llamada sale a números reales.
+          Escanee un código con un celular: abre el teléfono simulado de ese paciente.
         </p>
       </div>
 
