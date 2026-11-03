@@ -32,30 +32,34 @@ export const ROW_SELECT =
   "id,patient_id,specialty,time,risk,risk_rank,status,status_at,status_channel,origin,replaces_id,reassigned_to_id,remote,is_base," +
   "patient:patients(full_name,short_name,age,caregiver_name,caregiver_relation,demo_role,token)";
 
-function announce(prev: Row | undefined, next: Row) {
-  if (!prev || prev.status === next.status) {
-    if (!prev && next.origin === "lista_espera") {
-      toast.success(`${next.patient.short_name} tomó el cupo de ${next.specialty} de las ${next.time}`, {
-        description: "Nueva cita registrada desde la lista de espera.",
-      });
-    }
+type AnnounceEvent = {
+  id: number;
+  appointment_id: number;
+  from_status: Status | null;
+  to_status: Status | null;
+  channel: string;
+  patient: { short_name: string } | null;
+  appointment: { specialty: string; time: string; origin: string } | null;
+};
+
+// RF-34: notices come from the log (events), so they never depend on which
+// refetch won a race. Each event is announced once.
+function announce(e: AnnounceEvent) {
+  const who = e.patient?.short_name ?? "";
+  const where = e.appointment ? `${e.appointment.specialty}, ${e.appointment.time}` : "";
+  const by = e.channel === "voz" ? "en la llamada" : "por mensaje";
+  if (e.appointment?.origin === "lista_espera" && e.to_status === "confirmada") {
+    toast.success(`${who} tomó el cupo de ${where}`, { description: "Nueva cita registrada desde la lista de espera." });
     return;
   }
-  const who = next.patient.short_name;
-  const by = next.status_channel === "voz" ? "en la llamada" : next.status_channel === "mensaje" ? "por mensaje" : "";
-  if (next.status_channel === "panel") return; // the staff member just did it
   const messages: Partial<Record<Status, () => void>> = {
-    confirmada: () => toast.success(`${who} confirmó ${by}`.trim(), { description: `${next.specialty}, ${next.time}` }),
-    liberada: () =>
-      toast(`${who} liberó su cupo ${by}`.trim(), {
-        description: `${next.specialty}, ${next.time}. Puede ofrecerlo a la lista de espera.`,
-      }),
-    derivada_a_persona: () => toast.warning(`${who} pide hablar con una persona`, { description: next.specialty }),
-    sin_respuesta: () =>
-      prev.status === "en_llamada" ? toast(`${who} no contestó la llamada`, { description: next.specialty }) : undefined,
-    reasignada: () => toast.success(`Cupo de ${next.specialty} de las ${next.time} reasignado`),
+    confirmada: () => toast.success(`${who} confirmó ${by}`, { description: where }),
+    liberada: () => toast(`${who} liberó su cupo ${by}`, { description: `${where}. Puede ofrecerlo a la lista de espera.` }),
+    derivada_a_persona: () => toast.warning(`${who} pide hablar con una persona`, { description: where }),
+    sin_respuesta: () => (e.from_status === "en_llamada" ? toast(`${who} no contestó la llamada`, { description: where }) : undefined),
+    reasignada: () => toast.success(`Cupo de ${where} reasignado`),
   };
-  messages[next.status]?.();
+  if (e.to_status) messages[e.to_status]?.();
 }
 
 export function usePanelData() {
@@ -65,9 +69,29 @@ export function usePanelData() {
   const [flash, setFlash] = useState<Map<number, number>>(new Map());
   const [revision, setRevision] = useState(0);
   const rowsRef = useRef(rows);
+  const lastEvent = useRef<number | null>(null);
   useEffect(() => {
     rowsRef.current = rows;
   }, [rows]);
+
+  // Only actions by patients, the voice agent or the waitlist (not simulated replies, not the panel itself)
+  const announceNew = useCallback(async (ids: number[]) => {
+    if (lastEvent.current == null) return;
+    const { data } = await browserDb()
+      .from("events")
+      .select("id,appointment_id,from_status,to_status,channel,patient:patients(short_name),appointment:appointments(specialty,time,origin)")
+      .in("appointment_id", ids)
+      .gt("id", lastEvent.current)
+      .in("channel", ["mensaje", "voz"])
+      .eq("kind", "estado")
+      .neq("actor", "Paciente (simulado)")
+      .order("id");
+    for (const e of (data ?? []) as unknown as AnnounceEvent[]) {
+      if (e.id <= (lastEvent.current ?? 0)) continue;
+      lastEvent.current = e.id;
+      announce(e);
+    }
+  }, []);
 
   const loadAll = useCallback(async () => {
     try {
@@ -92,9 +116,8 @@ export function usePanelData() {
   const loadSome = useCallback(async (ids: number[]) => {
     const { data } = await (browserDb().from("appointments").select(ROW_SELECT).in("id", ids) as unknown as Query<Row>);
     if (!data) return;
-    const prev = rowsRef.current;
     const stamp = Date.now();
-    for (const r of data) announce(prev.get(r.id), r);
+    announceNew(ids);
     setRows((m) => {
       const next = new Map(m);
       for (const r of data) next.set(r.id, r);
@@ -106,9 +129,18 @@ export function usePanelData() {
       return next;
     });
     setRevision((v) => v + 1);
-  }, []);
+  }, [announceNew]);
+
 
   useEffect(() => {
+    browserDb()
+      .from("events")
+      .select("id")
+      .order("id", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        lastEvent.current = data?.[0]?.id ?? 0;
+      });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch from an external system
     loadAll();
   }, [loadAll]);

@@ -81,7 +81,7 @@ export function PanelApp() {
               programadas, ordenadas por riesgo de inasistencia
             </p>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-start gap-1 sm:items-end">
             <Button variant="primary" onClick={sendReminders} disabled={sending || loading || pendingReminders === 0}>
               <Send className="size-4" aria-hidden />
               {pendingReminders === 0 && base.length
@@ -101,7 +101,7 @@ export function PanelApp() {
         <Indicators counts={counts} total={base.length} onPick={(s) => { setTab("todas"); setStatus(s); }} active={status} />
 
         <div className="rounded-xl border border-line bg-surface">
-          <div role="tablist" aria-label="Vistas" className="flex flex-wrap gap-1 border-b border-line px-2 pt-2">
+          <div role="tablist" aria-label="Vistas" className="flex gap-1 overflow-x-auto overscroll-x-contain border-b border-line px-2 pt-2 [scrollbar-width:none]">
             <TabButton id="todas" tab={tab} setTab={setTab} label="Todas las citas" count={all.length} />
             <TabButton
               id="llamadas"
@@ -110,8 +110,8 @@ export function PanelApp() {
               label={`Lista de llamadas (${state ? pct(state.call_list_pct) : "10 %"} de mayor riesgo)`}
               count={listSize}
             />
-            <TabButton id="sin_respuesta" tab={tab} setTab={setTab} label="Sin respuesta" count={counts.sin_respuesta + counts.en_llamada} attention={counts.sin_respuesta > 0} />
-            <TabButton id="liberadas" tab={tab} setTab={setTab} label="Cupos por reasignar" count={counts.liberada} attention={counts.liberada > 0} />
+            <TabButton id="sin_respuesta" tab={tab} setTab={setTab} label="Sin respuesta" count={counts.sin_respuesta + counts.en_llamada} attention={counts.sin_respuesta > 0 ? "warn" : undefined} />
+            <TabButton id="liberadas" tab={tab} setTab={setTab} label="Cupos por reasignar" count={counts.liberada} attention={counts.liberada > 0 ? "free" : undefined} />
           </div>
           <div className="flex flex-wrap items-center gap-2 border-b border-line bg-sunken px-3 py-2.5">
             <label className="relative min-w-52 flex-1">
@@ -247,19 +247,19 @@ function Indicators({
   );
 }
 
-function TabButton({ id, tab, setTab, label, count, attention }: { id: Tab; tab: Tab; setTab: (t: Tab) => void; label: string; count: number; attention?: boolean }) {
+function TabButton({ id, tab, setTab, label, count, attention }: { id: Tab; tab: Tab; setTab: (t: Tab) => void; label: string; count: number; attention?: "warn" | "free" }) {
   const on = tab === id;
   return (
     <button
       role="tab"
       aria-selected={on}
       onClick={() => setTab(id)}
-      className={`-mb-px flex items-center gap-2 rounded-t-lg border px-3 py-2 text-sm font-medium ${
+      className={`-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-lg border px-3 py-2 text-sm font-medium ${
         on ? "border-line border-b-surface bg-surface text-ink" : "border-transparent text-muted hover:text-ink"
       }`}
     >
       {label}
-      <span className={`rounded-full px-1.5 text-xs tabular-nums ${attention ? "bg-st-free text-white" : "bg-st-neutral-soft text-muted"}`}>{num(count)}</span>
+      <span className={`rounded-full px-1.5 text-xs tabular-nums ${attention === "warn" ? "bg-st-warn text-white" : attention === "free" ? "bg-st-free text-white" : "bg-st-neutral-soft text-muted"}`}>{num(count)}</span>
     </button>
   );
 }
