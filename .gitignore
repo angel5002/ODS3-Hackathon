@@ -27,3 +27,12 @@ supabase/.branches/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Heavy / generated artifacts
+ml/cache/
+ml/**/*.pkl
+ml/**/*.joblib
+coverage/
+playwright-report/
+test-results/
+.pytest_cache/
