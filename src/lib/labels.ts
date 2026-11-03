@@ -45,7 +45,7 @@ export function riskLevel(risk: number | null, s: Pick<DemoState, "threshold_hig
 }
 
 export function pct(x: number, digits = 0) {
-  return `${(x * 100).toFixed(digits).replace(".", ",")} %`;
+  return `${(x * 100).toFixed(digits)} %`;
 }
 
 export function num(x: number) {

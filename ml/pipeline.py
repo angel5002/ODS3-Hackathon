@@ -421,7 +421,7 @@ def main(path: str) -> None:
                                      grp_extra),
         },
         "limitations": [
-            "El modelo distingue mejor que el azar (AUC 0,5), pero se equivoca a menudo: sirve para ordenar a quién apoyar primero, no para decidir sobre una cita.",
+            "El modelo distingue mejor que el azar (AUC 0.5), pero se equivoca a menudo: sirve para ordenar a quién apoyar primero, no para decidir sobre una cita.",
             "Usa el sexo como variable porque mejora la predicción, pero nunca se muestra como explicación ni decide nada por sí solo.",
             "Un riesgo alto significa más apoyo para llegar a la cita (mensaje, llamada), nunca perderla.",
             "Los datos son de 2023 y de un solo hospital; un piloto debe recalibrarlo con datos recientes.",
