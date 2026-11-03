@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:load": "node scripts/load-data.mjs",
+    "ml": "ml/.venv/Scripts/python ml/pipeline.py",
+    "test:ml": "ml/.venv/Scripts/python -m pytest tests/ml -q"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
