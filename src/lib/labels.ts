@@ -69,3 +69,7 @@ export function demoNowMin(s: DemoState | null, now = Date.now()) {
 export function addresseeName(p: { first_name: string; caregiver_name: string | null }) {
   return p.caregiver_name ? p.caregiver_name.split(" ")[0] : p.first_name;
 }
+
+export function years(n: number) {
+  return n === 1 ? "1 año" : `${n} años`;
+}

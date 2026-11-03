@@ -8,7 +8,7 @@ import { Button, RiskTag, StatusBadge } from "@/components/ui";
 import { post } from "@/lib/post";
 import { useHints, useNow } from "@/lib/realtime";
 import { browserDb } from "@/lib/supabase/browser";
-import { CHANNEL, STATUS, demoNowMin, fmtMin, riskLevel } from "@/lib/labels";
+import { CHANNEL, STATUS, demoNowMin, fmtMin, riskLevel, years } from "@/lib/labels";
 import type { Appointment, Call, DemoState, EventRow, Message, Offer, Patient, Status, WaitlistEntry } from "@/lib/types";
 import type { Row } from "./usePanelData";
 
@@ -126,7 +126,7 @@ export function AppointmentDetail({
             <p className="text-xs text-muted">Cita {row.id}{row.origin === "lista_espera" ? " · desde la lista de espera" : ""}</p>
             <h2 className="truncate text-xl font-bold">{row.patient.full_name}</h2>
             <p className="text-sm text-muted">
-              {row.patient.age} años
+              {years(row.patient.age)}
               {p?.caregiver_name ? ` · responde ${p.caregiver_name} (${p.caregiver_relation})` : ""}
             </p>
             {p && <p className="text-sm text-muted">Teléfono ficticio: {p.phone}</p>}
@@ -234,7 +234,7 @@ export function AppointmentDetail({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{c.patient.full_name}</p>
                     <p className="text-xs text-muted">
-                      Espera {c.wait_days} días · {c.patient.age} años
+                      Espera {c.wait_days} días · {years(c.patient.age)}
                       {offer ? ` · ${OFFER_LABEL[offer.status]}` : c.status === "asignado" ? " · ya tiene cita" : ""}
                     </p>
                   </div>

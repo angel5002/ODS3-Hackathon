@@ -252,7 +252,8 @@ def main(path: str) -> None:
             d.loc[ix, "hora"] = f"{minutes // 60:02d}:{minutes % 60:02d}"
 
     # ---------- demo patients (RF-38)
-    adults = d[(d["edad"] >= 25) & (d["edad"] <= 64) & (d["remoto"] == 0)]
+    single = d["ID"].map(d["ID"].value_counts()) == 1  # prepared patients have one appointment that day
+    adults = d[(d["edad"] >= 25) & (d["edad"] <= 64) & (d["remoto"] == 0) & single]
     common = adults["ESPECIALIDAD"].value_counts()
     preferred = ["CARDIOLOGIA", "OFTALMOLOGIA", "GASTROENTEROLOGIA", "TRAUMATOLOGIA", "MEDICINA INTERNA"]
     usable = [p for p in preferred if common.get(p, 0) >= 15]
@@ -261,7 +262,7 @@ def main(path: str) -> None:
     high = adults[(adults["riesgo"] >= high_cut) & (adults["ESPECIALIDAD"] != s_spec) & (adults["prev_ns"] >= 1)]
     high = high if len(high) else adults[adults["riesgo"] >= high_cut]
     demo_high = high.sort_values("hora").index[0]
-    kids = d[(d["edad"] <= 11) & (d["remoto"] == 0) & (d["riesgo"] >= t_mid)]
+    kids = d[(d["edad"] <= 11) & (d["remoto"] == 0) & (d["riesgo"] >= t_mid) & single]
     if (kids["ESPECIALIDAD"].str.contains("PEDIATR")).any():
         kids = kids[kids["ESPECIALIDAD"].str.contains("PEDIATR")]
     kids = kids if len(kids) else d[(d["edad"] <= 11)]

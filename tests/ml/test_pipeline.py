@@ -131,7 +131,11 @@ def test_demo_patients_prepared():
     kid = next(p for p in patients if p["demo_role"] == "pediatrico")
     assert kid["age"] < 12 and kid["caregiver_name"]
     waitlist = load("waitlist.json")
-    appts = {a["patient_id"]: a for a in load("appointments.json")}
+    all_appts = load("appointments.json")
+    for p in patients:
+        if p["demo_role"] in ("alto_riesgo", "pediatrico", "libera_cupo"):
+            assert sum(a["patient_id"] == p["id"] for a in all_appts) == 1  # one appointment: no confusion on stage
+    appts = {a["patient_id"]: a for a in all_appts}
     release = appts[next(p["id"] for p in patients if p["demo_role"] == "libera_cupo")]
     first = next(p for p in patients if p["demo_role"] == "espera_1")
     spec_list = sorted((w for w in waitlist if w["specialty"] == release["specialty"]), key=lambda w: -w["wait_days"])

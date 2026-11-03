@@ -6,7 +6,7 @@ import { PhoneCall, Search, Send, ArrowRightLeft, X } from "lucide-react";
 import { Button, RiskTag, StatusBadge } from "@/components/ui";
 import { post } from "@/lib/post";
 import { useDemoState, useStaffTick } from "@/lib/realtime";
-import { STATUS, STATUS_ORDER, fmtMin, num, pct, riskLevel, type RiskLevel } from "@/lib/labels";
+import { STATUS, STATUS_ORDER, fmtMin, num, pct, riskLevel, years, type RiskLevel } from "@/lib/labels";
 import type { DemoState, Status } from "@/lib/types";
 import { usePanelData, type Row } from "./usePanelData";
 import { AppointmentDetail } from "./AppointmentDetail";
@@ -324,7 +324,7 @@ const AppointmentRow = memo(function AppointmentRow({
           {p.full_name}
         </button>
         <span className="block truncate text-xs text-muted">
-          {p.age} años{p.caregiver_name ? ` · responde ${p.caregiver_relation}` : ""}
+          {years(p.age)}{p.caregiver_name ? ` · responde ${p.caregiver_relation}` : ""}
           {inList ? " · en la lista de llamadas" : ""}
         </span>
       </span>
