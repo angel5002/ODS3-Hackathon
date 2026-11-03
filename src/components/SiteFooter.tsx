@@ -18,13 +18,13 @@ export function SiteFooter() {
           <p className="font-semibold text-white">Prototipo</p>
           <ul className="mt-3 space-y-2">
             <li>
-              <Link href="/panel" className="hover:text-white">Panel de citas</Link>
+              <Link prefetch={false} href="/panel" className="hover:text-white">Panel de citas</Link>
             </li>
             <li>
-              <Link href="/tablero" className="hover:text-white">Tablero</Link>
+              <Link prefetch={false} href="/tablero" className="hover:text-white">Tablero</Link>
             </li>
             <li>
-              <Link href="/demo" className="hover:text-white">Demo y códigos QR</Link>
+              <Link prefetch={false} href="/demo" className="hover:text-white">Demo y códigos QR</Link>
             </li>
             <li>
               <a href="https://github.com/angel5002/ODS3-Hackathon" className="inline-flex items-center gap-1.5 hover:text-white">

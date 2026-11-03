@@ -1,5 +1,7 @@
 // 100 appointment slots of one day: "share" of them stay empty (the real 2023 rate),
 // and a few come back (the scenario with editable assumptions shown in the board).
+// Animations use only opacity and transform (compositor-only) and run per row,
+// so scrolling stays smooth while they play.
 function pick(n: number, k: number, seed: number) {
   const idx = Array.from({ length: n }, (_, i) => i);
   let s = seed;
@@ -19,14 +21,24 @@ export function AgendaGrid({ emptyShare, recoveredShare }: { emptyShare: number;
   const empties = new Set(emptySet);
   return (
     <figure className="w-full max-w-[420px]">
-      <div className="grid grid-cols-10 gap-[7px] rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/10" aria-hidden>
-        {Array.from({ length: 100 }, (_, i) => (
-          <span
-            key={i}
-            className="slot aspect-square rounded-[5px]"
-            data-kind={recoveredOrder.has(i) ? "recovered" : empties.has(i) ? "empty" : "kept"}
-            style={{ "--i": i, "--r": recoveredOrder.get(i) ?? 0 } as React.CSSProperties}
-          />
+      <div className="grid gap-[7px] rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/10" aria-hidden>
+        {Array.from({ length: 10 }, (_, row) => (
+          <div key={row} className="agenda-row grid grid-cols-10 gap-[7px]" style={{ "--row": row } as React.CSSProperties}>
+            {Array.from({ length: 10 }, (_, col) => {
+              const i = row * 10 + col;
+              const kind = recoveredOrder.has(i) ? "recovered" : empties.has(i) ? "empty" : "kept";
+              return (
+                <span
+                  key={i}
+                  className="cell"
+                  data-kind={kind}
+                  style={{ "--i": i, "--r": recoveredOrder.get(i) ?? 0 } as React.CSSProperties}
+                >
+                  {kind === "recovered" && <span className="cell-mint" />}
+                </span>
+              );
+            })}
+          </div>
         ))}
       </div>
       <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70">

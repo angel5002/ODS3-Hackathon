@@ -178,54 +178,76 @@ button:disabled {
   animation-delay: var(--d, 0ms);
 }
 
-/* agenda: 100 appointment slots */
-@keyframes slot-in {
+/* agenda: 100 appointment slots. Opacity/transform only (no repaint while scrolling). */
+@keyframes row-in {
   from {
     opacity: 0;
-    transform: scale(0.6);
+    transform: translateY(10px) scale(0.97);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-@keyframes slot-empty {
+@keyframes fade-out {
   to {
-    background-color: transparent;
-    border-color: rgb(255 255 255 / 0.55);
+    opacity: 0;
   }
 }
-@keyframes slot-recover {
-  0% {
-    background-color: transparent;
-    transform: scale(1);
+@keyframes fade-in {
+  to {
+    opacity: 1;
   }
-  50% {
-    transform: scale(1.25);
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
   }
   100% {
-    background-color: var(--color-mint);
-    border-color: var(--color-mint);
+    opacity: 1;
     transform: scale(1);
   }
 }
-.slot {
-  border: 1.5px solid transparent;
-  background-color: rgb(255 255 255 / 0.22);
-  animation: slot-in 420ms var(--ease-out) both;
-  animation-delay: calc(var(--i) * 9ms + 250ms);
+.agenda-row {
+  animation: row-in 600ms var(--ease-out) both;
+  animation-delay: calc(var(--row) * 70ms + 250ms);
 }
-.slot[data-kind="empty"],
-.slot[data-kind="recovered"] {
-  animation:
-    slot-in 420ms var(--ease-out) both calc(var(--i) * 9ms + 250ms),
-    slot-empty 500ms ease forwards calc(1500ms + var(--i) * 4ms);
+.cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 5px;
 }
-.slot[data-kind="recovered"] {
-  animation:
-    slot-in 420ms var(--ease-out) both calc(var(--i) * 9ms + 250ms),
-    slot-empty 500ms ease forwards calc(1500ms + var(--i) * 4ms),
-    slot-recover 650ms var(--ease-out) forwards calc(2900ms + var(--r) * 260ms);
+.cell::before,
+.cell::after,
+.cell-mint {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.cell::before {
+  background: rgb(255 255 255 / 0.22);
+}
+.cell[data-kind="empty"]::after,
+.cell[data-kind="recovered"]::after {
+  border: 1.5px solid rgb(255 255 255 / 0.55);
+  opacity: 0;
+  animation: fade-in 500ms ease forwards calc(1500ms + var(--i) * 4ms);
+}
+.cell[data-kind="empty"]::before,
+.cell[data-kind="recovered"]::before {
+  animation: fade-out 500ms ease forwards calc(1500ms + var(--i) * 4ms);
+}
+.cell-mint {
+  z-index: 1;
+  background: var(--color-mint);
+  opacity: 0;
+  animation: pop-in 650ms var(--ease-out) forwards calc(2900ms + var(--r) * 260ms);
 }
 
 /* scroll reveal */
@@ -244,9 +266,10 @@ button:disabled {
 
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .slot,
-  .slot[data-kind="empty"],
-  .slot[data-kind="recovered"] {
+  .agenda-row,
+  .cell::before,
+  .cell::after,
+  .cell-mint {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
   }

@@ -53,8 +53,9 @@ export default async function Landing() {
     <div className="flex min-h-dvh flex-col bg-paper">
       {/* ---------- Hero: the problem ---------- */}
       <section className="relative overflow-hidden bg-night text-white">
+        {/* soft glow as a gradient: a big CSS blur is expensive to paint on phones */}
         <div
-          className="pointer-events-none absolute -right-40 -top-40 size-[560px] rounded-full bg-mint/10 blur-3xl"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(560px_circle_at_90%_0%,rgb(95_208_180/0.14),transparent_70%)]"
           aria-hidden
         />
         <header className="relative mx-auto flex max-w-[1200px] items-center justify-between px-5 py-5 sm:px-8">
@@ -76,7 +77,7 @@ export default async function Landing() {
               tanto, otros pacientes hacían cola desde las 5 a. m. por un cupo.
             </p>
             <div className="rise mt-9 flex flex-wrap gap-3" style={{ "--d": "240ms" } as React.CSSProperties}>
-              <Link href="/panel" className="press group inline-flex items-center gap-2 rounded-full bg-mint px-6 py-3 font-semibold text-night hover:bg-[#7adcc3]">
+              <Link prefetch={false} href="/panel" className="press group inline-flex items-center gap-2 rounded-full bg-mint px-6 py-3 font-semibold text-night hover:bg-[#7adcc3]">
                 Ver la demo
                 <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
               </Link>
@@ -212,10 +213,10 @@ export default async function Landing() {
               <p className="mt-1 text-white/75">Panel, tablero y teléfonos de pacientes, conectados en tiempo real.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/panel" className="press inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-brand hover:bg-mint-soft">
+              <Link prefetch={false} href="/panel" className="press inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-brand hover:bg-mint-soft">
                 Abrir el panel <ArrowRight className="size-4" aria-hidden />
               </Link>
-              <Link href="/demo" className="press rounded-full px-5 py-3 font-semibold ring-1 ring-white/40 hover:bg-white/10">
+              <Link prefetch={false} href="/demo" className="press rounded-full px-5 py-3 font-semibold ring-1 ring-white/40 hover:bg-white/10">
                 Códigos QR
               </Link>
             </div>

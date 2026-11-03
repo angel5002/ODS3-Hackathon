@@ -99,6 +99,14 @@ export function PanelApp() {
     }
   }
 
+  // Render the list in pages: the top-risk rows first, more as the user scrolls.
+  // Drawing all 1,473 rows at once made scrolling and every live update stutter.
+  const listKey = [tab, deferredQuery, specialty, risk, status].join("|");
+  const [page, setPage] = useState({ key: listKey, n: FIRST_PAGE });
+  const limit = page.key === listKey ? page.n : FIRST_PAGE;
+  const rendered = visible.slice(0, limit);
+  const showMore = useCallback(() => setPage({ key: listKey, n: limit + NEXT_PAGE }), [listKey, limit]);
+
   const shownRow = shown != null ? rows.get(shown) : undefined;
   const isOpen = selected != null;
   const filtersOn = Boolean(query || specialty || risk || status);
@@ -206,7 +214,7 @@ export function PanelApp() {
               {!loading && !visible.length && (
                 <p className="px-4 py-12 text-center text-muted">{tab === "liberadas" ? "Todavía no hay cupos liberados." : "Ninguna cita coincide."}</p>
               )}
-              {visible.map((r) => (
+              {rendered.map((r) => (
                 <AppointmentRow
                   key={r.id}
                   row={r}
@@ -217,6 +225,9 @@ export function PanelApp() {
                   onSelect={open}
                 />
               ))}
+              {rendered.length < visible.length && (
+                <LoadMore key={rendered.length} onVisible={showMore} shown={rendered.length} total={visible.length} />
+              )}
             </div>
           </div>
         </div>
@@ -231,6 +242,26 @@ export function PanelApp() {
         <button type="button" className="detail-backdrop" data-open={isOpen} onClick={close} aria-label="Cerrar detalle" tabIndex={-1} />
       </div>
     </div>
+  );
+}
+
+const FIRST_PAGE = 80;
+const NEXT_PAGE = 80;
+
+/** Loads the next page when it scrolls near the viewport; also works as a button. */
+function LoadMore({ onVisible, shown, total }: { onVisible: () => void; shown: number; total: number }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && onVisible(), { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [onVisible]);
+  return (
+    <button ref={ref} onClick={onVisible} className="block w-full px-4 py-4 text-center text-sm font-medium text-muted hover:bg-sunken hover:text-ink">
+      Mostrando {num(shown)} de {num(total)} · ver más
+    </button>
   );
 }
 
@@ -403,7 +434,7 @@ const AppointmentRow = memo(function AppointmentRow({
     <div
       role="row"
       key={flashKey}
-      className={`row-cv grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-b border-line px-4 py-2.5 transition-colors duration-150 last:border-b-0 md:grid-cols-[140px_minmax(0,1.2fr)_minmax(0,0.9fr)_180px_104px] ${
+      className={`row-cv grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-b border-line px-4 py-2.5 last:border-b-0 md:grid-cols-[140px_minmax(0,1.2fr)_minmax(0,0.9fr)_180px_104px] ${
         selected ? "bg-brand-soft/70 shadow-[inset_3px_0_0_var(--color-brand)]" : "hover:bg-sunken"
       } ${flashKey ? "flash" : ""}`}
       onClick={() => onSelect(row.id)}

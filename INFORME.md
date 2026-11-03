@@ -191,6 +191,22 @@ Los QR están en `/demo` y cada uno lleva a `https://ods3-hackathon.vercel.app/t
 - **Menos texto:** pestañas más cortas, sin párrafos explicativos. El reloj de la demo queda como un chip junto al título.
 - **Estilo común:** el tablero, la demo y el acceso usan la misma tipografía de titulares (Bricolage Grotesque) y las mismas tarjetas.
 
+## Scroll trabado (3 de noviembre)
+
+Se midió con Playwright: tiempo de cada cuadro durante el scroll, con la CPU 6 veces más lenta para simular un celular de gama media.
+
+| Pantalla | Cuadros de más de 50 ms (antes) | Cuadros de más de 50 ms (después) |
+|---|---|---|
+| Panel en escritorio | 59 | 2 |
+| Panel en celular | 48 | 0 |
+| Landing durante la animación | 10 | 4 |
+
+Correcciones:
+- **Panel:** muestra las primeras 80 citas por riesgo y agrega 80 más al llegar al final. Antes dibujaba las 1,473 de una vez y las recorría en cada actualización en vivo. Además, sin transición de color al pasar el mouse por las filas.
+- **Landing, agenda animada:** anima 10 filas en lugar de 100 cuadritos y solo usa opacidad y escala, que resuelve la GPU sin redibujar.
+- **Landing, brillo de la portada:** degradado radial en lugar de un `blur` de 64 px.
+- **Enlaces a pantallas con PIN:** sin precarga (`prefetch={false}`). Antes, al aparecer en pantalla, descargaban rutas que solo redirigen al acceso, justo durante el scroll.
+
 ## Lo que necesita la ejecución 2 (voz con IA)
 
 1. **Implementación nueva:** `GeminiLiveVoiceAgent implements VoiceAgent` en `src/lib/voice/`. El contrato ya existe en `src/lib/voice/agent.ts`: `start`, `choose`, `hangUp`, `transcript` y los callbacks `onTurn`, `onOptions`, `onEnd`.
