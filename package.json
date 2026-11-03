@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:load": "node scripts/load-data.mjs",
     "ml": "ml/.venv/Scripts/python ml/pipeline.py",
-    "test:ml": "ml/.venv/Scripts/python -m pytest tests/ml -q"
+    "test:ml": "ml/.venv/Scripts/python -m pytest tests/ml -q",
+    "test:flow": "node --test --test-concurrency=1 tests/flow.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
