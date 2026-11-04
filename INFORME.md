@@ -170,7 +170,7 @@ Los QR están en `/demo` y cada uno lleva a `https://ods3-hackathon.vercel.app/t
    `ml/.venv/Scripts/python tests/e2e/demo_flow.py --base https://ods3-hackathon.vercel.app --pin <PIN>`
 3. Que una persona ajena al equipo use el panel sin explicación (RNF-01).
 4. **Cambiar `DEMO_PIN`.** El actual coincide con un valor de ejemplo muy común. Hay que cambiarlo en `.env.local` y en Vercel.
-5. **Definir el nombre del producto** en `NEXT_PUBLIC_APP_NAME`, en `.env.local` y en Vercel. Requiere un nuevo despliegue porque se incorpora al construir.
+5. ~~Definir el nombre del producto~~ Hecho: **AsistIA**, con el logo aprobado (`video/insumos/logo-asistia.svg`), en `.env.local` y en Vercel.
 6. Probar el internet del local y tener datos móviles de respaldo.
 7. Detalle menor: Playwright mostró una advertencia de hidratación al entrar a `/demo` justo después del PIN. No se reproduce en un navegador normal ni afecta el funcionamiento.
 

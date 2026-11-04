@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { APP_NAME } from "@/lib/labels";
 
-/** Own mark: a calendar slot that comes back (no third-party logos). */
+/** Own mark: a calendar slot that comes back (no third-party logos). Same as video/insumos/logo-asistia.svg. */
 export function BrandMark({ className = "size-8" }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden>
@@ -13,11 +13,23 @@ export function BrandMark({ className = "size-8" }: { className?: string }) {
   );
 }
 
+/** Wordmark: a trailing "IA" goes in the accent color, so it reads as "I" and not "l". */
+export function Wordmark({ tone = "dark", className = "" }: { tone?: "dark" | "light"; className?: string }) {
+  const accent = APP_NAME.endsWith("IA");
+  const head = accent ? APP_NAME.slice(0, -2) : APP_NAME;
+  return (
+    <span className={`font-display font-extrabold tracking-[-0.02em] ${tone === "light" ? "text-white" : "text-ink"} ${className}`}>
+      {head}
+      {accent && <span className={tone === "light" ? "text-mint" : "text-brand"}>IA</span>}
+    </span>
+  );
+}
+
 export function Brand({ tone = "dark", href = "/" }: { tone?: "dark" | "light"; href?: string }) {
   return (
-    <Link href={href} className={`group flex items-center gap-2.5 ${tone === "light" ? "text-white" : "text-brand"}`}>
+    <Link href={href} aria-label={`${APP_NAME}, inicio`} className={`group flex items-center gap-2.5 ${tone === "light" ? "text-white" : "text-brand"}`}>
       <BrandMark className="size-8 transition-transform duration-300 ease-out group-hover:-rotate-6" />
-      <span className="font-display text-[17px] font-bold tracking-tight">{APP_NAME}</span>
+      <Wordmark tone={tone} className="text-[19px]" />
     </Link>
   );
 }

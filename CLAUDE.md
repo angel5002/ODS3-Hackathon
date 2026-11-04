@@ -6,7 +6,7 @@ Prototipo para CientíficaHack 2026 (Universidad Científica del Sur, Lima), Des
 
 **Nuestra respuesta:** recuperar las citas de consulta externa que se pierden en hospitales públicos del MINSA. En 2023, en el Hospital María Auxiliadora (MINSA, III-1, Lima), 1 de cada 4 citas programadas no se atendió (106,100 citas, unas 347 por día de atención), mientras había pacientes haciendo cola desde las 5 a. m. sin conseguir cupo.
 
-**El producto** (nombre por definir; se toma de `NEXT_PUBLIC_APP_NAME`):
+**El producto: AsistIA** (grupo Algorritmia; el nombre se toma de `NEXT_PUBLIC_APP_NAME`, logo en `video/insumos/logo-asistia.svg`):
 1. Estima el riesgo de que cada cita de mañana no se atienda.
 2. Envía un recordatorio por mensaje a todas las citas (simulado, sin API de WhatsApp).
 3. Llama con un agente de voz con IA a quienes no responden (llamada dentro del navegador del celular, sin telefonía).

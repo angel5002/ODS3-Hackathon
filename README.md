@@ -1,6 +1,6 @@
-# ODS3-Hackathon — recuperar citas que se pierden
+# AsistIA — recuperar citas que se pierden
 
-Prototipo para CientíficaHack 2026 (Universidad Científica del Sur), Desafío 4 "IA para la experiencia del paciente" (ODS 3).
+Prototipo del grupo Algorritmia para CientíficaHack 2026 (Universidad Científica del Sur), Desafío 4 "IA para la experiencia del paciente" (ODS 3).
 
 En 2023, en el Hospital María Auxiliadora (MINSA, Lima), 1 de cada 4 citas de consulta externa programadas no se atendió: 106,100 citas, unas 347 por día de atención. Este prototipo:
 
