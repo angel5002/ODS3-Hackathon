@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Cierre · Cada cupo cuenta</title>
+<link rel="stylesheet" href="base.css" />
+<style>
+  body { background: var(--night); }
+  .notice { background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.14); color: rgb(255 255 255 / 0.72); }
+  #grid { position: absolute; left: 684px; top: 336px; width: 552px; height: 408px; display: grid; grid-template-columns: repeat(4, 120px); grid-template-rows: repeat(3, 120px); gap: 24px; }
+  .slot { position: relative; border-radius: 26px; box-shadow: inset 0 0 0 3px rgb(255 255 255 / 0.22); }
+  .slot::before { content: ""; position: absolute; left: 50%; top: 18px; width: 52px; margin-left: -26px; height: 6px; border-radius: 6px; background: rgb(255 255 255 / 0.14); }
+  .fill { position: absolute; inset: 0; border-radius: inherit; background: var(--mint); }
+  .fill svg { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -22px 0 0 -27px; }
+  #logo { position: absolute; left: 50%; top: 380px; height: 180px; transform-origin: 0 50%; }
+  #tag { position: absolute; left: 0; right: 0; top: 640px; text-align: center; color: rgb(255 255 255 / 0.9); font-family: var(--display); font-weight: 700; font-size: 72px; letter-spacing: -0.03em; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="notice">Pacientes ficticios</div>
+  <div id="grid"></div>
+  <img id="logo" src="logo-asistia-claro.svg" alt="AsistIA" />
+  <p id="tag">Cada cupo cuenta</p>
+</div>
+
+<script src="timeline.js"></script>
+<script>
+  const grid = document.getElementById("grid");
+  const CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="#0f2a2c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
+  for (let i = 0; i < 12; i++) grid.insertAdjacentHTML("beforeend", `<div class="slot"><span class="fill">${CHECK}</span></div>`);
+
+  // fills speed up: each gap shorter than the last
+  const GAPS = [0.26, 0.23, 0.2, 0.17, 0.15, 0.13, 0.11, 0.095, 0.085, 0.075, 0.065];
+  const FILLS = [0.35];
+  GAPS.forEach((g) => FILLS.push(FILLS.at(-1) + g));
+  const ORDER = [0, 1, 2, 3, 7, 6, 5, 4, 8, 9, 10, 11]; // a calm path through the agenda
+  const CLICK_AT = FILLS.at(-1) + 0.13; // the last one snaps in
+  window.SOUND_AT = Number(CLICK_AT.toFixed(3));
+
+  TL.build(() => {
+    const { to } = TL;
+    const fills = [...document.querySelectorAll(".fill")];
+    ORDER.forEach((slot, k) => {
+      to(fills[slot], [{ opacity: 0, transform: "scale(0.7)" }, { opacity: 1, transform: "none" }], { at: FILLS[k], dur: 0.16 });
+    });
+    // the "click": 1.00 -> 0.96 -> 1.00 in ~120 ms
+    to("#grid", [{ transform: "scale(1)" }, { transform: "scale(0.96)" }, { transform: "scale(1)" }], { at: CLICK_AT, dur: 0.12, ease: "linear" });
+
+    // the grid condenses into the logo mark
+    const logo = document.getElementById("logo");
+    const lw = logo.getBoundingClientRect().width;
+    logo.style.marginLeft = `${-lw / 2}px`;
+    const markCx = 960 - lw / 2 + 90; // the mark is the first 180 px of the logo
+    const markCy = 380 + 90;
+    const s = 150 / 552;
+    to("#grid", [{ transform: "none", opacity: 1 }, { transform: `translate(${markCx - 960}px, ${markCy - 540}px) scale(${s})`, opacity: 0 }], { at: 2.3, dur: 0.55, ease: "inOut" });
+    to(logo, [{ opacity: 0 }, { opacity: 1 }], { at: 2.6, dur: 0.35 });
+    to("#tag", [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }], { at: 3.0, dur: 0.5 });
+    // 3.5–6.0 everything holds still (final pause of more than 1.5 s)
+  });
+  window.DURATION = 6;
+  window.STORYBOARD = [1.6, 2.4, 5.5];
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+/* Shared look for the video scenes: same tokens, fonts and components as the app
+   (src/app/globals.css, panel, phone simulator). 1920x1080 stage. */
+@font-face { font-family: "Public Sans"; font-weight: 400; src: url(fonts/public-sans-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 500; src: url(fonts/public-sans-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 600; src: url(fonts/public-sans-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 700; src: url(fonts/public-sans-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 500; src: url(fonts/bricolage-grotesque-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(fonts/bricolage-grotesque-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(fonts/bricolage-grotesque-latin-800-normal.woff2) format("woff2"); }
+
+:root {
+  --night: #0f2a2c;
+  --mint: #5fd0b4;
+  --mint-soft: #c9f0e4;
+  --paper: #eef2f0;
+  --surface: #ffffff;
+  --sunken: #f6f8f7;
+  --ink: #16212c;
+  --muted: #56636d;
+  --faint: #8a969e;
+  --line: #d5ddd9;
+  --line-strong: #b9c5c0;
+  --brand: #0e5a57;
+  --brand-soft: #dcebea;
+  --alto: #b42318;
+  --alto-soft: #fde8e6;
+  --medio: #9a5a05;
+  --medio-soft: #fbf0db;
+  --bajo: #3f6b2a;
+  --bajo-soft: #e7f0df;
+  --sent: #2f5d8c;
+  --sent-soft: #e2ebf5;
+  --ok: #1c7445;
+  --ok-soft: #dff1e6;
+  --free: #6941c6;
+  --free-soft: #ece6fb;
+  --done: #0e5a57;
+  --done-soft: #d6ebe9;
+  --display: "Bricolage Grotesque", "Public Sans", sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Public Sans", sans-serif;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+.stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+.abs { position: absolute; }
+.display { font-family: var(--display); letter-spacing: -0.02em; }
+
+/* scene title: big at first, then parks in the top-left corner */
+.scene-title {
+  position: absolute; left: 96px; top: 72px; transform-origin: 0 0;
+  font-family: var(--display); font-weight: 800; font-size: 64px; letter-spacing: -0.03em; color: var(--ink);
+  display: flex; align-items: center; gap: 20px;
+}
+.scene-title .n {
+  display: grid; place-items: center; width: 76px; height: 76px; border-radius: 22px;
+  background: var(--brand); color: #fff; font-size: 44px;
+}
+
+.notice {
+  position: absolute; right: 64px; top: 64px; display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line);
+  color: var(--muted); font-size: 22px; font-weight: 600;
+}
+.notice::before { content: ""; width: 10px; height: 10px; border-radius: 999px; background: var(--mint); }
+
+.source { position: absolute; left: 96px; bottom: 56px; color: var(--muted); font-size: 22px; }
+
+.headline { font-family: var(--display); font-weight: 700; font-size: 56px; line-height: 1.12; letter-spacing: -0.025em; }
+.bignum { font-family: var(--display); font-weight: 800; font-size: 168px; line-height: 0.95; letter-spacing: -0.04em; }
+
+/* ---------- panel ---------- */
+.card { background: var(--surface); border-radius: 28px; box-shadow: inset 0 0 0 1.5px var(--line), 0 30px 70px -40px rgb(15 42 44 / 0.35); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 30px 36px 22px; border-bottom: 1.5px solid var(--line); }
+.panel-head h3 { font-family: var(--display); font-weight: 700; font-size: 38px; letter-spacing: -0.02em; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--line); color: var(--muted); font-size: 20px; }
+.row {
+  position: absolute; left: 0; right: 0; height: 74px; display: grid; align-items: center;
+  grid-template-columns: 190px 1fr 250px 230px; gap: 16px; padding: 0 36px; border-bottom: 1.5px solid var(--line); font-size: 22px;
+}
+.who { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.avatar { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+.name { font-weight: 600; white-space: nowrap; }
+.meta { color: var(--muted); font-size: 18px; }
+.risk { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; padding: 6px 12px; border-radius: 10px; font-weight: 700; font-size: 21px; }
+.risk .bar { width: 46px; height: 7px; border-radius: 999px; background: rgb(255 255 255 / 0.75); overflow: hidden; }
+.risk .bar i { display: block; height: 100%; border-radius: 999px; }
+.risk .v { font-weight: 500; }
+.alto { background: var(--alto-soft); color: var(--alto); } .alto .bar i { background: var(--alto); }
+.medio { background: var(--medio-soft); color: var(--medio); } .medio .bar i { background: var(--medio); }
+.bajo { background: var(--bajo-soft); color: var(--bajo); } .bajo .bar i { background: var(--bajo); }
+.badge { display: inline-flex; align-items: center; gap: 9px; padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 19px; white-space: nowrap; }
+.badge::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
+.b-pend { background: #eceff0; color: #56636d; }
+.b-sent { background: var(--sent-soft); color: var(--sent); }
+.b-free { background: var(--free-soft); color: var(--free); }
+.b-done { background: var(--done-soft); color: var(--done); }
+
+/* ---------- phone (generic messaging, no third-party look) ---------- */
+.phone {
+  position: absolute; width: 430px; height: 880px; border-radius: 58px; background: #0f1a1f; padding: 14px;
+  box-shadow: 0 40px 90px -40px rgb(15 42 44 / 0.55);
+}
+.screen { position: relative; width: 100%; height: 100%; border-radius: 46px; overflow: hidden; background: #e9efed; display: flex; flex-direction: column; }
+.notch { position: absolute; top: 12px; left: 50%; width: 120px; height: 32px; margin-left: -60px; border-radius: 999px; background: #0f1a1f; z-index: 5; }
+.app-bar { display: flex; align-items: center; gap: 14px; padding: 60px 22px 16px; background: var(--surface); border-bottom: 1.5px solid var(--line); }
+.app-bar .ico { width: 52px; height: 52px; border-radius: 16px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; }
+.app-bar .t { font-weight: 700; font-size: 20px; line-height: 1.2; }
+.app-bar .s { color: var(--muted); font-size: 16px; }
+.chat { flex: 1; padding: 22px 18px; display: flex; flex-direction: column; gap: 12px; }
+.bubble { max-width: 330px; padding: 16px 18px; border-radius: 22px; background: var(--surface); font-size: 21px; line-height: 1.38; box-shadow: 0 1px 0 rgb(15 42 44 / 0.06); }
+.bubble.in { border-bottom-left-radius: 8px; }
+.bubble.out { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 8px; font-weight: 600; }
+.bubble .time { display: block; margin-top: 6px; text-align: right; color: var(--faint); font-size: 15px; }
+.actions { display: grid; gap: 10px; max-width: 330px; }
+.btn { position: relative; padding: 15px; border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 1.5px rgb(14 90 87 / 0.22); color: var(--brand); text-align: center; font-weight: 700; font-size: 21px; }
+.typing { display: inline-flex; gap: 7px; padding: 18px 20px; border-radius: 22px; background: var(--surface); align-self: flex-start; }
+.typing i { width: 10px; height: 10px; border-radius: 999px; background: var(--faint); }
+.composer { margin: 0 16px 22px; padding: 16px 20px; border-radius: 999px; background: var(--surface); color: var(--faint); font-size: 17px; }
+
+/* touch indicator: a circle, no hand */
+.touch { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 999px; background: rgb(22 33 44 / 0.22); box-shadow: 0 0 0 3px rgb(255 255 255 / 0.9); z-index: 10; }
+
+/* incoming call */
+.call { position: absolute; inset: 0; border-radius: inherit; background: var(--night); color: #fff; display: flex; flex-direction: column; align-items: center; padding-top: 150px; z-index: 4; }
+.call .bot { width: 132px; height: 132px; border-radius: 999px; background: rgb(255 255 255 / 0.08); color: var(--mint); display: grid; place-items: center; box-shadow: 0 0 0 6px rgb(95 208 180 / 0.25); }
+.call .who { margin-top: 30px; font-family: var(--display); font-weight: 700; font-size: 34px; }
+.call .what { margin-top: 6px; color: rgb(255 255 255 / 0.7); font-size: 22px; }
+.call .ring { margin-top: 10px; color: rgb(255 255 255 / 0.6); font-size: 20px; }
+.call .keys { position: absolute; bottom: 90px; display: flex; gap: 90px; }
+.call .key { width: 96px; height: 96px; border-radius: 999px; display: grid; place-items: center; }
+.call .lbl { text-align: center; margin-top: 10px; font-size: 18px; color: rgb(255 255 255 / 0.8); }

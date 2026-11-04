@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Escena 3 · Reasignar</title>
+<link rel="stylesheet" href="base.css" />
+<style>
+  .phone.small { width: 380px; height: 780px; border-radius: 52px; padding: 12px; top: 200px; }
+  .phone.small .screen { border-radius: 42px; }
+  .phone.small .bubble { max-width: 290px; font-size: 19px; }
+  .phone.small .actions { max-width: 290px; }
+  .phone.small .btn { font-size: 19px; padding: 13px; }
+  .phone.small .app-bar { padding-top: 56px; }
+  .tagname { position: absolute; top: 996px; width: 380px; text-align: center; color: var(--muted); font-size: 22px; font-weight: 600; }
+  #phoneA { left: 96px; }
+  #phoneB { left: 1444px; }
+  .mid { position: absolute; left: 540px; width: 840px; }
+  #panel { top: 200px; height: 330px; }
+  #panel .row { grid-template-columns: 1fr 120px 270px; }
+  #panel .row .t { text-align: right; font-weight: 600; color: var(--muted); }
+  .st { position: relative; display: block; height: 34px; }
+  .st .badge { position: absolute; right: 0; top: 0; }
+  #wait { top: 560px; height: 330px; }
+  .wl { position: absolute; left: 0; right: 0; height: 74px; display: grid; grid-template-columns: 1fr 150px; align-items: center; padding: 0 36px; border-bottom: 1.5px solid var(--line); font-size: 22px; }
+  .wl .days { text-align: right; color: var(--muted); }
+  .hl { position: absolute; inset: 0; border-radius: 0; background: rgb(95 208 180 / 0.18); box-shadow: inset 4px 0 0 var(--mint); }
+  .offer { position: absolute; right: 36px; top: 20px; }
+  .slot { position: absolute; display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 999px; background: var(--free); color: #fff; font-weight: 700; font-size: 22px; box-shadow: 0 16px 30px -12px rgb(105 65 198 / 0.7); z-index: 20; }
+  #label { position: absolute; left: 540px; width: 840px; top: 918px; display: flex; align-items: center; justify-content: center; gap: 22px; font-size: 56px; }
+  #label .from { color: var(--free); }
+  #label .to { color: var(--brand); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="scene-title" id="title"><span class="n">3</span><span>Reasignar</span></div>
+  <div class="notice">Pacientes ficticios</div>
+
+  <!-- phone A: the patient who releases the slot -->
+  <div class="phone small" id="phoneA">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="app-bar"><span class="ico bico"></span><span><span class="t">Citas · Hospital</span><br /><span class="s">Mensajes automáticos</span></span></div>
+      <div class="chat">
+        <div class="bubble in">Hola, Rosa. Tienes cita de Cardiología mañana a las 9:00 en el Hospital. ¿Asistirás?<span class="time">18:30</span></div>
+        <div class="actions"><span class="btn">Confirmo</span><span class="btn" id="aNo">No puedo ir</span></div>
+        <div class="bubble out" id="aReply">No puedo ir</div>
+        <div class="bubble in" id="aThanks">Gracias por avisar. Tu cupo pasará a otro paciente.</div>
+      </div>
+    </div>
+  </div>
+  <p class="tagname" style="left:96px">Rosa</p>
+
+  <!-- phone B: the patient on the waiting list -->
+  <div class="phone small" id="phoneB">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="app-bar"><span class="ico bico"></span><span><span class="t">Citas · Hospital</span><br /><span class="s">Mensajes automáticos</span></span></div>
+      <div class="chat">
+        <div class="bubble in" id="bMsg">Tienes un cupo mañana: Cardiología, 9:00. ¿Lo tomas?<span class="time">18:42</span></div>
+        <div class="actions" id="bActions"><span class="btn" id="bYes">Acepto</span><span class="btn">No puedo</span></div>
+        <div class="bubble out" id="bReply">Acepto</div>
+        <div class="bubble in" id="bThanks">Listo. Tu cita queda registrada.</div>
+      </div>
+    </div>
+  </div>
+  <p class="tagname" style="left:1444px">Julio</p>
+
+  <!-- panel -->
+  <section class="card mid" id="panel">
+    <div class="panel-head"><h3>Citas de mañana</h3><span class="chip">Cardiología</span></div>
+    <div style="position:absolute;left:0;right:0;top:96px">
+      <div class="row" id="rosa" style="top:0">
+        <span class="who"><span class="avatar" style="background:var(--alto-soft);color:var(--alto)">RD</span><span><span class="name">Rosa Díaz Ortiz</span><br /><span class="meta" id="rosaMeta">Cardiología</span></span></span>
+        <span class="t">09:00</span>
+        <span class="st">
+          <span class="badge b-sent" id="s1">Recordatorio enviado</span>
+          <span class="badge b-free" id="s2">Cupo liberado</span>
+          <span class="badge b-done" id="s3">Reasignada</span>
+        </span>
+      </div>
+      <div class="row" style="top:74px">
+        <span class="who"><span class="avatar" style="background:var(--bajo-soft);color:var(--bajo)">JP</span><span><span class="name">Jorge Paredes Tello</span><br /><span class="meta">Cardiología</span></span></span>
+        <span class="t">09:20</span>
+        <span class="st"><span class="badge" style="background:var(--ok-soft);color:var(--ok)">Confirmada</span></span>
+      </div>
+      <div class="row" style="top:148px;border-bottom:0">
+        <span class="who"><span class="avatar" style="background:var(--medio-soft);color:var(--medio)">CQ</span><span><span class="name">Carmen Quispe Rodríguez</span><br /><span class="meta">Cardiología</span></span></span>
+        <span class="t">09:40</span>
+        <span class="st"><span class="badge" style="background:var(--ok-soft);color:var(--ok)">Confirmada</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- waiting list -->
+  <section class="card mid" id="wait">
+    <div class="panel-head"><h3>Lista de espera</h3><span class="chip">Cardiología</span></div>
+    <div style="position:absolute;left:0;right:0;top:96px">
+      <div class="wl" id="julio" style="top:0">
+        <span class="hl" id="julioHl"></span>
+        <span class="who" style="position:relative"><span class="avatar" style="background:var(--done-soft);color:var(--done)">JG</span><span class="name">Julio Gonzales López</span></span>
+        <span class="days" style="position:relative" id="julioDays">40 días</span>
+      </div>
+      <div class="wl" style="top:74px"><span class="who"><span class="avatar" style="background:var(--done-soft);color:var(--done)">AG</span><span class="name">Ana Gutiérrez Silva</span></span><span class="days">39 días</span></div>
+      <div class="wl" style="top:148px;border-bottom:0"><span class="who"><span class="avatar" style="background:var(--done-soft);color:var(--done)">TM</span><span class="name">Teresa Mendoza Paredes</span></span><span class="days">37 días</span></div>
+    </div>
+  </section>
+
+  <span class="slot" id="slot">Cupo · Cardiología, 9:00</span>
+  <span class="touch" id="touchA"></span>
+  <span class="touch" id="touchB"></span>
+
+  <p class="headline" id="label"><span class="from">Cupo liberado</span><span id="arrow"></span><span class="to">reasignado</span></p>
+</div>
+
+<script src="icons.js"></script>
+<script src="timeline.js"></script>
+<script>
+  document.querySelectorAll(".bico").forEach((e) => (e.innerHTML = ICON.building(26)));
+  document.getElementById("arrow").innerHTML = ICON.arrow(60);
+
+  // element center in stage coordinates (layout is static, so this is exact)
+  const center = (sel) => {
+    const r = document.querySelector(sel).getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2];
+  };
+  const place = (el, [x, y]) => {
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+  };
+
+  TL.build(() => {
+    const { to } = TL;
+    TL.parkTitle();
+    const fadeUp = (sel, at, dur = 0.45) => to(sel, [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }], { at, dur });
+    const show = (sel, at, dur = 0.3) => to(sel, [{ opacity: 0 }, { opacity: 1 }], { at, dur });
+    const hide = (sel, at, dur = 0.3) => to(sel, [{ opacity: 1 }, { opacity: 0 }], { at, dur });
+
+    // everything in place
+    fadeUp("#phoneA", 1.1, 0.6);
+    fadeUp("#panel", 1.2, 0.6);
+    fadeUp("#wait", 1.3, 0.6);
+    fadeUp("#phoneB", 1.4, 0.6);
+    show(".tagname", 1.5, 0.4);
+
+    // 1.5–4.0 a tap on "No puedo ir" (a touch circle, no hand)
+    const touchA = document.getElementById("touchA");
+    const [ax, ay] = center("#aNo");
+    place(touchA, [ax + 60, ay + 70]);
+    to(touchA, [{ opacity: 0, transform: "translate(0,0) scale(1)" }, { opacity: 1, transform: "translate(0,0) scale(1)" }], { at: 1.9, dur: 0.3 });
+    to(touchA, [{ transform: "translate(0,0) scale(1)" }, { transform: "translate(-60px,-70px) scale(1)" }], { at: 2.2, dur: 0.6, ease: "inOut" });
+    to(touchA, [{ transform: "translate(-60px,-70px) scale(1)" }, { transform: "translate(-60px,-70px) scale(0.78)" }, { transform: "translate(-60px,-70px) scale(1)" }], { at: 2.9, dur: 0.3 });
+    hide(touchA, 3.3, 0.3);
+    to("#aNo", [{ background: "#ffffff", color: "#0e5a57" }, { background: "#dcebea", color: "#0e5a57" }], { at: 2.95, dur: 0.15 });
+    fadeUp("#aReply", 3.2, 0.4);
+    fadeUp("#aThanks", 3.6, 0.4);
+
+    // 4.0–7.0 the row changes and the slot travels to the waiting list
+    hide("#s1", 4.0, 0.25);
+    to("#s2", [{ opacity: 0, transform: "scale(0.9)" }, { opacity: 1, transform: "none" }], { at: 4.05, dur: 0.35 });
+    to("#rosa", [{ background: "rgb(236 230 251 / 0)" }, { background: "rgb(236 230 251 / 1)" }, { background: "rgb(236 230 251 / 0.35)" }], { at: 4.0, dur: 1.2 });
+    const slot = document.getElementById("slot");
+    const sr = slot.getBoundingClientRect();
+    const [fx, fy] = center("#s2");
+    const [tx, ty] = center("#julioDays");
+    place(slot, [fx - sr.width / 2, fy - sr.height / 2]);
+    to(slot, [{ opacity: 0, transform: "scale(0.8)" }, { opacity: 1, transform: "none" }], { at: 4.5, dur: 0.3 });
+    to(slot, [{ transform: "translate(0,0)" }, { transform: `translate(${tx - fx - 60}px, ${ty - fy}px)` }], { at: 4.9, dur: 1.3, ease: "inOut" });
+    hide(slot, 6.25, 0.3);
+    show("#julioHl", 6.2, 0.4);
+
+    // 7.0–10.0 the candidate gets the offer and accepts
+    fadeUp("#bMsg", 7.0, 0.45);
+    to("#bActions .btn", [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { at: 7.35, dur: 0.4, stagger: 0.08 });
+    const touchB = document.getElementById("touchB");
+    const [bx, by] = center("#bYes");
+    place(touchB, [bx + 60, by + 80]);
+    to(touchB, [{ opacity: 0, transform: "translate(0,0) scale(1)" }, { opacity: 1, transform: "translate(0,0) scale(1)" }], { at: 7.9, dur: 0.3 });
+    to(touchB, [{ transform: "translate(0,0) scale(1)" }, { transform: "translate(-60px,-80px) scale(1)" }], { at: 8.2, dur: 0.6, ease: "inOut" });
+    to(touchB, [{ transform: "translate(-60px,-80px) scale(1)" }, { transform: "translate(-60px,-80px) scale(0.78)" }, { transform: "translate(-60px,-80px) scale(1)" }], { at: 8.85, dur: 0.3 });
+    hide(touchB, 9.25, 0.3);
+    to("#bYes", [{ background: "#ffffff" }, { background: "#dcebea" }], { at: 8.9, dur: 0.15 });
+    fadeUp("#bReply", 9.1, 0.4);
+    fadeUp("#bThanks", 9.45, 0.4);
+
+    // 9.0–12.0 reassigned (label stays 3 s)
+    hide("#s2", 9.3, 0.25);
+    to("#s3", [{ opacity: 0, transform: "scale(0.9)" }, { opacity: 1, transform: "none" }], { at: 9.35, dur: 0.35 });
+    to("#rosa", [{ background: "rgb(214 235 233 / 0)" }, { background: "rgb(214 235 233 / 1)" }, { background: "rgb(214 235 233 / 0.4)" }], { at: 9.3, dur: 1.2 });
+    to("#rosaMeta", [{ opacity: 1 }, { opacity: 0 }], { at: 9.3, dur: 0.2 });
+    fadeUp("#label", 9.0, 0.6);
+  });
+  // the meta line under Rosa switches to the new holder of the slot
+  TL.build(() => {
+    const meta = document.getElementById("rosaMeta");
+    TL.tween(9.5, 0.01, (p) => (meta.textContent = p >= 1 ? "Ahora: Julio Gonzales López" : "Cardiología"), (x) => x);
+    TL.to(meta, [{ opacity: 0 }, { opacity: 1 }], { at: 9.5, dur: 0.3 });
+    TL.tween(6.6, 0.01, (p) => (document.getElementById("julioDays").textContent = p >= 1 ? "Oferta enviada" : "40 días"), (x) => x);
+    TL.tween(9.5, 0.01, (p) => p >= 1 && (document.getElementById("julioDays").textContent = "Asignado"), (x) => x);
+  });
+  window.DURATION = 12;
+  window.STORYBOARD = [3.9, 6.0, 11.5];
+</script>
+</body>
+</html>

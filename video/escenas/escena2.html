@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Escena 2 · Confirmar</title>
+<link rel="stylesheet" href="base.css" />
+<style>
+  #phone { left: 330px; top: 196px; height: 820px; }
+  .right { position: absolute; left: 1040px; width: 780px; }
+  #stat { top: 300px; }
+  #stat .k { font-size: 52px; }
+  #stat .bignum { margin-top: 20px; color: var(--brand); font-size: 220px; }
+  #stat .after { margin-top: 18px; font-size: 52px; }
+  #stat .src { margin-top: 30px; color: var(--muted); font-size: 26px; }
+  #label { top: 380px; }
+  .pulse { position: absolute; width: 132px; height: 132px; border-radius: 999px; box-shadow: 0 0 0 3px rgb(95 208 180 / 0.6); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="scene-title" id="title"><span class="n">2</span><span>Confirmar</span></div>
+  <div class="notice">Pacientes ficticios</div>
+
+  <div class="phone" id="phone">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="app-bar">
+        <span class="ico" id="ico-building"></span>
+        <span><span class="t">Citas · Hospital</span><br /><span class="s">Mensajes automáticos</span></span>
+      </div>
+      <div class="chat">
+        <span class="typing" id="typing"><i></i><i></i><i></i></span>
+        <div class="bubble in" id="msg">
+          Hola, Rosa. Tienes cita de Cardiología mañana a las 9:00 en el Hospital. ¿Asistirás?
+          <span class="time">18:30</span>
+        </div>
+        <div class="actions">
+          <span class="btn" id="b1">Confirmo</span>
+          <span class="btn" id="b2">No puedo ir</span>
+        </div>
+      </div>
+      <div class="composer">Responde con los botones</div>
+
+      <div class="call" id="call">
+        <span class="pulse" id="pulse1"></span>
+        <span class="bot" id="bot"></span>
+        <span class="who">Hospital</span>
+        <span class="what">Asistente de citas</span>
+        <span class="ring">Llamada entrante…</span>
+        <div class="keys">
+          <div><span class="key" style="background:#d92d20;color:#fff" id="k-no"></span><p class="lbl">Rechazar</p></div>
+          <div><span class="key" style="background:var(--mint);color:var(--night)" id="k-yes"></span><p class="lbl">Contestar</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right" id="stat">
+    <p class="headline k">Recordatorios automatizados</p>
+    <p class="bignum">−29 %</p>
+    <p class="headline after">de inasistencia</p>
+    <p class="src">Hasvold y Wootton, 2011</p>
+  </div>
+
+  <p class="right headline" id="label" style="font-size:60px">Y a las citas de mayor riesgo, además, se les llama</p>
+</div>
+
+<script src="icons.js"></script>
+<script src="timeline.js"></script>
+<script>
+  document.getElementById("ico-building").innerHTML = ICON.building(28);
+  document.getElementById("bot").innerHTML = ICON.bot(64);
+  document.getElementById("k-yes").innerHTML = ICON.phone(40);
+  document.getElementById("k-no").innerHTML = `<span style="display:grid;transform:rotate(135deg)">${ICON.phone(40)}</span>`;
+  const pulse = document.getElementById("pulse1");
+  // the pulse ring sits behind the bot icon
+  pulse.style.top = "150px";
+
+  TL.build(() => {
+    const { to } = TL;
+    TL.parkTitle();
+
+    // 1.5–6.0 the message arrives
+    to("#phone", [{ opacity: 0, transform: "translateY(40px)" }, { opacity: 1, transform: "none" }], { at: 1.3, dur: 0.6 });
+    to("#typing", [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { at: 1.9, dur: 0.3 });
+    to("#typing i", [{ opacity: 0.35 }, { opacity: 1 }, { opacity: 0.35 }], { at: 2.0, dur: 0.6, stagger: 0.12, ease: "inOut" });
+    to("#typing", [{ opacity: 1, height: "48px" }, { opacity: 0, height: "0px", padding: "0px 20px" }], { at: 2.75, dur: 0.25 });
+    to("#msg", [{ opacity: 0, transform: "translateY(14px) scale(0.98)" }, { opacity: 1, transform: "none" }], { at: 2.9, dur: 0.45 });
+    to(".actions .btn", [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { at: 3.25, dur: 0.4, stagger: 0.08 });
+
+    // 6.0–11.0 the figure, with its source
+    to("#stat .k", [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }], { at: 6.0, dur: 0.5 });
+    to("#stat .bignum", [{ opacity: 0, transform: "translateY(24px)" }, { opacity: 1, transform: "none" }], { at: 6.09, dur: 0.6 });
+    to("#stat .after", [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }], { at: 6.18, dur: 0.5 });
+    to("#stat .src", [{ opacity: 0 }, { opacity: 1 }], { at: 6.4, dur: 0.5 });
+    to("#stat", [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-16px)" }], { at: 10.75, dur: 0.35 });
+
+    // 11.0–14.0 incoming call and the label
+    to("#call", [{ opacity: 0, transform: "translateY(60px)" }, { opacity: 1, transform: "none" }], { at: 11.0, dur: 0.5 });
+    to("#pulse1", [{ transform: "scale(1)", opacity: 0.9 }, { transform: "scale(1.45)", opacity: 0 }], { at: 11.4, dur: 1.0, ease: "out" });
+    to("#pulse1", [{ transform: "scale(1)", opacity: 0.9 }, { transform: "scale(1.45)", opacity: 0 }], { at: 12.4, dur: 1.0, ease: "out" });
+    to("#label", [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }], { at: 11.1, dur: 0.6 });
+  });
+  window.DURATION = 14;
+  window.STORYBOARD = [4.5, 8.5, 13.2];
+</script>
+</body>
+</html>
