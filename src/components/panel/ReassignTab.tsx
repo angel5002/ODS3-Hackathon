@@ -55,7 +55,7 @@ const ORIGIN: Record<string, string> = {
 };
 
 export function ReassignTab() {
-  const { data, error } = useServerView<{ slots: Slot[]; feed: Feed[] }>("/api/staff/data?view=slots", ["full", "bulk", "slot", "req"]);
+  const { data, error, reload } = useServerView<{ slots: Slot[]; feed: Feed[] }>("/api/staff/data?view=slots", ["full", "bulk", "slot", "req"]);
   const [busy, setBusy] = useState("");
   const [showFilled, setShowFilled] = useState(false);
   const slots = useMemo(() => data?.slots ?? [], [data]);
@@ -67,6 +67,7 @@ export function ReassignTab() {
     setBusy(key);
     try {
       await post("/api/staff", body);
+      reload(); // do not wait for the Realtime hint
       if (success) toast.success(success);
     } catch (e) {
       toast.error((e as Error).message);

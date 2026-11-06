@@ -34,5 +34,6 @@ export const config = {
     "/api/staff/:path*",
     "/api/regulator/:path*",
     "/api/callcenter/:path*",
+    "/api/fhir/:path*",
   ],
 };

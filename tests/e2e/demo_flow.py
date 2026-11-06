@@ -1,8 +1,8 @@
-"""End-to-end test following the demo script, with screenshots (H8).
+"""End-to-end test following the demo script, with screenshots (H8, updated for v4).
 
     ml/.venv/Scripts/python tests/e2e/demo_flow.py --base http://localhost:3000 --pin <PIN>
 
-Staff uses a desktop browser; four patients use phone-sized browsers. Every
+Staff uses a desktop browser; five patients use phone-sized browsers (simulated channels). Every
 step checks that the change shows up on the other screens within 2 seconds.
 Ends with "Reiniciar demo", so it leaves the demo in its initial state.
 """
@@ -68,7 +68,7 @@ def main(base: str, pin: str):
         staff.get_by_label("PIN").fill(pin)
         staff.get_by_role("button", name="Entrar").click()
         staff.wait_for_url(lambda u: u.rstrip("/").endswith("/panel") and "acceso" not in u, timeout=8000)
-        expect(staff.get_by_role("heading", name="Citas de mañana")).to_be_visible()
+        expect(staff.get_by_role("heading", name="Citas en 3 días")).to_be_visible()
         print("  el PIN lleva al panel: OK")
         res = staff.request.post(f"{base}/api/staff", data={"action": "reset"})
         assert res.ok, res.text()
@@ -77,9 +77,9 @@ def main(base: str, pin: str):
         shot(staff, "escritorio-demo-qr", full=True)
 
         phones = {}
-        for token in ["rosa", "valeria", "carmen", "julio"]:
+        for token in ["rosa", "valeria", "carmen", "julio", "ana"]:
             pg = p.chromium.launch(headless=True).new_context(**phone).new_page()  # each phone is its own device
-            pg.goto(f"{base}/t/{token}")
+            pg.goto(f"{base}/t/{token}?voz=guion")
             expect(pg.get_by_text("Teléfono simulado de")).to_be_visible()
             phones[token] = pg
         shot(phones["carmen"], "celular-sin-mensajes")
@@ -106,39 +106,49 @@ def main(base: str, pin: str):
         timed("cupo liberado visible en el panel", lambda: phones["carmen"].get_by_role("button", name="No podré asistir").click(),
               lambda: toast(staff, "liberó su cupo por mensaje"))
 
-        print("4. El personal reasigna")
-        staff.get_by_role("tab", name="Por reasignar").click()
-        staff.get_by_role("button", name="Carmen").first.click()
-        offer = staff.get_by_role("button", name="Ofrecer cupo")
-        expect(offer).to_be_visible()
+        print("4. El personal aprueba la oferta simultánea (zona cercana)")
+        staff.get_by_role("button", name="Por reasignar").first.click()
+        card = staff.locator("article").filter(has_text="Cardiología").filter(has_text="10:20").first
+        approve = card.get_by_role("button", name="Aprobar y enviar oferta")
+        expect(approve).to_be_visible(timeout=10000)
+        expect(card).to_contain_text("54 % con 4 candidatos")
         shot(staff, "escritorio-panel-reasignar")
-        julio = phones["julio"]
-        timed("oferta visible en el celular del candidato", offer.click,
+        julio, ana = phones["julio"], phones["ana"]
+        timed("oferta visible en el celular del candidato", approve.click,
               lambda: expect(julio.get_by_role("button", name="Acepto")).to_be_visible(timeout=8000))
         shot(julio, "celular-oferta")
 
-        print("5. El candidato acepta")
-        timed("reasignación visible en el panel", lambda: julio.get_by_role("button", name="Acepto").click(),
-              lambda: toast(staff, "tomó el cupo"))
-        expect(staff.get_by_text("Cupo tomado por")).to_be_visible()
-        shot(staff, "escritorio-panel-reasignada")
-        shot(julio, "celular-cupo-aceptado")
+        print("5. Julio acepta primero, Ana después; gana Ana por prioridad")
+        julio.get_by_role("button", name="Acepto").click()
+        expect(julio.get_by_text("Registramos que acepta")).to_be_visible(timeout=8000)
+        expect(ana.get_by_role("button", name="Acepto")).to_be_visible(timeout=8000)
+        ana.get_by_role("button", name="Acepto").click()
+        expect(ana.get_by_text("Registramos que acepta")).to_be_visible(timeout=8000)
+        close = card.get_by_role("button", name="Cerrar oferta y asignar")
+        timed("asignación visible en el panel", close.click,
+              lambda: expect(staff.get_by_text("aunque Julio respondió primero (0.48)")).to_be_visible(timeout=8000))
+        shot(staff, "escritorio-panel-asignada")
+        expect(julio.get_by_text("Usted queda primero")).to_be_visible(timeout=8000)
+        timed("validación de Ana visible en el panel", lambda: ana.get_by_role("button", name="Sí, soy el paciente").click(),
+              lambda: expect(staff.get_by_text("Ana G. confirmó el cupo")).to_be_visible(timeout=8000))
+        shot(ana, "celular-cupo-validado")
+        expect(staff.get_by_text("09/11").first).to_be_visible(timeout=8000)  # domino: her 09/11 appointment is free
+        shot(staff, "escritorio-panel-domino", full=True)
 
-        print("6. Sin respuesta y llamada")
-        staff.request.post(f"{base}/api/staff", data={"action": "advance", "minutes": 181})
-        staff.get_by_role("tab", name="Sin respuesta").click()
-        rosa_row = staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz")
-        expect(rosa_row.get_by_role("button", name="Llamar")).to_be_visible(timeout=8000)
+        print("6. Cierre del plazo: el asistente llama a Rosa (lista del 10 %)")
+        staff.get_by_role("button", name="Citas").first.click()
         rosa = phones["rosa"]
-        timed("llamada entrante en el celular", lambda: rosa_row.get_by_role("button", name="Llamar").click(),
-              lambda: expect(rosa.get_by_role("button", name="Contestar")).to_be_visible(timeout=8000))
+        timed("llamada entrante en el celular",
+              lambda: staff.request.post(f"{base}/api/staff", data={"action": "advance", "minutes": 181}),
+              lambda: expect(rosa.get_by_role("button", name="Contestar")).to_be_visible(timeout=12000), limit=LIMIT_MS + 8000)
         shot(rosa, "celular-llamada-entrante")
         rosa.get_by_role("button", name="Contestar").click()
         rosa.get_by_role("button", name="Sí, soy yo").click()
         rosa.get_by_role("button", name="Sí, asistiré").click()
-        expect(rosa.get_by_text("la cita queda confirmada")).to_be_visible()
+        expect(rosa.get_by_text("la cita quedó confirmada")).to_be_visible(timeout=8000)
         shot(rosa, "celular-llamada-agente")
         staff.get_by_role("tab", name="Todas").click()
+        staff.get_by_placeholder("Buscar paciente…").fill("Rosa Díaz Ortiz")
         expect(staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_text("Confirmada")).to_be_visible(timeout=8000)
         staff.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_role("button").first.click()
         expect(staff.get_by_text("Última llamada")).to_be_visible(timeout=10000)
@@ -147,8 +157,8 @@ def main(base: str, pin: str):
         print("7. El tablero lo refleja")
         board = staff_ctx.new_page()  # now the front tab of the laptop
         board.goto(f"{base}/tablero")
-        tile = board.get_by_text("Reasignadas", exact=True).locator("..")
-        expect(tile).to_contain_text("1", timeout=5000)
+        tile = board.get_by_text("Cupos liberados que se llenan", exact=True).locator("..")
+        expect(tile).to_contain_text("1", timeout=8000)
         shot(board, "escritorio-tablero", full=True)
         board.get_by_role("button", name="Ver qué pasó").click()
         expect(board.get_by_text("Lo que pasó de verdad ese día")).to_be_visible(timeout=5000)
@@ -158,7 +168,7 @@ def main(base: str, pin: str):
         mobile_staff.add_cookies(staff_ctx.cookies())
         mp = mobile_staff.new_page()
         mp.goto(f"{base}/panel")
-        expect(mp.get_by_text("Citas de mañana")).to_be_visible()
+        expect(mp.get_by_text("Citas en 3 días")).to_be_visible()
         mp.wait_for_timeout(1500)
         shot(mp, "celular-panel")
         mp.goto(f"{base}/tablero")
@@ -166,7 +176,8 @@ def main(base: str, pin: str):
         mp.wait_for_timeout(1500)
         shot(mp, "celular-tablero")
         mp.goto(f"{base}/panel")
-        expect(mp.get_by_text("Citas de mañana")).to_be_visible()
+        expect(mp.get_by_text("Citas en 3 días")).to_be_visible()
+        mp.get_by_placeholder("Buscar paciente…").fill("Rosa Díaz Ortiz")
         mp.get_by_role("row").filter(has_text="Rosa Díaz Ortiz").get_by_role("button").first.click()
         expect(mp.get_by_text("Lo que más pesa")).to_be_visible()
         mp.wait_for_timeout(800)

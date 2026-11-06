@@ -170,11 +170,29 @@ export function usePanelData() {
     loadAll();
   }, [loadAll]);
 
+  // bursts of per-appointment hints (hundreds of simulated answers) become one request every 300 ms
+  const pendingIds = useRef<Set<number>>(new Set());
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queueSome = useCallback(
+    (ids: number[]) => {
+      for (const id of ids) pendingIds.current.add(id);
+      if (flushTimer.current) return;
+      flushTimer.current = setTimeout(() => {
+        flushTimer.current = null;
+        const batch = [...pendingIds.current];
+        pendingIds.current.clear();
+        if (batch.length > 150) loadChanged();
+        else if (batch.length) loadSome(batch);
+      }, 300);
+    },
+    [loadSome, loadChanged],
+  );
+
   useHints((h) => {
     if (h.kind === "full") loadAll();
     else if (h.kind === "bulk" || (h.kind === "appt" && !h.appts.length) || h.kind === "slot") loadChanged();
     else if (!h.appts.length) return;
-    else loadSome(h.appts);
+    else queueSome(h.appts);
   });
 
   return { rows, loading, error, flash, revision, reload: loadAll };

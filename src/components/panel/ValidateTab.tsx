@@ -35,7 +35,7 @@ const STATE: Record<string, { label: string; tone: string }> = {
 };
 
 export function ValidateTab() {
-  const { data, error } = useServerView<{ assignments: Pending[]; recent: Recent[]; reschedules: Reschedule[] }>("/api/staff/data?view=validations", [
+  const { data, error, reload } = useServerView<{ assignments: Pending[]; recent: Recent[]; reschedules: Reschedule[] }>("/api/staff/data?view=validations", [
     "full",
     "bulk",
     "slot",
@@ -51,6 +51,7 @@ export function ValidateTab() {
     setBusy(key);
     try {
       await post("/api/staff", body);
+      reload(); // do not wait for the Realtime hint
       if (success) toast.success(success);
     } catch (e) {
       toast.error((e as Error).message);

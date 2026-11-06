@@ -13,7 +13,14 @@
     "test:flow": "node --test --test-concurrency=1 tests/flow.test.mjs",
     "test:e2e": "ml/.venv/Scripts/python tests/e2e/demo_flow.py",
     "video": "node video/render.mjs",
-    "video:storyboard": "node video/render.mjs --storyboard"
+    "video:storyboard": "node video/render.mjs --storyboard",
+    "voice:sync": "node scripts/voice-sync.mjs",
+    "test:v4": "node scripts/dev/flow-v4.mjs",
+    "test:chat": "node scripts/dev/chat-v4.mjs",
+    "test:voice": "node scripts/dev/voice-v4.mjs",
+    "test:rules": "node scripts/dev/rules-v4.mjs",
+    "test:phones": "node scripts/dev/check-phones.mjs",
+    "test:reset": "node scripts/dev/reset3.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",

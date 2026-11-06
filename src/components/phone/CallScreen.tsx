@@ -93,6 +93,8 @@ export function CallScreen({
   }
 
   async function connect() {
+    // plan B (and tests without a microphone): ?voz=guion forces the fixed script
+    if (new URLSearchParams(window.location.search).get("voz") === "guion") return fallback("Modo guion fijo (plan B)");
     try {
       const s = await post<{ session: VoiceSession | null; reason?: string }>("/api/voice/session", { token: auth.token, callId: call.id });
       if (s.session) {
