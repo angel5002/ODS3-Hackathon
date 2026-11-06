@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { PanelApp } from "@/components/panel/PanelApp";
+import { PanelShell } from "@/components/panel/PanelShell";
 
-export const metadata: Metadata = { title: "Panel de citas" };
+export const metadata: Metadata = { title: "Panel de Admisión" };
 
 export default function PanelPage() {
-  return <PanelApp />;
+  return <PanelShell />;
 }

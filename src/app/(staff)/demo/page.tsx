@@ -19,6 +19,8 @@ type DemoPatient = {
   caregiver_relation: string | null;
 };
 
+const qr = (url: string) => QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#16212c", light: "#ffffff" } });
+
 export default async function DemoPage() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
@@ -27,29 +29,30 @@ export default async function DemoPage() {
 
   const db = serverDb();
   const [{ data: patients }, { data: card }] = await Promise.all([
-    db.from("patients").select("id,full_name,age,token,demo_role,demo_label,demo_order,caregiver_name,caregiver_relation").not("demo_role", "is", null).order("demo_order"),
+    db
+      .from("patients")
+      .select("id,full_name,age,token,demo_role,demo_label,demo_order,caregiver_name,caregiver_relation")
+      .not("demo_role", "is", null)
+      .order("demo_order"),
     db.from("metrics").select("value").eq("key", "model_card").single(),
   ]);
   const ids = (patients ?? []).map((p) => p.id);
-  const [{ data: appts }, { data: waits }] = await Promise.all([
-    db.from("appointments").select("patient_id,specialty,time,risk").in("patient_id", ids).eq("is_base", true),
-    db.from("waitlist").select("patient_id,specialty,wait_days").in("patient_id", ids),
-  ]);
+  const { data: appts } = await db.from("appointments").select("patient_id,specialty,date,time,risk,is_base").in("patient_id", ids);
 
   const cards = await Promise.all(
     ((patients ?? []) as DemoPatient[]).map(async (p) => {
       const url = `${origin}/t/${p.token}`;
-      const svg = await QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#16212c", light: "#ffffff" } });
-      const a = appts?.find((x) => x.patient_id === p.id);
-      const w = waits?.find((x) => x.patient_id === p.id);
-      const detail = a
-        ? `Cita de ${a.specialty} a las ${a.time} · riesgo ${Math.round(a.risk * 100)} %`
-        : w
-          ? `Lista de espera de ${w.specialty} · espera ${w.wait_days} días`
-          : "";
-      return { ...p, url, svg, detail };
+      const base = appts?.find((x) => x.patient_id === p.id && x.is_base);
+      const future = appts?.find((x) => x.patient_id === p.id && !x.is_base);
+      const detail = base
+        ? `Cita de ${base.specialty}, jueves 19/10 a las ${base.time} · riesgo ${Math.round(base.risk * 100)} %`
+        : future
+          ? `Cardiología, lista de espera · cita actual ${future.date.slice(8, 10)}/${future.date.slice(5, 7)} ${future.time}`
+          : "Cardiología, lista de espera · sin cita";
+      return { ...p, url, svg: await qr(url), detail };
     }),
   );
+  const publicUrl = `${origin}/pedir-cita`;
 
-  return <DemoControls cards={cards} assumptions={card?.value?.simulation_assumptions ?? null} />;
+  return <DemoControls cards={cards} assumptions={card?.value?.simulation_assumptions ?? null} publicQr={{ url: publicUrl, svg: await qr(publicUrl) }} />;
 }

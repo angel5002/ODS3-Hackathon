@@ -10,6 +10,21 @@ const FRIENDLY: [RegExp, string][] = [
   [/already has a slot/, "Esa persona ya tiene una cita asignada."],
   [/cannot call a released slot/, "No se puede llamar: el cupo ya está liberado."],
   [/specialty mismatch/, "La persona no está en la lista de espera de esa especialidad."],
+  [/no candidates/, "No hay candidatos en la lista para este cupo y esta zona."],
+  [/not a candidate/, "Esta oferta no es para usted."],
+  [/invalid withdrawal reason/, "Elija un motivo de retiro. No responder no es un motivo válido."],
+  [/withdrawal text required/, "Escriba el motivo del retiro."],
+  [/request has an open offer/, "La solicitud tiene una oferta o asignación abierta. Ciérrela antes de retirarla."],
+  [/request is closed/, "La solicitud ya está cerrada."],
+  [/request is not pending/, "La solicitud ya fue regulada."],
+  [/invalid category/, "Elija una categoría de P1 a P4."],
+  [/revert reason required/, "Escriba el motivo para revertir."],
+  [/revert downstream first/, "Primero revierta la asignación del cupo que se liberó por efecto dominó."],
+  [/nothing to review/, "Esa reprogramación ya fue revisada."],
+  [/invalid reschedule option/, "Esa fecha ya no está disponible."],
+  [/name required/, "Escriba el nombre (puede ser ficticio)."],
+  [/specialty required/, "Elija la especialidad."],
+  [/session/, "Su sesión de chat venció. Recargue la página."],
 ];
 
 export function fail(error: unknown, status = 400) {

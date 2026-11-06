@@ -1,55 +1,179 @@
-// Staff actions (panel, board, demo controls). Protected by the PIN in src/proxy.ts.
+// Staff actions (Admisión: panel, board, demo controls). Protected by PIN + role in src/proxy.ts.
+// Every action calls one atomic Postgres function; the browser cannot run them.
 import { fail, ok } from "@/lib/api";
 import { messaging, voice } from "@/lib/channels";
 import { demoNowMin } from "@/lib/labels";
 import { broadcast, rpc, serverDb } from "@/lib/supabase/server";
+import { scrubReason } from "@/lib/scrub";
 import type { DemoState, Status } from "@/lib/types";
 
-const STAFF = "Personal de citas";
+const STAFF = "Admisión";
 const MANUAL: Status[] = ["confirmada", "liberada", "sin_respuesta", "derivada_a_persona", "pendiente"];
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
+  const actor = typeof body.actor === "string" && body.actor.trim() ? body.actor.trim().slice(0, 60) : STAFF;
   try {
     switch (body.action) {
+      // ---------------------------------------------------------------- E1 (kept)
       case "reminders": {
         const sent = await messaging.sendReminders();
         await broadcast("bulk");
         return ok({ sent });
       }
+      case "last_reminders": {
+        const sent = await rpc<number>("send_last_reminders");
+        await broadcast("bulk");
+        return ok({ sent });
+      }
+      case "agent_calls": {
+        const calls = await rpc<number>("start_agent_calls");
+        await broadcast("bulk");
+        return ok({ calls });
+      }
       case "status": {
         if (!MANUAL.includes(body.to)) return fail("invalid status");
-        await rpc("staff_set_status", { p_appt: Number(body.appointmentId), p_to: body.to, p_actor: STAFF });
+        await rpc("staff_set_status", { p_appt: Number(body.appointmentId), p_to: body.to, p_actor: actor });
         return ok();
       }
       case "call":
-        return ok({ callId: await voice.startCall(Number(body.appointmentId), STAFF) });
-      case "offer":
-        return ok({ offerId: await messaging.sendSlotOffer(Number(body.slotId), Number(body.waitlistId), STAFF) });
+        return ok({ callId: await voice.startCall(Number(body.appointmentId), actor) });
       case "tick": {
         const changes = await rpc<number>("demo_tick");
         if (changes > 0) await broadcast("bulk");
         return ok({ changes });
       }
       case "advance":
-        await rpc("advance_clock", { p_minutes: Math.max(1, Math.min(600, Number(body.minutes) || 60)) });
+        await rpc("advance_clock", { p_minutes: Math.max(1, Math.min(1440, Number(body.minutes) || 60)) });
         await broadcast("bulk");
         return ok();
-      case "reset":
+      case "reset": {
+        const t0 = Date.now();
         await rpc("reset_demo");
         await broadcast("full");
-        return ok();
+        return ok({ ms: Date.now() - t0 });
+      }
       case "settings":
         await saveSettings(body.settings ?? {});
         return ok();
+      case "params":
+        await saveParams(body.params ?? {});
+        return ok();
       case "reveal":
         return ok(await reveal());
+
+      // ---------------------------------------------------------------- RF-01 / RF-12: requests
+      case "register": {
+        const r = body.request ?? {};
+        const res = await rpc<{ id: number; code: string }>("create_request", {
+          p: { ...r, reason_text: scrubReason(String(r.reason_text ?? ""), String(r.display_name ?? "")), source: "ventanilla", actor },
+        });
+        return ok(res);
+      }
+      case "withdraw":
+        await rpc("withdraw_request", {
+          p_request: Number(body.requestId),
+          p_reason: body.reason ?? null,
+          p_text: body.text ?? null,
+          p_user: actor,
+        });
+        return ok();
+
+      // ---------------------------------------------------------------- RF-05 to RF-09: offers
+      case "approve_offer":
+        return ok({ offerId: await rpc<number>("approve_offer", { p_slot: Number(body.slotId), p_actor: actor }) });
+      case "approve_all": {
+        const { data } = await serverDb().from("slots").select("id").eq("state", "libre");
+        let sent = 0;
+        for (const s of data ?? []) {
+          const { error } = await serverDb().rpc("approve_offer", { p_slot: s.id, p_actor: actor });
+          if (!error) sent++;
+        }
+        return ok({ sent });
+      }
+      case "close_offer":
+        return ok({ assignmentId: await rpc<number | null>("close_offer", { p_offer: Number(body.offerId), p_actor: actor }) });
+      case "simulate_response":
+        // "Usar simulado": the same flow without the live channel
+        return ok({
+          response: await rpc("respond_offer", {
+            p_offer: Number(body.offerId),
+            p_request: Number(body.requestId),
+            p_response: body.accept ? "acepta" : "declina",
+            p_channel: "simulado",
+          }),
+        });
+      case "validate":
+        return ok({
+          state: await rpc("validate_assignment", {
+            p_assignment: Number(body.assignmentId),
+            p_ok: Boolean(body.ok),
+            p_by: body.by === "persona" ? "persona" : "mensaje",
+            p_role: body.role === "cuidador" ? "cuidador" : "paciente",
+            p_actor: body.by === "persona" ? actor : "Usar simulado",
+          }),
+        });
+      case "validation_call": {
+        const { data: a } = await serverDb().from("assignments").select("id,request_id,offer_id").eq("id", Number(body.assignmentId)).single();
+        if (!a) return fail("assignment not found", 404);
+        return ok({
+          callId: await rpc("start_request_call", { p_request: a.request_id, p_purpose: "validacion", p_offer: a.offer_id, p_assignment: a.id, p_session: null }),
+        });
+      }
+      case "revert":
+        await rpc("revert_assignment", { p_assignment: Number(body.assignmentId), p_reason: body.reason ?? "", p_actor: actor });
+        return ok();
+      case "review_reschedule":
+        return ok({ appointmentId: await rpc("review_reschedule", { p_appt: Number(body.appointmentId), p_approve: Boolean(body.approve), p_actor: actor }) });
+
+      // ---------------------------------------------------------------- RF-13: "En vivo"
+      case "link_session": {
+        const patient = body.patientId ? String(body.patientId) : null;
+        const { error } = await serverDb().from("chat_sessions").update({ linked_patient_id: patient }).eq("id", String(body.sessionId));
+        if (error) throw new Error(error.message);
+        await rpc("hint", { p_kind: "live" });
+        return ok();
+      }
+      case "test_message": {
+        const sessionId = body.sessionId ? String(body.sessionId) : null;
+        const patientId = body.patientId ? String(body.patientId) : null;
+        if (sessionId) {
+          await rpc("chat_system_message", { p_session: sessionId, p_body: "Mensaje de prueba del equipo de citas: si lo ve, el chat en vivo funciona." });
+        } else if (patientId) {
+          await rpc("deliver", { p_patient: patientId, p_request: null, p_body: "Mensaje de prueba del equipo de citas: si lo ve, este teléfono recibe los mensajes.", p_buttons: null, p_kind: "info" });
+          await rpc("notify", { p_kind: "appt", p_appts: [], p_patients: [patientId] });
+        }
+        return ok();
+      }
+      case "test_call": {
+        const callId = await rpc<number>("start_test_call", {
+          p_session: body.sessionId ? String(body.sessionId) : null,
+          p_patient: body.patientId ? String(body.patientId) : null,
+        });
+        return ok({ callId });
+      }
+      case "end_call":
+        await voice.updateCall(Number(body.callId), "finalizada", "Terminada desde el panel (usar simulado)");
+        return ok();
       default:
         return fail("unknown action");
     }
   } catch (e) {
     return fail(e);
   }
+}
+
+async function saveParams(input: Record<string, unknown>) {
+  const db = serverDb();
+  const { data } = await db.from("params").select("key");
+  const keys = new Set((data ?? []).map((p) => p.key));
+  for (const [key, raw] of Object.entries(input)) {
+    const value = Number(raw);
+    if (!keys.has(key) || !Number.isFinite(value) || value < 0 || value > 1_000_000) continue;
+    const { error } = await db.from("params").update({ value }).eq("key", key);
+    if (error) throw new Error(error.message);
+  }
+  await broadcast("bulk");
 }
 
 async function saveSettings(input: Record<string, unknown>) {
@@ -73,7 +197,6 @@ async function saveSettings(input: Record<string, unknown>) {
   if (patch.threshold_high != null && patch.threshold_mid != null && patch.threshold_mid >= patch.threshold_high) {
     throw new Error("thresholds");
   }
-  // keep the clock continuous when the speed changes
   if (patch.speed != null && data.clock_started_at) {
     patch.clock_base_min = demoNowMin(data);
     patch.clock_started_at = new Date().toISOString();

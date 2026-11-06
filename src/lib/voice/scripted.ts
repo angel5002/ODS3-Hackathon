@@ -1,15 +1,18 @@
 "use client";
 
-import { callTool, type AgentCallbacks, type AgentContext, type AppointmentInfo, type Option, type ToolName, type Turn, type VoiceAgent } from "./agent";
+import { callTool, type AgentCallbacks, type AgentContext, type CallContext, type Option, type ToolName, type Turn, type VoiceAgent } from "./agent";
 
-type Step = "identity" | "attendance" | "done";
+type Purpose = "confirmacion" | "oferta" | "validacion" | "registro" | "prueba";
 
-/** Fixed-script agent (RF-19). Speaks with the browser's speech synthesis when available. */
+/** Fixed-script agent: the fallback when the live voice is not available. Speaks with the browser's voice. */
 export class ScriptedVoiceAgent implements VoiceAgent {
   transcript: Turn[] = [];
-  private step: Step = "identity";
-  private info: AppointmentInfo | null = null;
+  private step: "identity" | "task" | "done" = "identity";
+  private purpose: Purpose = "confirmacion";
+  private c: CallContext | null = null;
   private ended = false;
+  private role = "paciente";
+  private lastOptions: Option[] = [];
 
   constructor(
     private ctx: AgentContext,
@@ -18,51 +21,76 @@ export class ScriptedVoiceAgent implements VoiceAgent {
   ) {}
 
   async start() {
-    const { appointment } = await callTool<{ appointment: AppointmentInfo }>(this.ctx, "get_appointment");
-    this.info = appointment;
-    const p = appointment.patient;
-    const who = p.caregiver_name
-      ? `¿Hablo con ${p.caregiver_relation === "padre" ? "el padre" : `la ${p.caregiver_relation}`} de ${p.first_name}?`
-      : `¿Hablo con ${p.first_name}?`;
+    const { context, purpose } = await callTool<{ context: CallContext; purpose: Purpose }>(this.ctx, "get_context");
+    this.c = context;
+    this.purpose = purpose;
+    const name = context.patient_name || "la persona de la cita";
+    if (purpose === "prueba" || purpose === "registro") {
+      this.say("Hola, le llama el asistente automático de citas, en una demostración. Esta es una llamada de prueba: si me escucha, todo funciona. Gracias.");
+      return this.end("Llamada de prueba");
+    }
     this.say(
-      `Hola, le habla el asistente automático del Hospital María Auxiliadora. Le llamo por una cita médica. ` +
-        `Si en algún momento prefiere hablar con una persona, solo dígalo. ${who}`,
+      purpose === "oferta"
+        ? `Hola, le llama el asistente de citas, en una demostración. ¿Hablo con ${name}? Le llamo porque se liberó un cupo de ${context.specialty}.`
+        : `Hola, le llama el asistente automático de citas, en una demostración. Si prefiere hablar con una persona, solo dígalo. ¿Hablo con ${name} o con su cuidador?`,
     );
     this.options([
-      { id: "yes", label: p.caregiver_name ? `Sí, soy quien cuida a ${p.first_name}` : "Sí, soy yo", tone: "primary" },
+      { id: "yes", label: context.role === "cuidador" ? `Sí, soy quien cuida a ${name}` : "Sí, soy yo", tone: "primary" },
+      { id: "carer", label: "Soy su cuidador" },
       { id: "human", label: "Quiero hablar con una persona" },
       { id: "wrong", label: "No, número equivocado" },
     ]);
   }
 
   async choose(id: string) {
-    if (this.ended || !this.info) return;
+    if (this.ended || !this.c) return;
     const label = this.lastOptions.find((o) => o.id === id)?.label ?? id;
     this.hear(label);
-    if (id === "human") return this.finish("transfer_to_human", "Le comunico con una persona del equipo de citas. Le contactarán en unos minutos. Gracias.");
+    if (id === "human") return this.finish("transfer_to_human");
     if (id === "wrong") {
       this.say("Disculpe la molestia. Que tenga un buen día.");
-      return this.end("Número equivocado: no se dieron detalles de la cita");
+      return this.end("Número equivocado: no se dieron detalles");
     }
-    if (this.step === "identity" && id === "yes") {
-      const i = this.info;
-      const whose = i.patient.caregiver_name ? `La cita de ${i.patient.first_name}` : "Su cita";
-      this.step = "attendance";
-      this.say(
-        `Gracias. ${whose} de ${i.specialty} es mañana, ${i.day_label}, a las ${i.time}${i.remote ? ", por teleconsulta" : ""}. ¿Podrá asistir?`,
-      );
+    const c = this.c;
+    if (this.step === "identity") {
+      this.step = "task";
+      this.role = id === "carer" ? "cuidador" : "paciente";
+      if (this.purpose === "confirmacion") {
+        this.say(`Gracias. La cita de ${c.specialty} es ${c.slot_text}. ¿Podrá asistir?`);
+        return this.options([
+          { id: "confirm", label: "Sí, asistiré", tone: "primary" },
+          { id: "release", label: "No podré ir" },
+          { id: "reschedule", label: "Necesito otra fecha" },
+          { id: "human", label: "Quiero hablar con una persona" },
+        ]);
+      }
+      if (this.purpose === "oferta") {
+        this.say(
+          `El cupo es ${c.slot_text}. Lo ofrecemos a varios pacientes a la vez y se asigna por prioridad, no por quién responde primero. ` +
+            `Tiene hasta ${c.deadline_text}. Si dice que no, conserva su lugar. ¿Lo quiere?`,
+        );
+        return this.options([
+          { id: "accept", label: "Sí, lo quiero", tone: "primary" },
+          { id: "decline", label: "No puedo" },
+        ]);
+      }
+      this.say(`Gracias. Le asignamos el cupo de ${c.specialty}, ${c.slot_text}. ¿Podrá asistir?`);
       return this.options([
-        { id: "confirm", label: "Sí, asistiré", tone: "primary" },
-        { id: "release", label: "No podré ir" },
-        { id: "reschedule", label: "Necesito otra fecha" },
-        { id: "human", label: "Quiero hablar con una persona" },
+        { id: "validate", label: "Sí, confirmo", tone: "primary" },
+        { id: "decline_assignment", label: "No puedo" },
       ]);
     }
-    if (this.step === "attendance") {
-      if (id === "confirm") return this.finish("confirm_appointment", "Perfecto, la cita queda confirmada. Recuerde llegar 20 minutos antes a admisión. Que tenga un buen día.");
-      if (id === "release") return this.finish("release_slot", "Entendido, gracias por avisar. El cupo pasará a otro paciente que lo espera. Si necesita una nueva cita, puede pedirla en admisión.");
-      if (id === "reschedule") return this.finish("request_reschedule", "Entendido. Registré su pedido de otra fecha y el equipo de citas le llamará. El cupo de mañana pasará a otro paciente.");
-    }
+    const map: Record<string, [ToolName, Record<string, unknown>?]> = {
+      confirm: ["confirm_appointment"],
+      release: ["release_slot"],
+      reschedule: ["propose_reschedule", { option: 1 }],
+      accept: ["respond_offer", { answer: "accept" }],
+      decline: ["respond_offer", { answer: "decline" }],
+      validate: ["confirm_assignment", { role: this.role }],
+      decline_assignment: ["decline_assignment"],
+    };
+    const t = map[id];
+    if (t) return this.finish(t[0], t[1]);
   }
 
   async hangUp() {
@@ -71,23 +99,21 @@ export class ScriptedVoiceAgent implements VoiceAgent {
     this.end("El paciente colgó");
   }
 
-  private lastOptions: Option[] = [];
   private options(o: Option[]) {
     this.lastOptions = o;
     this.cb.onOptions(o);
   }
 
-  private async finish(tool: ToolName, closing: string) {
+  private async finish(tool: ToolName, args: Record<string, unknown> = {}) {
     this.cb.onOptions([]);
-    await callTool(this.ctx, tool);
-    this.say(closing);
-    const summary: Record<string, string> = {
-      confirm_appointment: "Confirmó la cita",
-      release_slot: "Liberó el cupo",
-      request_reschedule: "Pidió otra fecha",
-      transfer_to_human: "Pidió hablar con una persona",
-    };
-    this.end(summary[tool] ?? tool);
+    try {
+      const r = await callTool<{ say: string; done: string | null }>(this.ctx, tool, args);
+      this.say(`${r.say} Que tenga un buen día.`);
+      this.end(r.done ?? tool);
+    } catch (e) {
+      this.say("Disculpe, no pude registrar su respuesta. Una persona del equipo de citas le contactará.");
+      this.end(`Error: ${(e as Error).message}`);
+    }
   }
 
   private end(result: string) {

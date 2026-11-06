@@ -3,7 +3,7 @@ import type { Channel, DemoState, Status } from "./types";
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Prototipo";
 
 export const DISCLAIMER =
-  "Pacientes ficticios. Citas y modelo basados en datos abiertos reales del Hospital María Auxiliadora (2023).";
+  "Demostración. Pacientes ficticios. Citas y modelo basados en datos abiertos reales del Hospital María Auxiliadora (2023).";
 
 export const STATUS: Record<Status, { label: string; tone: string }> = {
   pendiente: { label: "Pendiente", tone: "neutral" },
@@ -14,6 +14,8 @@ export const STATUS: Record<Status, { label: string; tone: string }> = {
   en_llamada: { label: "En llamada", tone: "call" },
   derivada_a_persona: { label: "Pide hablar con una persona", tone: "human" },
   reasignada: { label: "Reasignada", tone: "done" },
+  reprogramacion_pendiente: { label: "Reprogramación por validar", tone: "human" },
+  validacion_pendiente: { label: "Por validar", tone: "human" },
 };
 
 export const STATUS_ORDER: Status[] = [
@@ -25,6 +27,7 @@ export const STATUS_ORDER: Status[] = [
   "confirmada",
   "liberada",
   "reasignada",
+  "reprogramacion_pendiente",
 ];
 
 export const CHANNEL: Record<Channel, string> = {
@@ -32,6 +35,7 @@ export const CHANNEL: Record<Channel, string> = {
   mensaje: "Mensaje",
   voz: "Llamada",
   sistema: "Sistema",
+  chat: "Chat",
 };
 
 export type RiskLevel = "alto" | "medio" | "bajo";
@@ -76,4 +80,99 @@ export function years(n: number) {
 
 export function days(n: number) {
   return n === 1 ? "1 día" : `${n} días`;
+}
+
+// ---------------------------------------------------------------- v4: requests, slots, offers
+export type RequestState =
+  | "registrada"
+  | "pendiente_regulacion"
+  | "pendiente_informacion"
+  | "priorizada_sin_cupo"
+  | "con_oferta"
+  | "en_espera_prioritaria"
+  | "asignada_por_validar"
+  | "con_cita"
+  | "atendida"
+  | "derivada_emergencia"
+  | "cerrada_con_causal";
+
+export const REQUEST_STATE: Record<RequestState, { label: string; tone: string }> = {
+  registrada: { label: "Registrada", tone: "neutral" },
+  pendiente_regulacion: { label: "Pendiente de regulación", tone: "sent" },
+  pendiente_informacion: { label: "Pendiente de información", tone: "warn" },
+  priorizada_sin_cupo: { label: "En lista, sin cupo", tone: "neutral" },
+  con_oferta: { label: "Con oferta abierta", tone: "free" },
+  en_espera_prioritaria: { label: "Primero para el próximo cupo", tone: "call" },
+  asignada_por_validar: { label: "Asignada, por validar", tone: "human" },
+  con_cita: { label: "Con cita", tone: "ok" },
+  atendida: { label: "Atendida", tone: "done" },
+  derivada_emergencia: { label: "Derivada a emergencia", tone: "warn" },
+  cerrada_con_causal: { label: "Retirada con motivo", tone: "done" },
+};
+
+export const CATEGORY_TEXT: Record<string, string> = {
+  P1: "P1 · hasta 30 días",
+  P2: "P2 · hasta 90 días",
+  P3: "P3 · hasta 180 días",
+  P4: "P4 · hasta 360 días",
+};
+
+export const ZONE_TEXT: Record<string, string> = {
+  cercana: "Zona cercana · P1–P2 y poco aviso",
+  media: "Zona media · P2–P3",
+  lejana: "Zona lejana · P3–P4",
+};
+
+export const WITHDRAW_REASONS: { id: string; label: string }[] = [
+  { id: "atendido_en_otro_lugar", label: "Atendido en otro establecimiento" },
+  { id: "ya_no_lo_necesita", label: "Ya no lo necesita" },
+  { id: "duplicado", label: "Solicitud duplicada" },
+  { id: "otro", label: "Otro (escribir el motivo)" },
+];
+
+export const TASK_TYPE: Record<string, string> = {
+  pide_persona: "Pide hablar con una persona",
+  derivacion_clinica: "Duda clínica derivada por el agente",
+  validacion_fallida: "Validación sin éxito",
+  p1_no_contactable: "Paciente P1 no contactable",
+  alarma: "Signos de alarma",
+};
+
+/** The 8 specialties with most demand on the demo day plus the jury's test ones (chat and form). */
+export const SPECIALTIES = [
+  "Medicina Interna",
+  "Cardiología",
+  "Pediatría General",
+  "Ginecología",
+  "Traumatología",
+  "Oftalmología",
+  "Dermatología",
+  "Gastroenterología",
+  "Otorrinolaringología",
+  "Neurología",
+  "Endocrinología",
+  "Urología",
+  "Psiquiatría",
+  "Psicología",
+];
+
+const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+export function dateEs(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return `${WEEKDAYS[dt.getUTCDay()]} ${d} de ${MONTHS[m - 1]}`;
+}
+export function dateShort(iso: string) {
+  const [, m, d] = iso.split("-");
+  return `${d}/${m}`;
+}
+/** Demo minutes count from Monday 16/10/2023 00:00. */
+export function demoDayLabel(min: number) {
+  const day = Math.floor(min / 1440);
+  const base = new Date(Date.UTC(2023, 9, 16 + day));
+  return `${WEEKDAYS[base.getUTCDay()]} ${base.getUTCDate()}/${base.getUTCMonth() + 1}`;
+}
+export function index2(x: number | string | null | undefined) {
+  return x == null ? "—" : Number(x).toFixed(2);
 }

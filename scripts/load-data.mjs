@@ -1,5 +1,7 @@
-// Loads ml/out/*.json into Supabase (RF-07). Wipes the previous data first.
-// Usage: npm run db:load   (needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local)
+// Loads ml/out/*.json into Supabase (RF-07).
+// Usage: npm run db:load            upsert by id (keeps the database, updates every row)
+//        npm run db:load -- --wipe  empty the tables first (only for a brand-new project)
+// Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.
 import { readFileSync } from "node:fs";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
@@ -13,9 +15,15 @@ const db = createClient(url, key, { auth: { persistSession: false } });
 const read = (name) => JSON.parse(readFileSync(new URL(`../ml/out/${name}`, import.meta.url), "utf8"));
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
+const WIPE = process.argv.includes("--wipe");
+const KEYS = { appointment_outcomes: "appointment_id", metrics: "key" };
+
 async function insert(table, rows, size = 500) {
   for (let i = 0; i < rows.length; i += size) {
-    const { error } = await db.from(table).insert(rows.slice(i, i + size));
+    const chunk = rows.slice(i, i + size);
+    const { error } = WIPE
+      ? await db.from(table).insert(chunk)
+      : await db.from(table).upsert(chunk, { onConflict: KEYS[table] ?? "id" });
     if (error) throw new Error(`${table}: ${error.message}`);
   }
   console.log(`${table}: ${rows.length}`);
@@ -27,9 +35,24 @@ const [y, m, d] = summary.demo_day.split("-").map(Number);
 const dayLabel = `${summary.demo_day_weekday} ${d} de ${MONTHS[m - 1]}`;
 
 const t0 = Date.now();
-const { error: wipeError } = await db.rpc("wipe_all");
-if (wipeError) throw new Error(`wipe_all: ${wipeError.message}`);
+if (WIPE) {
+  const { error: wipeError } = await db.rpc("wipe_all");
+  if (wipeError) throw new Error(`wipe_all: ${wipeError.message}`);
+} else {
+  // the demo state of the previous run (offers, assignments, extra appointments) is cleared by reset_demo below
+  const { error: resetError } = await db.rpc("reset_demo");
+  if (resetError) throw new Error(`reset_demo: ${resetError.message}`);
+}
 
+if (!WIPE) {
+  // demo tokens ("rosa", "carmen"...) may move to another patient id: free them before the upsert
+  const { data: demo } = await db.from("patients").select("id,token").not("demo_role", "is", null);
+  for (const p of demo ?? []) {
+    if (p.id === "P9001") continue;
+    const { error } = await db.from("patients").update({ token: `${p.token}-${p.id}`.toLowerCase(), demo_role: null }).eq("id", p.id);
+    if (error) throw new Error(`patients: ${error.message}`);
+  }
+}
 await insert("patients", read("patients.json"));
 await insert("appointments", read("appointments.json"));
 await insert("appointment_outcomes", read("outcomes.json"));

@@ -1,28 +1,36 @@
 "use client";
 
-// Voice agent contract (RF-18 to RF-26). The phone simulator only talks to this
-// interface. Execution 1 ships ScriptedVoiceAgent (fixed script, no AI, works
-// as the offline fallback, RF-19). Execution 2 adds a Gemini Live implementation
-// with the same callbacks and the same tool functions.
+// Voice agent contract. The call screen only talks to this interface:
+//   ElevenLabs agents (src/components/phone/ElevenLabsCall.tsx) -> live voice in the browser
+//   ScriptedVoiceAgent (src/lib/voice/scripted.ts)               -> fixed script, the last fallback
+// Both act only through the same server tools (src/lib/voice/tools.ts).
 import { post } from "../post";
 
 export type Turn = { who: "agente" | "paciente"; text: string };
 export type Option = { id: string; label: string; tone?: "primary" | "danger" | "neutral" };
 export type ToolName =
+  | "get_context"
   | "get_appointment"
   | "confirm_appointment"
   | "release_slot"
+  | "get_available_slots"
+  | "propose_reschedule"
   | "request_reschedule"
-  | "transfer_to_human";
+  | "get_offer"
+  | "respond_offer"
+  | "get_assignment"
+  | "confirm_assignment"
+  | "decline_assignment"
+  | "transfer_to_human"
+  | "flag_alarm";
 
-export type AppointmentInfo = {
+export type CallContext = {
+  call_id: string;
+  patient_name: string;
+  role: string;
   specialty: string;
-  date: string;
-  time: string;
-  remote: boolean;
-  status: string;
-  day_label: string;
-  patient: { first_name: string; age: number; caregiver_name: string | null; caregiver_relation: string | null };
+  slot_text: string;
+  deadline_text: string;
 };
 
 export type AgentCallbacks = {
@@ -40,9 +48,9 @@ export interface VoiceAgent {
   readonly transcript: Turn[];
 }
 
-export type AgentContext = { token: string; callId: number };
+export type AgentContext = { token?: string; callId: number };
 
-/** Every agent action goes through our API and is scoped to the call's appointment. */
-export async function callTool<T = Record<string, unknown>>(ctx: AgentContext, fn: ToolName) {
-  return post<T>("/api/agent", { token: ctx.token, callId: ctx.callId, fn });
+/** Every agent action goes through our API and is scoped to the call (RF-23). */
+export async function callTool<T = Record<string, unknown>>(ctx: AgentContext, fn: ToolName, args: Record<string, unknown> = {}) {
+  return post<T>("/api/agent", { token: ctx.token, callId: ctx.callId, fn, args });
 }

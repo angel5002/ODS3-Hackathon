@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { browserDb, fetchAll } from "@/lib/supabase/browser";
+import { getJson } from "@/lib/post";
 import { useHints, useSingleFlight } from "@/lib/realtime";
 import type { Appointment, Patient, Status } from "@/lib/types";
 
@@ -23,15 +23,14 @@ export type Row = Pick<
   | "remote"
   | "is_base"
   | "updated_at"
+  | "date"
+  | "uses_messaging"
+  | "request_id"
 > & {
   patient: Pick<Patient, "full_name" | "short_name" | "age" | "caregiver_name" | "caregiver_relation" | "demo_role" | "token">;
 };
 
-type Query<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-
-export const ROW_SELECT =
-  "id,patient_id,specialty,time,risk,risk_rank,status,status_at,status_channel,origin,replaces_id,reassigned_to_id,remote,is_base,updated_at," +
-  "patient:patients(full_name,short_name,age,caregiver_name,caregiver_relation,demo_role,token)";
+const rowsUrl = (q = "") => `/api/staff/data?view=appointments${q}`;
 
 type AnnounceEvent = {
   id: number;
@@ -86,16 +85,10 @@ export function usePanelData() {
   // Only actions by patients, the voice agent or the waitlist (not simulated replies, not the panel itself)
   const announceNew = useCallback(async (ids: number[]) => {
     if (lastEvent.current == null) return;
-    const { data } = await browserDb()
-      .from("events")
-      .select("id,appointment_id,from_status,to_status,channel,patient:patients(short_name),appointment:appointments(specialty,time,origin)")
-      .in("appointment_id", ids)
-      .gt("id", lastEvent.current)
-      .in("channel", ["mensaje", "voz"])
-      .eq("kind", "estado")
-      .neq("actor", "Paciente (simulado)")
-      .order("id");
-    for (const e of (data ?? []) as unknown as AnnounceEvent[]) {
+    const { events } = await getJson<{ events: AnnounceEvent[] }>(
+      `/api/staff/data?view=events&after=${lastEvent.current}&ids=${ids.join(",")}`,
+    ).catch(() => ({ events: [] as AnnounceEvent[] }));
+    for (const e of events) {
       if (e.id <= (lastEvent.current ?? 0)) continue;
       lastEvent.current = e.id;
       announce(e);
@@ -104,9 +97,7 @@ export function usePanelData() {
 
   const loadAll = useSingleFlight(async () => {
     try {
-      const data = await fetchAll<Row>((from, to) =>
-        browserDb().from("appointments").select(ROW_SELECT).order("id").range(from, to) as unknown as Query<Row>,
-      );
+      const { rows: data } = await getJson<{ rows: Row[] }>(rowsUrl());
       const prev = rowsRef.current;
       const changed = new Map<number, number>();
       const stamp = Date.now();
@@ -128,11 +119,9 @@ export function usePanelData() {
     if (!cursor.current) return loadAll();
     // overlap of 15 s: a transaction that started earlier may commit after our last read
     const since = new Date(Date.parse(cursor.current) - 15000).toISOString();
-    const data = await fetchAll<Row>(
-      (from, to) =>
-        browserDb().from("appointments").select(ROW_SELECT).gt("updated_at", since).order("id").range(from, to) as unknown as Query<Row>,
-      2000,
-    ).catch(() => null);
+    const data = await getJson<{ rows: Row[] }>(rowsUrl(`&since=${encodeURIComponent(since)}`))
+      .then((r) => r.rows)
+      .catch(() => null);
     if (!data) return;
     const prev = rowsRef.current;
     const stamp = Date.now();
@@ -149,7 +138,9 @@ export function usePanelData() {
   });
 
   const loadSome = useCallback(async (ids: number[]) => {
-    const { data } = await (browserDb().from("appointments").select(ROW_SELECT).in("id", ids) as unknown as Query<Row>);
+    const data = await getJson<{ rows: Row[] }>(rowsUrl(`&ids=${ids.join(",")}`))
+      .then((r) => r.rows)
+      .catch(() => null);
     if (!data) return;
     const stamp = Date.now();
     announceNew(ids);
@@ -168,13 +159,12 @@ export function usePanelData() {
 
 
   useEffect(() => {
-    browserDb()
-      .from("events")
-      .select("id")
-      .order("id", { ascending: false })
-      .limit(1)
-      .then(({ data }) => {
-        lastEvent.current = data?.[0]?.id ?? 0;
+    getJson<{ last: number }>("/api/staff/data?view=events&last=1")
+      .then(({ last }) => {
+        lastEvent.current = last;
+      })
+      .catch(() => {
+        lastEvent.current = 0;
       });
      
     loadAll();
@@ -182,7 +172,8 @@ export function usePanelData() {
 
   useHints((h) => {
     if (h.kind === "full") loadAll();
-    else if (h.kind === "bulk" || !h.appts.length) loadChanged();
+    else if (h.kind === "bulk" || (h.kind === "appt" && !h.appts.length) || h.kind === "slot") loadChanged();
+    else if (!h.appts.length) return;
     else loadSome(h.appts);
   });
 

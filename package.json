@@ -16,6 +16,8 @@
     "video:storyboard": "node video/render.mjs --storyboard"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "@elevenlabs/react": "^1.21.1",
     "@supabase/supabase-js": "^2.118.0",
     "lucide-react": "^1.66.0",
     "next": "16.4.4",

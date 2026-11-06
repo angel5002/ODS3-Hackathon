@@ -271,6 +271,26 @@ def main(path: str) -> None:
     rel = rel if len(rel) else adults[adults["ESPECIALIDAD"] == s_spec]
     demo_rel = rel.sort_values("hora").index[len(rel) // 3]
 
+    # v4: the prepared patients are fixed by docs/requisitos_v4.md section 1 (Rosa: ENT, high risk;
+    # Valeria: 1 year old, pediatric surgery; Carmen: cardiology at 10:20), whatever the model ranks first.
+    fem = d["SEXO"] == "FEMENINO"
+    ent = adults[(adults["ESPECIALIDAD"] == "OTORRINOLARINGOLOGIA") & fem & (adults["riesgo"] >= t_high)]
+    if len(ent):
+        demo_high = ent.sort_values("riesgo", ascending=False).index[0]
+    kid1 = d[(d["ESPECIALIDAD"] == "CIRUGIA PEDIATRICA") & (d["edad"] == 1) & fem & single]
+    if len(kid1):
+        demo_kid = kid1.sort_values("riesgo", ascending=False).index[0]
+    car = rel[fem.loc[rel.index]]
+    if len(car):
+        demo_rel = car.sort_values("hora").index[len(car) // 3]
+    # Carmen's appointment is at 10:20: swap times with whoever had 10:20 in her specialty
+    target = "10:20"
+    other = d[(d["ESPECIALIDAD"] == d.loc[demo_rel, "ESPECIALIDAD"]) & (d["hora"] == target)].index
+    if len(other) and other[0] != demo_rel:
+        d.loc[other[0], "hora"], d.loc[demo_rel, "hora"] = d.loc[demo_rel, "hora"], target
+    elif not len(other):
+        d.loc[demo_rel, "hora"] = target
+
     demo_roles = {
         demo_high: ("alto_riesgo", "Riesgo alto: no responde el mensaje y recibe la llamada"),
         demo_kid: ("pediatrico", "Cita pediátrica: responde su cuidador y confirma"),
@@ -334,6 +354,11 @@ def main(path: str) -> None:
             "factors": factors[i], "sim_reply": reply, "sim_delay_min": delay,
         })
         outcomes.append({"appointment_id": i + 1, "no_show": bool(r["y"])})
+    # v4: 68.6 % of the population uses instant messaging (OSIPTEL); the rest gets a call.
+    # Separate generator so the rest of the seeded data (times, replies) does not change.
+    rng_msg = np.random.default_rng(SEED + 4)
+    for i, (ix, r) in enumerate(d.iterrows()):
+        appointments[i]["uses_messaging"] = True if ix in demo_roles else bool(rng_msg.random() < 0.686)
     ap_by_ix = {ix: appointments[i] for i, ix in enumerate(d.index)}
 
     # ---------- waiting lists (RF-06): 5-30 per specialty, wait days from the real distribution
@@ -382,10 +407,12 @@ def main(path: str) -> None:
             p["demo_order"] = order[p["demo_role"]]
 
     demo = []
+    ap_age = {p["id"]: p["age"] for p in patients}
     for ix, (role, label) in demo_roles.items():
         ap = ap_by_ix[ix]
         demo.append({"role": role, "appointment_id": ap["id"], "patient_id": ap["patient_id"],
-                     "specialty": ap["specialty"], "risk": ap["risk"], "label": label})
+                     "specialty": ap["specialty"], "risk": ap["risk"], "label": label, "time": ap["time"],
+                     "age": ap_age.get(ap["patient_id"])})
     summary["demo_patients"] = demo
     summary["demo_specialty_for_release"] = title(s_spec)
 
@@ -407,7 +434,7 @@ def main(path: str) -> None:
         "call_list_share": CALL_LIST_SHARE, "call_list_precision": summary["call_list_precision"],
         "call_list_capture": summary["call_list_capture"],
         "thresholds": {"alto": t_high, "medio": t_mid},
-        "features": ["Especialidad", "Edad", "Sexo", "Tiene seguro", "Presencial o remota",
+        "features": ["Especialidad", "Edad", "Tiene seguro", "Presencial o remota",
                      "Días entre la solicitud y la cita", "Día de la semana",
                      "Citas anteriores del paciente", "Inasistencias anteriores del paciente"],
         "history_rule": "El historial del paciente solo usa citas de fechas anteriores a la cita evaluada.",
@@ -422,7 +449,7 @@ def main(path: str) -> None:
         },
         "limitations": [
             "El modelo distingue mejor que el azar (AUC 0.5), pero se equivoca a menudo: sirve para ordenar a quién apoyar primero, no para decidir sobre una cita.",
-            "Usa el sexo como variable porque mejora la predicción, pero nunca se muestra como explicación ni decide nada por sí solo.",
+            "No usa la variable sexo: retirarla no cambió el desempeño (AUC 0.655 con y sin ella).",
             "Un riesgo alto significa más apoyo para llegar a la cita (mensaje, llamada), nunca perderla.",
             "Los datos son de 2023 y de un solo hospital; un piloto debe recalibrarlo con datos recientes.",
         ],
@@ -459,7 +486,7 @@ def main(path: str) -> None:
     print(f"Pacientes {len(patients)} | citas {len(appointments)} | lista de espera {len(waitlist)} "
           f"| especialidad de la reasignación: {title(s_spec)}")
     for x in demo:
-        print("  demo:", x["role"], x["patient_id"], x["specialty"], f"riesgo {x['risk']:.2f}")
+        print("  demo:", x["role"], x["patient_id"], x["specialty"], x["time"], "edad", x["age"], f"riesgo {x['risk']:.2f}")
     print(f"Archivos en {OUT}")
 
 
