@@ -1,0 +1,19 @@
+# Never upload secrets, the original dataset or the local backup kit (CLI deploys do not read .gitignore)
+.env*
+!.env.example
+AsistIA_respaldo/
+AsistIA_respaldo.zip
+insumos/*.csv
+insumos/*.pdf
+insumos/*.xlsx
+insumos/*.docx
+ml/.venv/
+ml/out/
+ml/cache/
+node_modules/
+.next/
+capturas/
+video/
+tests/
+scripts/dev/
+.claude/
