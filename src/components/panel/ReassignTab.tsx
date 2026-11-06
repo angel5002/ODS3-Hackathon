@@ -60,6 +60,12 @@ export function ReassignTab() {
   const [showFilled, setShowFilled] = useState(false);
   const slots = useMemo(() => data?.slots ?? [], [data]);
   const open = slots.filter((s) => s.state !== "ocupado");
+  // what needs a decision first: open offers and pending validations, then slots with candidates
+  const actionable = open
+    .filter((s) => s.state === "retenido" || (s.proposal?.k ?? 0) > 0)
+    .sort((a, b) => Number(b.state === "retenido") - Number(a.state === "retenido"));
+  const waiting = open.filter((s) => s.state === "libre" && (s.proposal?.k ?? 0) === 0);
+  const [showWaiting, setShowWaiting] = useState(false);
   const filled = slots.filter((s) => s.state === "ocupado");
   const free = open.filter((s) => s.state === "libre" && (s.proposal?.k ?? 0) > 0);
 
@@ -117,8 +123,27 @@ export function ReassignTab() {
       {!data && !error && <p className="text-muted">Cargando cupos…</p>}
       {data && !open.length && <p className="rounded-2xl bg-surface p-8 text-center text-muted ring-1 ring-line">No hay cupos libres por ahora.</p>}
 
+      {waiting.length > 0 && (
+        <section className="rounded-2xl bg-surface px-4 py-3 ring-1 ring-line">
+          <button onClick={() => setShowWaiting(!showWaiting)} className="text-sm font-semibold text-brand hover:underline">
+            {showWaiting ? "Ocultar" : "Ver"} {num(waiting.length)} cupos libres sin candidatos en su zona
+          </button>
+          <span className="ml-2 text-xs text-muted">Esperan a que se regule una solicitud que corresponda, o pasan a la zona siguiente.</span>
+          {showWaiting && (
+            <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+              {waiting.map((s) => (
+                <li key={s.id} className="flex flex-wrap gap-x-2 border-t border-line py-1.5">
+                  <strong>{s.specialty}</strong> {dateShort(s.date)} {s.time}
+                  <span className="text-muted">· {ZONE_TEXT[s.zone] ?? s.zone}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       <ul className="grid gap-4 xl:grid-cols-2">
-        {open.map((s) => (
+        {actionable.map((s) => (
           <li key={s.id}>
             <SlotCard slot={s} busy={busy} act={act} />
           </li>

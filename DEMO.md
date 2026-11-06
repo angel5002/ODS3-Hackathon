@@ -1,41 +1,39 @@
-# Guion de demo (5 minutos)
+# Guion de demo v4 (5 minutos)
 
-URL: **https://ods3-hackathon.vercel.app** (use siempre este dominio: los demás piden inicio de sesión de Vercel y los QR no abrirían).
+URL: **https://ods3-hackathon.vercel.app** (los demás dominios piden inicio de sesión de Vercel y los QR no abrirían).
+Fuente: `docs/requisitos_v4.md` §6. Preparación detallada en `GUIA_DE_USO.md` §4.
 
 ## Quién hace qué
 
-| Integrante | Dispositivo | Pantalla | Papel |
-|---|---|---|---|
-| 1 | Laptop conectada al proyector | `/panel`, luego `/tablero` | Presenta y maneja el panel |
-| 2 | Segunda laptop o pestaña | `/demo` | Operador: reloj de la demo y reinicio |
-| 3 | Celular A y celular B | Teléfono 2 (Valeria, responde su madre Lucía) y Teléfono 3 (Carmen) | Pacientes que responden por mensaje |
-| 4 | Celular C y celular D | Teléfono 1 (Rosa) y Teléfono 4 (Julio) | Paciente que recibe la llamada y paciente de la lista de espera |
+| Integrante | Dispositivo | Pantalla |
+|---|---|---|
+| 1 | Laptop al proyector | `/panel` (Admisión) y `/tablero` |
+| 2 | Segunda laptop | `/demo` (operador) y `/regulador` |
+| 3 | Celular A | Chat de `/pedir-cita` vinculado a **Julio** |
+| 4 | Celular B | Teléfono simulado de **Rosa** (`/t/rosa`), con sonido activado |
+| Jurado | Su celular | QR impreso de `/pedir-cita` |
 
-Si son tres, el integrante 2 también lleva el celular D (Julio). El Teléfono 5 (Ana) es de respaldo: si Julio toca "No puedo", el panel propone a Ana.
+## Antes (paso 0)
 
-## Antes de empezar (5 minutos antes)
-
-1. En `/demo`, tocar **Reiniciar demo** y confirmar.
-2. Cada celular escanea su QR en `/demo` y deja abierta la página. Debe decir "Todavía no hay mensajes".
-3. Celular C (Rosa): volumen alto (el asistente habla en voz alta) y pantalla sin bloqueo automático.
-4. En la laptop 1, abrir `/panel` con el PIN y comprobar que la hora de la demo dice 09:00 «detenido».
-5. Respaldo de internet: tener listos datos móviles compartidos.
+`/demo` → **Reiniciar demo**. Celular A abre `/pedir-cita`, **Activar sonido y llamadas**, **Chatear**, ACEPTO; en **En vivo** se vincula a Julio. Celular B abre `/t/rosa` y toca **Activar sonido y llamadas**. **Probar llamada** en ambos.
+*Plan B:* teléfonos simulados en pestañas de la laptop 2.
 
 ## Guion
 
-| Tiempo | Quién | Clic por clic | Qué decir |
-|---|---|---|---|
-| 0:00–0:40 | 1 | `/tablero`, bajar a "Histórico 2023" | "En 2023, en el María Auxiliadora, 1 de cada 4 citas no se atendió: 106,100 citas, unas 347 por día, mientras otros hacían cola desde las 5 a. m." |
-| 0:40–1:30 | 1 | `/panel`. Señalar el riesgo de la primera fila. Pestaña **Lista de llamadas**. Buscar "Rosa" y abrirla | "Estas son las 1,473 citas reales de un jueves de octubre de 2023, con pacientes ficticios. El modelo ordena por riesgo y explica por qué. En la prueba con octubre a diciembre, el 10 % de mayor riesgo tuvo 52 % de inasistencias frente a 27 % de promedio. Riesgo alto significa más apoyo, nunca perder la cita." |
-| 1:30–2:10 | 1, 3 | **Enviar recordatorios a 1,473 citas**. Celular A (Valeria): **Confirmo**. Celular B (Carmen): **No podré asistir** | "El mensaje llega a todos a la vez. Miren el panel: cada respuesta aparece al instante." (Se ven los avisos "Valeria C. confirmó por mensaje" y "Carmen Q. liberó su cupo".) |
-| 2:10–3:00 | 1, 4 | Pestaña **Cupos por reasignar** → Carmen → **Ofrecer cupo** (Julio, 40 días de espera). Celular D (Julio): **Acepto** | "El sistema propone; la persona decide. Julio esperaba hace 40 días. Acepta desde su celular y el cupo queda reasignado." |
-| 3:00–3:50 | 2, 1, 4 | En `/demo`: **2. Cerrar el plazo de respuesta**. En `/panel`, pestaña **Sin respuesta** → fila de Rosa → **Llamar**. Celular C (Rosa): **Contestar** → **Sí, soy yo** → **Sí, asistiré** | "Rosa no respondió el mensaje. Llama el asistente automático: dice que es automático y que puede pasar con una persona. Hoy usa un guion fijo, que también es el respaldo si falla internet." |
-| 3:50–4:40 | 1 | `/tablero`: indicadores en vivo. **Ver qué pasó** | "Ese día, de verdad, 414 citas no se atendieron y 80 de ellas estaban en nuestra lista de llamadas. Con supuestos editables (30 % avisa, 70 % se reasigna) serían unas 87 citas recuperadas al día." |
-| 4:40–5:00 | 1 | — | "Una persona decide todo cambio. Los mensajes y la llamada están detrás de una interfaz: en un piloto se conectan a WhatsApp Business o a telefonía real sin rehacer el sistema." |
+| Tiempo | Paso | Clic por clic | Lo que se ve | Qué decir | Plan B |
+|---|---|---|---|---|---|
+| 0:00–0:40 | 1 | Un jurado escanea el QR, abre el chat, ACEPTO y pide Dermatología con un nombre ficticio | En `/regulador` aparece S-04XX sin alias ni datos de contacto | «Quien no consigue cupo hoy no queda registrado en ningún sistema. Aquí sí, y el regulador decide sin ver quién es.» | **Formulario** de `/pedir-cita` |
+| 0:40–1:00 | 2 | Regulador: **P3** | La solicitud entra a la Lista de espera, en su posición y con su razón | «El orden es público: categoría y plazo consumido. Nunca el seguro ni el sexo.» | — |
+| 1:00–1:40 | 3 | Panel: **Enviar recordatorios (72 h)**. Carmen (simulada o celular) **No podré asistir** | Por reasignar: cupo 19/10 10:20 «Zona cercana · P1–P2», 54 % con 4 candidatos | «El mensaje llega a todos; quien no puede avisa con un toque y el cupo se recupera tres días antes.» | Botón de Carmen en su teléfono simulado |
+| 1:40–2:30 | 4 | `/demo` → **2. Cerrar el plazo**. Celular B suena: contestar en altavoz | Llamada en curso en **En vivo**, con las acciones del agente | «Rosa no respondió y está en el 10 % de mayor riesgo: la llama el agente. Dice que es automático y no pide datos.» | La llamada sigue con el guion fijo; o `/t/rosa?voz=guion` |
+| 2:30–3:30 | 5 | **Aprobar y enviar oferta a 4**. Julio (chat real) responde **1** primero; Ana (**Acepta**, simulada) después. **Cerrar oferta y asignar** | «Asignado a Ana G. (prioridad 0.77: P2, 69 % de su plazo) aunque Julio respondió primero (0.48)». Julio recibe en el chat «Usted queda primero» | «Responder rápido no da ventaja: gana quien más lo necesita según reglas públicas.» | Botones Acepta/No de cada candidato |
+| 3:30–4:10 | 6 | Por validar → **Usar simulado: confirma** (Ana) | Cita confirmada; su cita del 09/11 se libera (efecto dominó) → **Aprobar y enviar oferta a 4** → Luis acepta solo (simulado) → **Cerrar oferta y asignar** → termina en **Luis** (solicitud sin cita) | «El espacio vacío se corre a una fecha lejana, donde hay más tiempo para organizarse.» | Teléfono de Ana `/t/ana` |
+| 4:10–4:40 | 7 | Por reasignar: cupo de **Dermatología, lunes 23/10** (zona media) → aprobar | En el chat del jurado llega la oferta; «1», al cerrar «Sí, confirmo» → cita registrada | «La persona que pidió la cita hace 4 minutos ya tiene una, sin hacer cola.» | Usar simulado |
+| 4:40–5:00 | 8 | `/tablero` | Cupos llenados, validaciones, equidad, carga del personal y escenario r ≈ 10 % → unas 10,600 citas al año | «Con los mismos médicos. Desde 5.3 % el hospital ya gana.» | — |
 
 ## Si algo falla
 
-- Un celular no muestra el mensaje: recargar la página del celular (los datos están en la base, no se pierden).
-- Rosa rechazó la llamada por error: en el panel, volver a tocar **Llamar**.
-- Julio tocó **No puedo**: en el panel aparece **Ofrecer a esta persona** junto a Ana (Teléfono 5).
-- Todo se desordenó: `/demo` → **Reiniciar demo** (tarda menos de 1 segundo) y volver a abrir los QR.
+- Celular sin mensaje: recargar (los datos están en la base).
+- Voz sin conectar: la llamada continúa con el guion fijo; el operador puede **Terminar (usar simulado)** en **En vivo**.
+- Una oferta o validación no llega: botones **Usar simulado** en Por reasignar y Por validar.
+- Todo se desordenó: `/demo` → **Reiniciar demo** (2 s) y volver a vincular el chat a Julio.
