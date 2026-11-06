@@ -168,6 +168,12 @@ async function exec(call: CallRow, tool: string, args: Record<string, unknown>):
           actor: "Asistente de voz",
         },
       });
+      if (call.chat_session_id) {
+        await rpc("chat_system_message", {
+          p_session: call.chat_session_id,
+          p_body: `Registramos por llamada su solicitud ${res.code}. No es una cita todavía: un profesional la revisará y le avisaremos por aquí. Si deja de responder, no pierde su lugar.`,
+        });
+      }
       const digits = res.code.replace(/\D/g, "").split("").join(", ");
       return { say: `Listo. Su número de solicitud es S, ${digits}. No es una cita todavía: un profesional la revisará y le avisaremos.`, data: res, done: `Registró la solicitud ${res.code}` };
     }
