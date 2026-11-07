@@ -33,10 +33,10 @@ export type SceneController = { next: () => void };
  * shows Tito's appointment ticket. The AI lines play their pre-generated audio and the wave follows THAT audio.
  * The phone is a picture of a phone on the projector: inert and hidden from screen readers, which get the line said.
  */
-// The phone is drawn at a real phone's size (360 × 760 CSS px, the call screen's own layout) and scaled to the
+// The phone is drawn at a real phone's size (320 × 680 CSS px, a small phone's layout) and scaled to the
 // height the moment gives it, so the call screen, the ticket and the type keep their phone proportions.
-const PHONE_W = 360;
-const PHONE_H = 760;
+const PHONE_W = 320;
+const PHONE_H = 680;
 
 export function Scene1CallSlot({ controller: c }: { controller: PlaybackController }) {
   const call = scene1CallProps(c);

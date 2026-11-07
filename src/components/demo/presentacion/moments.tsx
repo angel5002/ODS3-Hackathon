@@ -4,6 +4,7 @@
 // no lists of text. Sizes are in em of the presentation root (theme.tsx), so each view fits 1280×720 and 1920×1080.
 import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from "react";
 import {
+  ThumbsUp,
   CalendarCheck,
   Check,
   ClipboardList,
@@ -163,7 +164,7 @@ export function Scene1Moment({
           <ol className="grid grid-cols-3 gap-[0.6em]" aria-label="Pasos del cupo">
             <Step icon={PhoneOff} text="Carmen avisa" state="done" />
             <Step icon={UserCheck} text="El personal aprueba" state={stage >= 1 ? "done" : "now"} strong />
-            <Step icon={Check} text={`${to} acepta`} state={stage >= 2 ? "done" : stage === 1 ? "now" : "todo"} />
+            <Step icon={ThumbsUp} text={`${to} acepta`} state={stage >= 2 ? "done" : stage === 1 ? "now" : "todo"} />
           </ol>
         </div>
       </div>
