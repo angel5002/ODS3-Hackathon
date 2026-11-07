@@ -2,7 +2,7 @@
 
 // /demo presentation mode: one view per moment of the pitch script v7 (slides 5–9). One idea per view, huge type,
 // no lists of text. Sizes are in em of the presentation root (theme.tsx), so each view fits 1280×720 and 1920×1080.
-import { useEffect, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from "react";
 import {
   CalendarCheck,
   Check,
@@ -22,8 +22,9 @@ import {
 import { num } from "@/lib/labels";
 import type { DemoOverview } from "@/lib/demo-overview";
 import type { JuryActivity, JuryActivityKind, JuryOverview } from "@/lib/demo/contract";
-import { SCENE2, SCENE2_AT, SUMMARY_AT, summaryAt } from "./fixtures";
-import { useCues, type JurySource } from "./hooks";
+import { SCENE1 } from "./fixtures";
+import type { JurySource } from "./hooks";
+import { scene2Summary, useSceneController } from "@/components/scenes";
 import { DoctorSummarySlot, PreconsultaChatSlot, SampleTag, Scene1CallSlot, SUMMARY_NOTE, type SceneController } from "./slots";
 
 const i = (n: number) => ({ "--i": n }) as CSSProperties;
@@ -93,8 +94,8 @@ export function QrMoment({ qr, jury, source }: { qr: { url: string; svg: string 
 
 // ------------------------------------------------------------------------------------------------ 2 · Escena 1
 
-/** scene 1 cues (script v7): red band 9 s, first AI line 11 s, staff approval 15 s, second AI line 17 s, green band 18 s */
-export const SCENE1_CUES = [9000, 11000, 15000, 17000, 18000] as const;
+/** scene 1 steps (track C, src/lib/demo/scenes.ts): Space advances line by line; the AI lines play their audio */
+const SCENE1_STEP = Object.fromEntries(SCENE1.lines.map((l, n) => [l.id, n])) as Record<string, number>;
 
 export function Scene1Moment({
   jury,
@@ -105,7 +106,8 @@ export function Scene1Moment({
   source: JurySource;
   controllerRef: RefObject<SceneController | null>;
 }) {
-  const { elapsed, passed, next } = useCues(SCENE1_CUES);
+  const c = useSceneController("escena1", { voice: true });
+  const next = c.next;
   useEffect(() => {
     controllerRef.current = { next };
     return () => {
@@ -114,13 +116,13 @@ export function Scene1Moment({
   }, [controllerRef, next]);
 
   // the hand-off follows the real slot when track E's view is live (the staff approval is the trigger);
-  // otherwise it follows the scene clock
+  // otherwise it follows the scene: the staff approved before the phone rings, Tito accepts in the call
   const live = source === "en_vivo" && jury?.carmenSlot ? jury.carmenSlot : null;
-  const stage = live ? ({ libre: 0, ofrecido: 1, asignado: 2 } as const)[live.state] : passed >= 5 ? 2 : passed >= 3 ? 1 : 0;
+  const stage = live ? ({ libre: 0, ofrecido: 1, asignado: 2 } as const)[live.state] : c.index >= SCENE1_STEP.ia2 ? 2 : c.index >= SCENE1_STEP.s1 ? 1 : 0;
   const slot = live ?? { specialty: "Oncología", when: "mañana 9:00", assignedTo: null };
   const to = live?.assignedTo ?? "Tito";
-  const red = passed >= 1;
-  const green = passed >= 5;
+  const red = c.index >= SCENE1_STEP.n2;
+  const green = c.index >= SCENE1_STEP.ia2;
 
   return (
     <Moment id="escena1" label="Escena 1: Tito en el hospital">
@@ -129,7 +131,7 @@ export function Scene1Moment({
         {source === "ejemplo" ? <SampleTag /> : null}
       </div>
       <div className="mt-[0.9em] grid min-h-0 flex-1 grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)] gap-[1.6em] max-[900px]:grid-cols-1">
-        <Scene1CallSlot elapsed={elapsed} passed={passed} />
+        <Scene1CallSlot controller={c} />
         <div className="flex min-h-0 flex-col justify-center gap-[1.1em]">
           {/* who had the slot, who gets it */}
           <div className="grid grid-cols-2 gap-[1em]">
@@ -306,19 +308,19 @@ export function JuryMoment({ jury, source, now }: { jury: JuryOverview | null; s
 
 // ------------------------------------------------------------------------------------------------ 4 · Escena 2
 
-/** one chat message every 2.4 s (SCENE2_AT) plus the summary steps; the scene closes at 26.4 s */
-export const SCENE2_CUES = [...new Set([...SCENE2_AT, ...Object.values(SUMMARY_AT)])].sort((a, b) => a - b);
-
+/** Space starts the chat (after the narrator's line); then a message every 2.4 s, and the summary fills in sync from
+ *  the real pre-visit machine. Space during the chat shows the next message at once. */
 export function Scene2Moment({ controllerRef }: { controllerRef: RefObject<SceneController | null> }) {
-  const { elapsed, next } = useCues(SCENE2_CUES);
+  const c = useSceneController("escena2");
+  const next = c.next;
   useEffect(() => {
     controllerRef.current = { next };
     return () => {
       controllerRef.current = null;
     };
   }, [controllerRef, next]);
-  const lines = SCENE2.lines.filter((_, n) => elapsed >= SCENE2_AT[n]);
-  const summary = summaryAt(elapsed);
+  const lines = c.shown.filter((l) => l.cue?.chat);
+  const summary = useMemo(() => scene2Summary({ shown: c.shown }), [c.shown]);
   const w = summary.ventanaLlegada;
   return (
     <Moment id="escena2" label="Escena 2: preconsulta en la clínica">

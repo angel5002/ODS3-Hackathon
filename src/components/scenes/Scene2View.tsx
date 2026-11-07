@@ -31,7 +31,7 @@ export function Scene2View({ controller: c, className = "" }: Scene2ViewProps) {
   const tapped = bubbles.some((b) => b.cue?.tap);
 
   return (
-    <div className={`flex h-full w-full flex-col items-stretch justify-center gap-6 p-4 lg:flex-row lg:items-center lg:gap-10 ${className}`} data-scene="escena2" data-step={c.line.id}>
+    <div className={`flex h-full w-full flex-col items-stretch justify-center gap-6 p-4 lg:flex-row lg:items-center lg:gap-10 ${className}`} data-scene="escena2" data-step={c.line.id} data-index={c.index} data-speaking={c.agentSpeaking ? "1" : "0"}>
       <div
         className="relative mx-auto flex aspect-[9/18] h-[min(78vh,760px)] max-h-full shrink-0 flex-col overflow-hidden rounded-[28px] border-[10px] border-night bg-paper shadow-xl"
         aria-label="Celular de Tito"

@@ -76,7 +76,7 @@ export function Scene1View({ controller: c, className = "" }: Scene1ViewProps) {
   const call = scene1CallProps(c);
   const band = c.line.cue?.band;
   return (
-    <div className={`flex h-full w-full flex-col items-center justify-center gap-6 p-4 lg:flex-row lg:gap-12 ${className}`} data-scene="escena1" data-step={c.line.id}>
+    <div className={`flex h-full w-full flex-col items-center justify-center gap-6 p-4 lg:flex-row lg:gap-12 ${className}`} data-scene="escena1" data-step={c.line.id} data-index={c.index} data-speaking={c.agentSpeaking ? "1" : "0"}>
       <div
         className="relative aspect-[9/18] h-[min(78vh,760px)] max-h-full shrink-0 overflow-hidden rounded-[28px] border-[10px] border-night bg-paper shadow-xl"
         aria-label="Celular de Tito"

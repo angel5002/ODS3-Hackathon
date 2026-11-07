@@ -32,6 +32,7 @@ import type { DemoOverview, OverviewEvent, OverviewSlot, OverviewWaitRow } from 
 import type { CallRow, LiveData } from "./LiveSection";
 import type { VoiceOverview } from "./VoiceSessionsCard";
 import { groupCalls } from "./calls";
+import { Scene1Ops } from "@/components/scenes/Scene1Ops";
 
 export type Rule = DemoOverview["rule"];
 type Run = (action: string, body?: Record<string, unknown>, success?: string) => Promise<boolean>;
@@ -647,6 +648,7 @@ function SlotsPanel({ overview, busy, run, now, state }: { overview: DemoOvervie
           {rule ? RULE_TEXT[rule].long : "Cargando la regla"}
         </p>
       </fieldset>
+      <Scene1Ops busy={busy} run={run} />
       <div className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain max-xl:max-h-[60vh]">
         {overview && !slots.length && (
           <p className="rounded-lg bg-(--cc-subtle) px-3 py-2.5 text-[14px] text-(--cc-text-2)">Ningún cupo libre por ahora. Aparecen cuando un paciente avisa que no podrá ir.</p>
