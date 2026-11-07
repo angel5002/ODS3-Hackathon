@@ -207,6 +207,8 @@ async def juror(pw, browser, base: str, staff: Staff, j: dict, token: str):
     page = await ctx.new_page()
     errors: list[str] = []
     page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+    net: list[str] = []
+    page.on("response", lambda r: net.append(f"{r.request.method} {r.url.split('/api/')[-1][:40]} {r.status}") if "/api/chat" in r.url or "/api/jury" in r.url else None)
     marks = timings.setdefault(token, {})
     t0 = time.monotonic()
     ch = j["character"]
@@ -279,6 +281,8 @@ async def juror(pw, browser, base: str, staff: Staff, j: dict, token: str):
             fail(f"{ch}: errores en la consola: {real[:3]}")
     except Exception as e:  # noqa: BLE001
         fail(f"{ch}: {type(e).__name__}: {str(e)[:300]}")
+        if net:
+            print(f"  {ch} red: {' | '.join(net[-14:])}", flush=True)
         await page.screenshot(path=str(ROOT / "test-results" / f"jurado_{token}.png"))
     finally:
         await ctx.close()
@@ -297,14 +301,15 @@ async def close_if_open(staff: Staff, token: str):
 async def run(args):
     env = env_from(Path(args.env))
     db = Db(env["NEXT_PUBLIC_SUPABASE_URL"], env["SUPABASE_SERVICE_ROLE_KEY"])
-    jurors = (JURORS * ((args.n + len(JURORS) - 1) // len(JURORS)))[: args.n]
+    pool = [j for j in JURORS if not args.only or j["kind"] in args.only.split(",")]
+    jurors = (pool * ((args.n + len(pool) - 1) // len(pool)))[: args.n]
     rows, tokens = [], []
     for i, j in enumerate(jurors):
         token = "j-test-" + "".join(secrets.choice(ALPH) for _ in range(6))
         tokens.append(token)
         rows.append(
             dict(
-                token=token, character=j["character"] if i < len(JURORS) else f"{j['character']}{i}", full_name=j["full_name"],
+                token=token, character=j["character"] if i < len(pool) else f"{j['character']}{i}", full_name=j["full_name"],
                 story=f"Cartilla de prueba automática ({j['kind']}).", try_line="Prueba automática.", channel=j["channel"], kind=j["kind"],
                 specialty=j["specialty"], appt_time=j.get("appt_time"), category=j.get("category"), wait_days=j.get("wait_days"),
                 reason=j.get("reason"), age=j["age"], sex=j["sex"], is_test=True, sort=900 + i,
@@ -386,6 +391,7 @@ def main():
     ap.add_argument("--env", default=str(ROOT / ".env.local"))
     ap.add_argument("--pin", default=_os.environ.get("LOCAL_TEST_PIN", "482913"))
     ap.add_argument("--keep", action="store_true")
+    ap.add_argument("--only", default="", help="comma-separated kinds, e.g. pide_cita")
     args = ap.parse_args()
     code = asyncio.run(run(args))
     print("\nOK: circuito del jurado" if not code else f"\n{len(failures)} fallas")
