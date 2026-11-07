@@ -23,6 +23,7 @@ export default async function DevCallPage({ searchParams }: { searchParams: Prom
       panel={one(sp.panel) !== "0"}
       captions={one(sp.subtitulos) !== "0"}
       muted={one(sp.silencio) === "1"}
+      theme={one(sp.tema) === "claro" ? "claro" : "oscuro"}
     />
   );
 }

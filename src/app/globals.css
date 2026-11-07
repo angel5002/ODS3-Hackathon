@@ -51,6 +51,36 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Voice tokens as Tailwind colours: bg-vc-bg, text-vc-text, border-vc-edge… They resolve to whatever
+   [data-voice-theme] the element sits in (see "Voice call themes" below). */
+@theme inline {
+  --color-vc-bg: var(--vc-bg);
+  --color-vc-bg-2: var(--vc-bg-2);
+  --color-vc-text: var(--vc-text);
+  --color-vc-text-2: var(--vc-text-2);
+  --color-vc-text-3: var(--vc-text-3);
+  --color-vc-surface: var(--vc-surface);
+  --color-vc-surface-press: var(--vc-surface-press);
+  --color-vc-edge: var(--vc-edge);
+  --color-vc-icon: var(--vc-icon);
+  --color-vc-agent: var(--vc-agent);
+  --color-vc-person: var(--vc-person);
+  --color-vc-rest: var(--vc-rest);
+  --color-vc-danger: var(--vc-danger);
+  --color-vc-danger-press: var(--vc-danger-press);
+  --color-vc-on-danger: var(--vc-on-danger);
+  --color-vc-accept: var(--vc-accept);
+  --color-vc-accept-press: var(--vc-accept-press);
+  --color-vc-on-accept: var(--vc-on-accept);
+  --color-vc-primary: var(--vc-primary);
+  --color-vc-primary-press: var(--vc-primary-press);
+  --color-vc-on-primary: var(--vc-on-primary);
+  --color-vc-toggle: var(--vc-toggle);
+  --color-vc-on-toggle: var(--vc-on-toggle);
+  --color-vc-warn: var(--vc-warn);
+  --color-vc-focus: var(--vc-focus);
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
@@ -403,5 +433,209 @@ button:disabled {
   }
   .bump {
     animation: none;
+  }
+}
+
+/* ---------- Voice call themes (E5 v2) ----------
+   Two variants for the call screen, the incoming call and the voice start screen. Every value that a
+   contrast pair uses is an opaque hex so `node scripts/dev/contrast-check.mjs` can measure it (WCAG 2.x
+   relative luminance): text >= 4.5:1, icons and control edges >= 3:1. Change a value here, run the script. */
+[data-voice-theme="oscuro"] {
+  --vc-bg: #0a2322;
+  --vc-bg-2: #0e2b2a;
+  --vc-text: #ffffff;
+  --vc-text-2: #d4e7e3;
+  --vc-text-3: #a8c7c1;
+  --vc-surface: #1b4341;
+  --vc-surface-press: #255452;
+  --vc-edge: #6a9a94;
+  --vc-icon: #7ee8d0;
+  --vc-agent: #5eead4;
+  --vc-person: #ffb35c;
+  --vc-rest: #8fb3ad;
+  --vc-danger: #dc3527;
+  --vc-danger-press: #c0291d;
+  --vc-on-danger: #ffffff;
+  --vc-accept: #079455;
+  --vc-accept-press: #067647;
+  --vc-on-accept: #ffffff;
+  --vc-primary: #7ee8d0;
+  --vc-primary-press: #5fd8bd;
+  --vc-on-primary: #06201f;
+  --vc-toggle: #ffffff;
+  --vc-on-toggle: #10302f;
+  --vc-warn: #ffc46b;
+  --vc-focus: #7ee8d0;
+  /* wave: additive light on a dark ground */
+  --vc-wave-blend: lighter;
+  --vc-glow: 26%;
+  color-scheme: dark;
+}
+[data-voice-theme="claro"] {
+  --vc-bg: #ffffff;
+  --vc-bg-2: #eef6f4;
+  --vc-text: #10302f;
+  --vc-text-2: #2f5250;
+  --vc-text-3: #4b6a67;
+  --vc-surface: #e3efec;
+  --vc-surface-press: #d2e5e1;
+  --vc-edge: #6b8f8a;
+  --vc-icon: #0b7a6c;
+  --vc-agent: #0a9884;
+  --vc-person: #e2590b;
+  --vc-rest: #6f8f8a;
+  --vc-danger: #d92d20;
+  --vc-danger-press: #b42318;
+  --vc-on-danger: #ffffff;
+  --vc-accept: #079455;
+  --vc-accept-press: #067647;
+  --vc-on-accept: #ffffff;
+  --vc-primary: #10302f;
+  --vc-primary-press: #1b4745;
+  --vc-on-primary: #ffffff;
+  --vc-toggle: #10302f;
+  --vc-on-toggle: #ffffff;
+  --vc-warn: #b54708;
+  --vc-focus: #0b7a6c;
+  /* wave: ink on paper, layers stack normally */
+  --vc-wave-blend: source-over;
+  --vc-glow: 16%;
+  color-scheme: light;
+}
+[data-voice-theme] {
+  background-color: var(--vc-bg);
+  color: var(--vc-text);
+}
+[data-voice-theme] :focus-visible {
+  outline: 2px solid var(--vc-focus);
+  outline-offset: 3px;
+}
+
+/* the soft wash behind the wave: two fixed layers, only their opacity changes */
+.vc-wash {
+  background: radial-gradient(
+    60% 50% at 50% 50%,
+    color-mix(in srgb, var(--vc-wash-color) var(--vc-glow), transparent) 0%,
+    transparent 70%
+  );
+  transition: opacity 700ms ease;
+}
+
+/* a screen of the call entering: fade and a short rise, children staggered by --i */
+@keyframes vc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.vc-enter > * {
+  animation: vc-rise 340ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+/* a word or a caption that just changed */
+@keyframes vc-swap {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.vc-swap {
+  animation: vc-swap 240ms var(--ease-out) both;
+}
+
+/* incoming call: three rings leave the avatar one after another */
+@keyframes vc-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+.vc-rings > span {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--vc-agent);
+  animation: vc-ring 2400ms var(--ease-out) infinite;
+  will-change: transform, opacity;
+}
+.vc-rings > span:nth-child(2) {
+  animation-delay: 800ms;
+}
+.vc-rings > span:nth-child(3) {
+  animation-delay: 1600ms;
+}
+/* the answer button nudges every ring cycle so the eye goes there */
+@keyframes vc-nudge {
+  0%,
+  70%,
+  100% {
+    transform: none;
+  }
+  78% {
+    transform: translateY(-3px) rotate(-8deg);
+  }
+  86% {
+    transform: translateY(0) rotate(6deg);
+  }
+}
+.vc-nudge > svg {
+  animation: vc-nudge 2400ms ease-in-out infinite;
+}
+
+/* round call buttons: press feedback on pointer-down */
+.vc-round {
+  transition:
+    transform 150ms var(--ease-out),
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+.vc-round:active:not(:disabled) {
+  transform: scale(0.93);
+}
+.vc-pill {
+  transition:
+    transform 140ms var(--ease-out),
+    background-color 140ms ease;
+}
+.vc-pill:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vc-enter > *,
+  .vc-swap,
+  .vc-nudge > svg {
+    animation: none;
+  }
+  .vc-rings > span {
+    animation: none;
+    opacity: 0.35;
+    transform: scale(1.25);
+  }
+  .vc-rings > span:nth-child(2),
+  .vc-rings > span:nth-child(3) {
+    display: none;
+  }
+  .vc-wash,
+  .vc-round,
+  .vc-pill {
+    transition: none;
+  }
+  .vc-round:active:not(:disabled),
+  .vc-pill:active:not(:disabled) {
+    transform: none;
   }
 }

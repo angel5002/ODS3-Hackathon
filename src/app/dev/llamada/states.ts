@@ -13,6 +13,7 @@ export const PLAYGROUND_STATES = [
   { id: "ocupado-dispositivo", label: "Ocupado: otro dispositivo" },
   { id: "ocupado-capacidad", label: "Ocupado: líneas llenas" },
   { id: "sin_conexion", label: "Sin conexión de voz" },
+  { id: "inicio-voz", label: "Inicio de voz (/pedir-cita)" },
 ] as const;
 
 export type PlaygroundState = (typeof PLAYGROUND_STATES)[number]["id"];

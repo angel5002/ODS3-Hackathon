@@ -6,6 +6,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CallView } from "@/components/voice/CallView";
+import { VoiceStartView } from "@/components/voice/VoiceStartView";
+import { VOICE_THEMES, type VoiceTheme } from "@/lib/voice/theme";
 import type { AudioLevels, BusyInfo, CallPhase, CallViewProps, Caption, ScriptOption } from "@/lib/voice/contract";
 import { DISCLAIMER } from "@/lib/labels";
 import { PLAYGROUND_STATES, type PlaygroundState } from "./states";
@@ -68,25 +70,35 @@ export function CallPlayground({
   panel,
   captions: initialCaptions,
   muted: initialMuted,
+  theme: initialTheme,
 }: {
   initial: PlaygroundState;
   frame: "pantalla" | "telefono";
   panel: boolean;
   captions: boolean;
   muted: boolean;
+  theme: VoiceTheme;
 }) {
   const [state, setState] = useState<PlaygroundState>(initial);
   const [frame, setFrame] = useState(initialFrame);
   const [captionsVisible, setCaptionsVisible] = useState(initialCaptions);
   const [muted, setMuted] = useState(initialMuted);
-  const [seconds, setSeconds] = useState(initial === "finalizada" ? 94 : initial.startsWith("activa") || initial === "guion" ? 37 : 0);
+  const [seconds, setSeconds] = useState(initial === "finalizada" ? 94 : initial === "finalizando" ? 41 : initial.startsWith("activa") || initial === "guion" ? 37 : 0);
   const [turn, setTurn] = useState(0);
   const [scriptCaptions, setScriptCaptions] = useState<Caption[]>(() => (initial === "guion" ? GUION_FIRST : []));
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [theme, setTheme] = useState<VoiceTheme>(initialTheme);
   const voice = useRef<Voice>("silencio");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const phase: CallPhase = state.startsWith("activa") ? "activa" : state.startsWith("ocupado") ? "ocupado" : (state as CallPhase);
+  const start = state === "inicio-voz";
+  const phase: CallPhase = start
+    ? "entrante"
+    : state.startsWith("activa")
+      ? "activa"
+      : state.startsWith("ocupado")
+        ? "ocupado"
+        : (state as CallPhase);
   const auto = state === "activa-auto";
   const t = TURNS[turn % TURNS.length];
   const agentSpeaking = state === "activa-habla" || (auto && t.voice === "agente");
@@ -140,7 +152,8 @@ export function CallPlayground({
     setState(next);
     setTurn(0);
     setScriptCaptions(next === "guion" ? GUION_FIRST : []);
-    setSeconds(next === "finalizada" ? 94 : next.startsWith("activa") || next === "guion" ? 37 : 0);
+    // hanging up keeps the call's time on screen while it ends
+    setSeconds((s) => (next === "finalizando" ? Math.max(s, 41) : next === "finalizada" ? Math.max(s, 94) : next.startsWith("activa") || next === "guion" ? 37 : 0));
   }
 
   const captions: Caption[] =
@@ -199,21 +212,50 @@ export function CallPlayground({
     },
   };
 
+  const screen = start ? (
+    <div className="absolute inset-0 flex flex-col">
+      <VoiceStartView
+        ready
+        theme={theme}
+        onStart={() => {
+          go("conectando");
+          later(1600, () => go("activa-auto"));
+        }}
+      />
+    </div>
+  ) : (
+    <CallView {...props} theme={theme} />
+  );
+
   const stage =
     frame === "telefono" ? (
       <div className="grid h-full place-items-center p-4">
         <div className="relative h-[min(800px,calc(100dvh-2rem))] w-full max-w-[400px] overflow-hidden rounded-[28px] border-[6px] border-ink shadow-xl">
-          <CallView {...props} />
+          {screen}
         </div>
       </div>
     ) : (
-      <div className="relative h-full w-full">
-        <CallView {...props} />
-      </div>
+      <div className="relative h-full w-full">{screen}</div>
     );
 
   const controls = (
     <div className="space-y-4 text-sm">
+      <p className="font-semibold">Variante</p>
+      <div className="grid grid-cols-2 gap-1" role="radiogroup" aria-label="Variante de color">
+        {VOICE_THEMES.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="radio"
+            aria-checked={theme === v.id}
+            data-theme-option={v.id}
+            onClick={() => setTheme(v.id)}
+            className={`min-h-11 rounded-lg px-3 ${theme === v.id ? "bg-brand text-white" : "bg-surface text-ink hover:bg-brand-soft"}`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
       <p className="font-semibold">Estado de la llamada</p>
       <div className="grid gap-1" role="radiogroup" aria-label="Estado de la llamada">
         {PLAYGROUND_STATES.map((s) => (
@@ -248,7 +290,12 @@ export function CallPlayground({
     </div>
   );
 
-  if (!panel) return <div className="h-dvh bg-[#10302f]">{stage}</div>;
+  if (!panel)
+    return (
+      <div data-voice-theme={theme} className="h-dvh">
+        {stage}
+      </div>
+    );
 
   return (
     <div className="flex h-dvh bg-paper">

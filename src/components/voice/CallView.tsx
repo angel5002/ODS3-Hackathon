@@ -1,14 +1,20 @@
 "use client";
 
-// Presentational call screen (E5, hito 3). It receives ONLY CallViewProps (src/lib/voice/contract.ts): no
-// SDK, no server calls, no database. The controller maps the voice state machine to `phase` and wires the
-// actions; a button is drawn only when its callback exists. Rendered as `absolute inset-0` inside a relative
-// container: the simulated phone frame, the chat, or a full-height page on desktop.
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+// Presentational call screen (E5 v2). It receives ONLY CallViewProps (src/lib/voice/contract.ts) plus the
+// optional `theme`: no SDK, no server calls, no database. The controller maps the voice state machine to
+// `phase` and wires the actions; a button is drawn only when its callback exists. Rendered as
+// `absolute inset-0` inside a relative container: the simulated phone frame, the chat, or a full page.
+//
+// Layout of the live call: one top line (Demostración, identification, timer), the wave as the protagonist
+// (38 % of the height), the state in two or three words, the last caption only (two lines at most), three
+// controls (Silenciar, Colgar, Chat), a discreet "Hablar con una persona" and one safety line.
+// Colours are the --vc-* tokens of src/app/globals.css (variants "claro" and "oscuro").
+import { useMemo, type CSSProperties, type ReactNode } from "react";
 import {
   Bot,
   Captions,
   CaptionsOff,
+  Check,
   Hourglass,
   MessageSquareText,
   Mic,
@@ -18,18 +24,27 @@ import {
   PhoneOff,
   RotateCcw,
   ShieldCheck,
+  Unplug,
   UserRound,
   WifiOff,
 } from "lucide-react";
-import { AGENT_IDENTIFICATION, SAFETY_LINES, type AudioLevels, type CallPhase, type CallViewProps, type Caption } from "@/lib/voice/contract";
-import { VoiceWave, WAVE_COLOR } from "./VoiceWave";
+import type { AudioLevels, CallPhase, CallViewProps, Caption } from "@/lib/voice/contract";
+import { DEFAULT_VOICE_THEME, type VoiceTheme } from "@/lib/voice/theme";
+import { VoiceWave } from "./VoiceWave";
 
-const RED = "bg-[#d92d20] text-white";
-const GREEN = "bg-[#17b26a] text-white";
-const SOFT = "bg-white/12 text-white active:bg-white/20";
+/** The one safety line shown on every call screen. */
+export const CALL_SAFETY_LINE = "Nunca pedimos pagos, claves, códigos ni su DNI completo";
 
-/** phases in which the conversation (wave, captions) is on screen */
-const TALK: CallPhase[] = ["conectando", "activa", "guion", "finalizando", "finalizada"];
+/** "Asistente automatizado · Hospital de demostración" */
+export const callIdentification = (establishment: string) => `Asistente automatizado · ${establishment}`;
+
+export type CallViewExtraProps = {
+  /** Visual variant (optional, default "oscuro"). Sets data-voice-theme on the root. */
+  theme?: VoiceTheme;
+};
+
+/** phases in which the wave is on screen (the canvas stays mounted across them) */
+const TALK: CallPhase[] = ["conectando", "activa", "guion", "finalizando"];
 /** phases in which "Hablar con una persona" makes sense */
 const PERSON_OK: CallPhase[] = ["reconectar", "conectando", "activa", "guion", "ocupado", "sin_conexion"];
 
@@ -38,44 +53,32 @@ export function formatDuration(seconds: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function statusCopy(p: CallViewProps): { title: string; detail: string | null } {
+/** the state under the wave, in two or three words, and a fuller sentence for screen readers */
+function talkState(p: CallViewProps): { word: string; spoken: string; tone: "agente" | "persona" | "rest" } {
   switch (p.phase) {
-    case "entrante":
-      return { title: "Llamada entrante", detail: p.purposeLabel };
-    case "reconectar":
-      return { title: "La llamada sigue abierta", detail: "Se interrumpió la conexión de voz. Puede volver a conectar o colgar." };
     case "conectando":
-      return { title: "Conectando…", detail: "Un momento, por favor." };
-    case "activa":
-      if (p.thinking) return { title: "Pensando…", detail: null };
-      if (p.agentSpeaking) return { title: "El asistente está hablando", detail: null };
-      if (p.muted) return { title: "Micrófono silenciado", detail: "El asistente no le escucha. Toque Activar micrófono para hablar." };
-      return { title: "Te escucho", detail: "Hable con normalidad." };
+      return { word: "Conectando", spoken: "Conectando la llamada", tone: "agente" };
+    case "finalizando":
+      return { word: "Terminando", spoken: "Terminando la llamada", tone: "rest" };
     case "guion":
       return p.agentSpeaking
-        ? { title: "El asistente está hablando", detail: null }
-        : { title: "Responda tocando una opción", detail: null };
-    case "finalizando":
-      return { title: "Terminando la llamada…", detail: null };
-    case "finalizada":
-      return { title: "Llamada finalizada", detail: p.seconds > 0 ? `Duración: ${formatDuration(p.seconds)}` : null };
-    case "ocupado":
-      if (p.busy?.kind === "otro_dispositivo")
-        return {
-          title: "Esta llamada ya se está atendiendo en otro dispositivo",
-          detail: "Para evitar dos conversaciones a la vez, aquí no se abre otra. Puede cerrar esta pantalla.",
-        };
-      return { title: "Todas las líneas están ocupadas", detail: "Seguimos intentando conectarle. También puede seguir por chat." };
-    case "sin_conexion":
-      return { title: "No pudimos conectar la voz", detail: p.errorMessage || "Revise su conexión a internet e intente de nuevo." };
+        ? { word: "Hablando", spoken: "El asistente está hablando", tone: "agente" }
+        : { word: "Elija una respuesta", spoken: "Responda tocando una opción", tone: "rest" };
+    default:
+      if (p.thinking) return { word: "Pensando", spoken: "El asistente está pensando", tone: "agente" };
+      if (p.agentSpeaking) return { word: "Hablando", spoken: "El asistente está hablando", tone: "agente" };
+      if (p.muted) return { word: "Silenciado", spoken: "Micrófono silenciado. El asistente no le escucha.", tone: "rest" };
+      return { word: "Te escucho", spoken: "El asistente le escucha", tone: "persona" };
   }
 }
 
-export function CallView(props: CallViewProps) {
-  const { phase, purposeLabel, establishment, agentSpeaking, thinking, muted, seconds, captions, captionsVisible, busy, levels, actions } = props;
+const TONE_COLOR = { agente: "var(--vc-agent)", persona: "var(--vc-person)", rest: "var(--vc-rest)" } as const;
+
+export function CallView(props: CallViewProps & CallViewExtraProps) {
+  const { phase, establishment, agentSpeaking, thinking, muted, seconds, busy, levels, actions } = props;
+  const theme = props.theme ?? DEFAULT_VOICE_THEME;
   const talk = TALK.includes(phase);
   const live = phase === "activa" || phase === "guion";
-  const { title, detail } = statusCopy(props);
 
   // muted: the wave must not show the microphone, whatever the controller still feeds
   const waveLevels = useMemo<AudioLevels | null>(() => {
@@ -86,278 +89,362 @@ export function CallView(props: CallViewProps) {
 
   const speaker: "agente" | "persona" | null =
     phase === "activa" ? (agentSpeaking || thinking ? "agente" : "persona") : phase === "guion" ? (agentSpeaking ? "agente" : null) : null;
-  const waveActive =
-    phase === "conectando" || (phase === "activa" && !(muted && !agentSpeaking && !thinking)) || (phase === "guion" && agentSpeaking);
-  const glow = live && waveActive && speaker ? speaker : null;
+  const waveActive = (phase === "activa" && !(muted && !agentSpeaking && !thinking)) || (phase === "guion" && agentSpeaking);
+  const glow = talk && phase !== "finalizando" ? (waveActive && speaker ? speaker : "agente") : null;
 
   const showPerson = !!actions.talkToPerson && PERSON_OK.includes(phase) && !(phase === "ocupado" && busy?.kind === "otro_dispositivo");
+  // one key per screen: a new key replays the staggered entrance; the talk phases share one so the wave lives on
+  const stageKey = talk ? "talk" : phase === "ocupado" ? `ocupado-${busy?.kind ?? "capacidad"}` : phase;
 
   return (
     <div
       role="dialog"
       aria-label="Llamada del asistente automatizado"
-      className="@container absolute inset-0 z-20 flex flex-col overflow-hidden bg-[#10302f] text-white [&_:focus-visible]:outline-[#7ee0c9]"
+      data-voice-theme={theme}
+      className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-vc-bg text-vc-text [container-type:size]"
+      style={{ backgroundImage: "linear-gradient(to bottom, var(--vc-bg-2), var(--vc-bg) 62%)" }}
     >
-      {/* speaker glow: two fixed layers, only their opacity changes */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
+      {/* speaker wash behind the wave: two fixed layers, only their opacity changes */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[8%] h-[62%]">
         <div
-          className="absolute inset-x-0 top-[18%] h-[55%] bg-[radial-gradient(ellipse_at_center,rgba(126,224,201,0.20),transparent_65%)] transition-opacity duration-700 ease-out motion-reduce:transition-none"
-          style={{ opacity: glow === "agente" ? 1 : talk ? 0.35 : 0 }}
+          className="vc-wash absolute inset-0"
+          style={{ "--vc-wash-color": "var(--vc-agent)", opacity: glow === "agente" ? (waveActive ? 1 : 0.55) : 0 } as CSSProperties}
         />
         <div
-          className="absolute inset-x-0 top-[18%] h-[55%] bg-[radial-gradient(ellipse_at_center,rgba(246,193,119,0.17),transparent_65%)] transition-opacity duration-700 ease-out motion-reduce:transition-none"
-          style={{ opacity: glow === "persona" ? 1 : 0 }}
+          className="vc-wash absolute inset-0"
+          style={{ "--vc-wash-color": "var(--vc-person)", opacity: glow === "persona" ? 1 : 0 } as CSSProperties}
         />
       </div>
 
-      <Header
-        establishment={establishment}
-        purposeLabel={purposeLabel}
-        showPurpose={phase !== "entrante"}
-        duration={live || phase === "finalizando" ? formatDuration(seconds) : null}
-        muted={muted && live}
-      />
+      <TopLine establishment={establishment} duration={live || phase === "finalizando" ? formatDuration(seconds) : null} />
 
-      <main className="relative mx-auto flex min-h-0 w-full max-w-[600px] flex-1 flex-col px-5">
-        <div role="status" aria-live="polite" aria-atomic="true" className={`text-center ${phase === "guion" ? "pt-3" : talk ? "pt-4" : "pt-6"}`}>
-          {phase === "activa" && (
-            <span
-              aria-hidden
-              className="mb-2 inline-block size-2 rounded-full transition-colors duration-300"
-              style={{ background: muted && !agentSpeaking && !thinking ? "#ffffff55" : WAVE_COLOR[speaker ?? "agente"] }}
-            />
-          )}
-          <p className="text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em] @lg:text-3xl">{title}</p>
-          {detail && <p className="mx-auto mt-1.5 max-w-[34ch] text-pretty text-[15px] leading-snug text-white/75">{detail}</p>}
-        </div>
-
-        {talk && (
-          <div className={`relative -mx-5 shrink-0 @3xl:-mx-24 ${phase === "guion" ? "mt-1 h-14" : "mt-4 h-28 @lg:h-32 @3xl:h-40"}`}>
-            <VoiceWave levels={waveLevels} active={waveActive} speaker={speaker} />
-          </div>
-        )}
-
+      <main className="relative flex min-h-0 w-full flex-1 flex-col">
         {talk ? (
-          phase === "conectando" ? (
-            <div className="flex-1" />
-          ) : (
-            <CaptionsPanel captions={captions} visible={captionsVisible} onToggle={actions.toggleCaptions} live={live} />
-          )
+          <TalkStage {...props} speaker={speaker} waveActive={waveActive} waveLevels={waveLevels} theme={theme} />
         ) : (
-          // incoming, reconnect, busy and no connection: the emblem sits in the optical centre of the free space
-          <div className="flex flex-1 flex-col items-center justify-center pb-6">
-            {(phase === "entrante" || phase === "reconectar") && <Avatar ringing={phase === "entrante"} />}
-            {phase === "ocupado" && <BusyStage kind={busy?.kind ?? "capacidad"} position={busy?.position ?? null} />}
-            {phase === "sin_conexion" && <Emblem icon={<WifiOff className="size-9" aria-hidden />} />}
-          </div>
-        )}
-
-        {phase === "guion" && props.scriptOptions.length > 0 && (
-          <div role="group" aria-label="Opciones de respuesta" className="grid shrink-0 gap-2 pt-2">
-            {props.scriptOptions.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                disabled={!props.onScriptOption}
-                onClick={() => props.onScriptOption?.(o.id)}
-                className={`press min-h-[52px] rounded-2xl px-4 py-2 text-[17px] font-semibold leading-tight disabled:opacity-50 ${
-                  o.tone === "primary" ? "bg-[#7ee0c9] text-[#0b2b2a] active:bg-[#9be9d6]" : SOFT
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
+          <div key={stageKey} className="vc-enter mx-auto flex w-full max-w-[600px] flex-1 flex-col items-center justify-center px-6 pb-8 text-center">
+            <StaticStage {...props} />
           </div>
         )}
       </main>
 
-      <footer className="relative mx-auto w-full max-w-[600px] shrink-0 px-5 pb-[calc(0.875rem+env(safe-area-inset-bottom,0px))] pt-3">
-        {showPerson && (
-          <div className="mb-3 flex justify-center">
-            <button
-              type="button"
-              onClick={actions.talkToPerson}
-              className="press inline-flex min-h-12 items-center gap-2 rounded-full border border-white/25 px-5 text-[15px] font-semibold text-white active:bg-white/10"
-            >
-              <UserRound className="size-5" aria-hidden />
-              Hablar con una persona
-            </button>
+      <footer className="relative mx-auto w-full max-w-[600px] shrink-0 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-2">
+        <div key={stageKey} className="vc-enter">
+          <div style={{ "--i": 2 } as CSSProperties}>
+            <Controls {...props} />
           </div>
-        )}
-        <Controls {...props} />
-        {phase !== "finalizada" && (
-          <div className="mx-auto mt-4 flex w-fit max-w-full items-start gap-2 text-[13px] leading-snug text-white/75">
-            <ShieldCheck className="mt-px size-4 shrink-0 text-[#7ee0c9]" aria-hidden />
-            <ul className="space-y-0.5">
-              {SAFETY_LINES.map((l) => (
-                <li key={l}>{l}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+          {showPerson && (
+            <div className="mt-2 flex justify-center" style={{ "--i": 3 } as CSSProperties}>
+              <button
+                type="button"
+                onClick={actions.talkToPerson}
+                className="vc-pill inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-vc-text-3 underline decoration-vc-edge decoration-1 underline-offset-4"
+              >
+                <UserRound className="size-4" aria-hidden />
+                Hablar con una persona
+              </button>
+            </div>
+          )}
+          {phase !== "finalizada" && (
+            <p className="-mx-3 mt-1.5 text-balance text-center text-[12px] leading-snug text-vc-text-3 @md:text-[13px]" style={{ "--i": 4 } as CSSProperties}>
+              <ShieldCheck className="mr-1 inline size-4 align-[-3px] text-vc-icon" aria-hidden />
+              {CALL_SAFETY_LINE}
+            </p>
+          )}
+        </div>
       </footer>
     </div>
   );
 }
 
-function Header({
-  establishment,
-  purposeLabel,
-  showPurpose,
-  duration,
-  muted,
-}: {
-  establishment: string;
-  purposeLabel: string;
-  showPurpose: boolean;
-  duration: string | null;
-  muted: boolean;
-}) {
+/** One line: Demostración, the identification and the timer. Below ~28rem the identification drops to a
+ *  second, centred line so it is never cut. */
+function TopLine({ establishment, duration }: { establishment: string; duration: string | null }) {
   return (
-    <header className="relative mx-auto w-full max-w-[600px] shrink-0 px-5 pt-[calc(0.875rem+env(safe-area-inset-top,0px))]">
-      <div className="flex min-h-7 items-center justify-between gap-3">
-        <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">Demostración</span>
-        <div className="flex items-center gap-2">
-          {muted && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#d92d20]/25 px-2.5 py-1 text-xs font-semibold text-[#ffcdc7]">
-              <MicOff className="size-3.5" aria-hidden />
-              Silenciado
-            </span>
-          )}
-          {duration && (
-            <span className="text-sm font-semibold tabular-nums text-white/85" aria-label={`Duración ${duration}`}>
-              {duration}
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="mt-3 flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 text-[#7ee0c9]">
-          <Bot className="size-5" aria-hidden />
+    <header className="relative mx-auto w-full max-w-[920px] shrink-0 px-4 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 text-[13px] leading-tight">
+        <span className="col-start-1 row-start-1 justify-self-start rounded-full border border-vc-edge px-2.5 py-1 font-semibold text-vc-text-2">
+          Demostración
         </span>
-        <div className="min-w-0">
-          <p className="text-[15px] font-semibold leading-tight">{AGENT_IDENTIFICATION(establishment)}</p>
-          {showPurpose && <p className="truncate text-sm text-white/70">{purposeLabel}</p>}
-        </div>
+        <p className="col-span-3 col-start-1 row-start-2 text-center text-vc-text-2 @md:col-span-1 @md:col-start-2 @md:row-start-1">
+          {callIdentification(establishment)}
+        </p>
+        <span
+          className="col-start-3 row-start-1 min-w-[3.25rem] text-right text-[14px] font-semibold tabular-nums text-vc-text"
+          aria-label={duration ? `Duración ${duration}` : undefined}
+        >
+          {duration}
+        </span>
       </div>
     </header>
   );
 }
 
-function Avatar({ ringing }: { ringing: boolean }) {
-  return (
-    <div className="flex justify-center">
-      <div className={`relative grid size-28 place-items-center rounded-full bg-white/10 text-[#7ee0c9] ${ringing ? "ring-pulse" : ""}`}>
-        <Bot className="size-12" aria-hidden />
-      </div>
-    </div>
-  );
-}
+function TalkStage(
+  p: CallViewProps & {
+    speaker: "agente" | "persona" | null;
+    waveActive: boolean;
+    waveLevels: AudioLevels | null;
+    theme: VoiceTheme;
+  },
+) {
+  const state = talkState(p);
+  const guion = p.phase === "guion";
+  const last = p.captions.length ? p.captions[p.captions.length - 1] : null;
+  const showCaptions = p.phase !== "conectando";
 
-function Emblem({ icon, tone = "#7ee0c9" }: { icon: ReactNode; tone?: string }) {
   return (
-    <div className="flex justify-center">
-      <div className="grid size-20 place-items-center rounded-3xl bg-white/10" style={{ color: tone }}>
-        {icon}
+    <div className={`vc-enter flex min-h-0 flex-1 flex-col items-center ${guion ? "" : "justify-center pb-2"}`}>
+      {/* the wave: the protagonist. 38 % of the screen height (cqh of the call root) in the live call, smaller
+          when the script options need room */}
+      <div
+        className="relative min-h-24 w-full max-w-[1100px]"
+        style={{ flex: guion ? "0 1 22cqh" : "0 1 38cqh", "--i": 0 } as CSSProperties}
+      >
+        <VoiceWave
+          levels={p.waveLevels}
+          active={p.waveActive}
+          speaker={p.speaker}
+          theme={p.theme}
+          connecting={p.phase === "conectando"}
+          ending={p.phase === "finalizando"}
+        />
       </div>
-    </div>
-  );
-}
 
-function BusyStage({ kind, position }: { kind: "otro_dispositivo" | "capacidad"; position: number | null }) {
-  if (kind === "otro_dispositivo") return <Emblem icon={<MonitorSmartphone className="size-9" aria-hidden />} />;
-  return (
-    <div className="flex flex-col items-center">
-      <Emblem icon={<Hourglass className="size-9" aria-hidden />} tone="#f6c177" />
-      {position != null && position > 0 && (
-        <p className="mt-5 flex flex-col items-center">
-          <span className="text-sm text-white/75">Su lugar en la fila</span>
-          <span className="font-display text-5xl font-bold tabular-nums leading-none">{position}</span>
+      <div className="flex w-full max-w-[600px] flex-col items-center px-6" style={{ "--i": 1 } as CSSProperties}>
+        <p role="status" aria-live="polite" aria-atomic="true" className="flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="size-2.5 shrink-0 rounded-full transition-colors duration-300 motion-reduce:transition-none"
+            style={{ background: TONE_COLOR[state.tone] }}
+          />
+          <span key={state.word} aria-hidden className="vc-swap font-display text-[28px] font-bold leading-tight tracking-[-0.015em] @lg:text-[32px]">
+            {state.word}
+          </span>
+          <span className="sr-only">{state.spoken}</span>
         </p>
+
+        {showCaptions && (
+          <CaptionLine last={last} visible={p.captionsVisible} onToggle={p.actions.toggleCaptions} lines={guion ? 3 : 2} live={p.phase === "activa" || guion} />
+        )}
+      </div>
+
+      {guion && p.scriptOptions.length > 0 && (
+        <div
+          role="group"
+          aria-label="Opciones de respuesta"
+          className="mt-auto grid w-full max-w-[600px] gap-2 px-5 pb-3 pt-3"
+          style={{ "--i": 2 } as CSSProperties}
+        >
+          {p.scriptOptions.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              disabled={!p.onScriptOption}
+              onClick={() => p.onScriptOption?.(o.id)}
+              className={`vc-pill min-h-[52px] rounded-2xl px-4 py-2 text-[17px] font-semibold leading-tight disabled:opacity-50 ${
+                o.tone === "primary"
+                  ? "bg-vc-primary text-vc-on-primary active:bg-vc-primary-press"
+                  : "border border-vc-edge bg-vc-surface text-vc-text active:bg-vc-surface-press"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-function CaptionsPanel({
-  captions,
+/** Only the last sentence, clamped, with a small button to hide it. The space is reserved so nothing jumps. */
+function CaptionLine({
+  last,
   visible,
   onToggle,
+  lines,
   live,
 }: {
-  captions: Caption[];
+  last: Caption | null;
   visible: boolean;
   onToggle: () => void;
+  lines: 2 | 3;
   live: boolean;
 }) {
-  const listRef = useRef<HTMLOListElement>(null);
-  const last = captions.length ? captions[captions.length - 1] : null;
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [captions.length, last?.text, visible]);
-
   return (
-    <section aria-label="Subtítulos" className={`flex flex-1 flex-col ${visible ? "min-h-[104px]" : "min-h-0"}`}>
-      <div className="flex shrink-0 justify-end">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="press inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-white/85 active:bg-white/10"
-        >
-          {visible ? <CaptionsOff className="size-4" aria-hidden /> : <Captions className="size-4" aria-hidden />}
-          {visible ? "Ocultar subtítulos" : "Mostrar subtítulos"}
-        </button>
-      </div>
-      {visible && (
-        <ol
-          ref={listRef}
-          role="log"
-          aria-live="polite"
-          className="min-h-0 flex-1 basis-0 space-y-3 overflow-y-auto overscroll-contain pb-1 pt-5 [mask-image:linear-gradient(to_bottom,transparent,black_24px)]"
-        >
-          {captions.length === 0 && live && (
-            <li className="text-center text-[15px] text-white/65">Aquí aparecerá lo que digan usted y el asistente.</li>
-          )}
-          {captions.map((c) => (
-            <li key={c.id} className={`bubble-in transition-opacity duration-300 ${c.id === last?.id ? "opacity-100" : "opacity-70"}`}>
-              <p className="text-xs font-semibold" style={{ color: WAVE_COLOR[c.who] }}>
-                {c.who === "agente" ? "Asistente" : "Usted"}
-              </p>
-              <p className="text-[17px] leading-snug text-white">{c.text}</p>
-            </li>
+    <section aria-label="Subtítulos" className="mt-3 flex w-full max-w-[34rem] flex-col items-center">
+      <div className={`flex w-full flex-col items-center justify-start ${lines === 3 ? "min-h-[6.25rem]" : "min-h-[4.75rem]"}`}>
+        {visible &&
+          (last ? (
+            <div key={last.id} className="vc-swap w-full text-center" aria-live="polite">
+              <p className="text-[12.5px] font-semibold text-vc-text-3">{last.who === "agente" ? "Asistente" : "Usted"}</p>
+              <p className={`mt-0.5 text-pretty text-[18px] leading-snug text-vc-text ${lines === 3 ? "line-clamp-3" : "line-clamp-2"}`}>{last.text}</p>
+            </div>
+          ) : (
+            live && <p className="pt-4 text-center text-[15px] text-vc-text-3">Aquí verá lo último que se dijo.</p>
           ))}
-        </ol>
-      )}
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={!visible}
+        className="vc-pill mt-1 inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-vc-text-2 active:bg-vc-surface"
+      >
+        {visible ? <CaptionsOff className="size-4" aria-hidden /> : <Captions className="size-4" aria-hidden />}
+        {visible ? "Ocultar subtítulos" : "Mostrar subtítulos"}
+      </button>
     </section>
   );
 }
 
+function StaticStage(p: CallViewProps) {
+  const i = (n: number) => ({ "--i": n }) as CSSProperties;
+  switch (p.phase) {
+    case "entrante":
+      return (
+        <>
+          <div style={i(0)} className="relative grid size-32 place-items-center @lg:size-36">
+            <div aria-hidden className="vc-rings absolute inset-0">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="relative grid size-full place-items-center rounded-full border border-vc-edge bg-vc-surface text-vc-icon">
+              <Bot className="size-14" aria-hidden />
+            </div>
+          </div>
+          <p style={i(1)} className="mt-12 text-[15px] text-vc-text-2">
+            Llamada entrante
+          </p>
+          <p style={i(2)} className="mt-1 text-balance font-display text-[30px] font-bold leading-tight tracking-[-0.015em]">
+            {p.purposeLabel}
+          </p>
+        </>
+      );
+    case "reconectar":
+      return (
+        <Message
+          icon={<Unplug className="size-10" aria-hidden />}
+          title="La llamada sigue abierta"
+          detail="Se cortó la voz. Puede volver a conectar o colgar."
+        />
+      );
+    case "finalizada":
+      return (
+        <Message
+          icon={<Check className="size-10" aria-hidden />}
+          title="Llamada finalizada"
+          detail={p.seconds > 0 ? `Duración ${formatDuration(p.seconds)}` : null}
+        />
+      );
+    case "ocupado":
+      if (p.busy?.kind === "otro_dispositivo")
+        return (
+          <Message
+            icon={<MonitorSmartphone className="size-10" aria-hidden />}
+            title="Llamada abierta en otro dispositivo"
+            detail="Para no tener dos conversaciones, aquí no se abre otra."
+          />
+        );
+      return (
+        <>
+          <Emblem tone="var(--vc-warn)" style={i(0)}>
+            <Hourglass className="size-10" aria-hidden />
+          </Emblem>
+          <p style={i(1)} role="status" className="mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
+            Todas las líneas están ocupadas
+          </p>
+          {p.busy?.position != null && p.busy.position > 0 && (
+            <p style={i(2)} className="mt-4 flex flex-col items-center">
+              <span className="text-[14px] text-vc-text-2">Su lugar en la fila</span>
+              <span className="font-display text-6xl font-bold tabular-nums leading-none">{p.busy.position}</span>
+            </p>
+          )}
+          <p style={i(3)} className="mt-4 max-w-[30ch] text-pretty text-[15px] leading-snug text-vc-text-2">
+            Seguimos intentando. También puede seguir por chat.
+          </p>
+        </>
+      );
+    case "sin_conexion":
+      return (
+        <Message
+          icon={<WifiOff className="size-10" aria-hidden />}
+          tone="var(--vc-warn)"
+          title="No pudimos conectar la voz"
+          detail={p.errorMessage || "Revise su conexión a internet e intente de nuevo."}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+function Message({ icon, title, detail, tone }: { icon: ReactNode; title: string; detail: string | null; tone?: string }) {
+  return (
+    <>
+      <Emblem tone={tone} style={{ "--i": 0 } as CSSProperties}>
+        {icon}
+      </Emblem>
+      <p role="status" style={{ "--i": 1 } as CSSProperties} className="mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
+        {title}
+      </p>
+      {detail && (
+        <p style={{ "--i": 2 } as CSSProperties} className="mt-2 max-w-[32ch] text-pretty text-[15px] leading-snug text-vc-text-2">
+          {detail}
+        </p>
+      )}
+    </>
+  );
+}
+
+function Emblem({ children, tone = "var(--vc-icon)", style }: { children: ReactNode; tone?: string; style?: CSSProperties }) {
+  return (
+    <div className="grid size-24 place-items-center rounded-[30px] border border-vc-edge bg-vc-surface" style={{ ...style, color: tone }}>
+      {children}
+    </div>
+  );
+}
+
+type RoundTone = "danger" | "accept" | "soft" | "toggle";
+const ROUND: Record<RoundTone, string> = {
+  danger: "bg-vc-danger text-vc-on-danger active:bg-vc-danger-press",
+  accept: "bg-vc-accept text-vc-on-accept active:bg-vc-accept-press",
+  soft: "border border-vc-edge bg-vc-surface text-vc-text active:bg-vc-surface-press",
+  toggle: "bg-vc-toggle text-vc-on-toggle",
+};
+
 function RoundButton({
   label,
   onClick,
-  className,
+  tone,
   children,
   big,
+  pressed,
+  nudge,
 }: {
   label: string;
   onClick: () => void;
-  className: string;
+  tone: RoundTone;
   children: ReactNode;
   big?: boolean;
+  pressed?: boolean;
+  nudge?: boolean;
 }) {
   return (
-    <div className="flex w-[100px] flex-col items-center gap-1.5">
-      <button
+    <div className="flex w-[92px] flex-col items-center gap-1.5 @lg:w-[104px]">
+      {/* every button sits in a slot as tall as the big one, so buttons share a centre line and labels a top line */}
+      <div className="grid h-[76px] place-items-center">
+        <button
         type="button"
         aria-label={label}
+        aria-pressed={pressed}
         onClick={onClick}
-        className={`press grid place-items-center rounded-full ${big ? "size-[72px]" : "size-16"} ${className}`}
+        className={`vc-round grid place-items-center rounded-full ${big ? "size-[76px]" : "size-16"} ${ROUND[tone]} ${nudge ? "vc-nudge" : ""}`}
       >
-        {children}
-      </button>
-      <span className="text-center text-[13px] font-medium leading-tight text-white/85" aria-hidden>
+          {children}
+        </button>
+      </div>
+      <span className="text-center text-[13px] font-medium leading-tight text-vc-text-2" aria-hidden>
         {label}
       </span>
     </div>
@@ -367,16 +454,12 @@ function RoundButton({
 function PillButton({ label, onClick, tone, icon }: { label: string; onClick: () => void; tone: "primary" | "soft" | "danger"; icon: ReactNode }) {
   const cls =
     tone === "primary"
-      ? "bg-[#7ee0c9] text-[#0b2b2a] active:bg-[#9be9d6]"
+      ? "bg-vc-primary text-vc-on-primary active:bg-vc-primary-press"
       : tone === "danger"
-        ? "bg-[#d92d20] text-white active:bg-[#b42318]"
-        : SOFT;
+        ? "bg-vc-danger text-vc-on-danger active:bg-vc-danger-press"
+        : "border border-vc-edge bg-vc-surface text-vc-text active:bg-vc-surface-press";
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`press flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-4 text-[17px] font-semibold ${cls}`}
-    >
+    <button type="button" onClick={onClick} className={`vc-pill flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-4 text-[17px] font-semibold ${cls}`}>
       {icon}
       {label}
     </button>
@@ -385,19 +468,18 @@ function PillButton({ label, onClick, tone, icon }: { label: string; onClick: ()
 
 function Controls(p: CallViewProps) {
   const a = p.actions;
-  const chat = a.continueByChat && <MessageSquareText className="size-6" aria-hidden />;
 
   switch (p.phase) {
     case "entrante":
       return (
-        <Row>
+        <Row wide>
           {a.reject && (
-            <RoundButton label="Rechazar" onClick={a.reject} className={RED} big>
+            <RoundButton label="Rechazar" onClick={a.reject} tone="danger" big>
               <PhoneOff className="size-8" aria-hidden />
             </RoundButton>
           )}
           {a.answer && (
-            <RoundButton label="Contestar" onClick={a.answer} className={GREEN} big>
+            <RoundButton label="Contestar" onClick={a.answer} tone="accept" big nudge>
               <Phone className="size-8" aria-hidden />
             </RoundButton>
           )}
@@ -406,12 +488,12 @@ function Controls(p: CallViewProps) {
     case "reconectar": {
       const reconnect = a.answer ?? a.retry;
       return (
-        <Row>
-          <RoundButton label="Colgar" onClick={a.hangUp} className={RED} big>
+        <Row wide>
+          <RoundButton label="Colgar" onClick={a.hangUp} tone="danger" big>
             <PhoneOff className="size-8" aria-hidden />
           </RoundButton>
           {reconnect && (
-            <RoundButton label="Volver a conectar" onClick={reconnect} className={GREEN} big>
+            <RoundButton label="Volver a conectar" onClick={reconnect} tone="accept" big>
               <RotateCcw className="size-8" aria-hidden />
             </RoundButton>
           )}
@@ -424,26 +506,22 @@ function Controls(p: CallViewProps) {
       return (
         <Row>
           {a.toggleMute && p.phase !== "conectando" && (
-            <RoundButton
-              label={p.muted ? "Activar micrófono" : "Silenciar"}
-              onClick={a.toggleMute}
-              className={p.muted ? "bg-white text-[#10302f]" : SOFT}
-            >
+            <RoundButton label="Silenciar" onClick={a.toggleMute} tone={p.muted ? "toggle" : "soft"} pressed={p.muted}>
               {p.muted ? <MicOff className="size-7" aria-hidden /> : <Mic className="size-7" aria-hidden />}
             </RoundButton>
           )}
-          <RoundButton label="Colgar" onClick={a.hangUp} className={RED} big>
+          <RoundButton label="Colgar" onClick={a.hangUp} tone="danger" big>
             <PhoneOff className="size-8" aria-hidden />
           </RoundButton>
           {a.continueByChat && (
-            <RoundButton label="Seguir por chat" onClick={a.continueByChat} className={SOFT}>
-              {chat}
+            <RoundButton label="Chat" onClick={a.continueByChat} tone="soft">
+              <MessageSquareText className="size-7" aria-hidden />
             </RoundButton>
           )}
         </Row>
       );
     case "finalizando":
-      return <div className="h-4" />;
+      return <div className="h-[100px]" />;
     case "finalizada":
       return (
         <Stack>
@@ -454,8 +532,7 @@ function Controls(p: CallViewProps) {
         </Stack>
       );
     case "ocupado":
-      if (p.busy?.kind === "otro_dispositivo")
-        return <Stack>{a.leave && <PillButton label="Cerrar" onClick={a.leave} tone="soft" icon={null} />}</Stack>;
+      if (p.busy?.kind === "otro_dispositivo") return <Stack>{a.leave && <PillButton label="Cerrar" onClick={a.leave} tone="soft" icon={null} />}</Stack>;
       return (
         <Stack>
           {a.continueByChat && (
@@ -477,8 +554,8 @@ function Controls(p: CallViewProps) {
   }
 }
 
-function Row({ children }: { children: ReactNode }) {
-  return <div className="flex items-start justify-center gap-2 @lg:gap-8">{children}</div>;
+function Row({ children, wide }: { children: ReactNode; wide?: boolean }) {
+  return <div className={`flex items-start justify-center ${wide ? "gap-16 @lg:gap-24" : "gap-3 @lg:gap-10"}`}>{children}</div>;
 }
 
 function Stack({ children }: { children: ReactNode }) {
