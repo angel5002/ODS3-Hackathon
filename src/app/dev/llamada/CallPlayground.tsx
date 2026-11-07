@@ -31,7 +31,7 @@ function fillVoice(buf: Uint8Array, t: number, seed: number, gain: number) {
 const CONVERSATION: { who: Caption["who"]; text: string }[] = [
   {
     who: "agente",
-    text: "Hola, le habla el asistente automatizado del Hospital de demostración. Le llamo para confirmar su cita de Cardiología del jueves 19 a las 9:00.",
+    text: "Hola, le habla el asistente automatizado del Hospital Mirasur. Le llamo para confirmar su cita de Cardiología del jueves 19 a las 9:00.",
   },
   { who: "persona", text: "Sí, ahí estaré." },
   { who: "agente", text: "Perfecto, queda confirmada. Lleve su documento de identidad y llegue 20 minutos antes." },
@@ -167,7 +167,7 @@ export function CallPlayground({
   const props: CallViewProps = {
     phase,
     purposeLabel: "Confirmación de su cita",
-    establishment: "Hospital de demostración",
+    establishment: "Hospital Mirasur",
     agentSpeaking,
     thinking,
     muted,
@@ -228,21 +228,20 @@ export function CallPlayground({
         </div>
       </div>
     ) : frame === "pedir" ? (
-      // same boxes as /pedir-cita (PedirCita): app bar, notice, sound bar and the voice view <main>
-      <div className="flex h-full justify-center bg-[#cfd8d4] sm:py-6">
-        <div className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-paper sm:rounded-[28px] sm:shadow-xl">
-          <header className="flex items-center gap-2 bg-brand px-3 pb-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))] text-white">
-            <span className="grid size-9 place-items-center" aria-hidden>
+      // same boxes as /pedir-cita (PedirCita) in the voice view: the app bar and the voice view <main>
+      // (no demo notice and no sound button there since E5 estilo)
+      <div className="flex h-full justify-center bg-paper sm:py-6">
+        <div className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-surface sm:rounded-2xl sm:border sm:border-line">
+          <header className="flex items-center gap-2.5 border-b border-line px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
+            <span className="grid size-11 place-items-center rounded-md border border-line-strong" aria-hidden>
               ←
             </span>
             <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate font-semibold">Llamada con el asistente</p>
-              <p className="truncate text-xs text-white/75">Usted aparece como «Cóndor 267»</p>
+              <p className="truncate text-[17px] font-bold">Llamada con el asistente</p>
+              <p className="truncate text-[13px] text-muted">Usted aparece como «Cóndor 267»</p>
             </div>
           </header>
-          <p className="bg-[#fff8e1] px-3 py-1.5 text-[11px] leading-snug text-[#6b4e00]">{DISCLAIMER} Use un nombre ficticio.</p>
-          <p className="bg-[#10302f] px-3 py-2.5 text-center text-sm font-semibold text-white">Activar sonido y llamadas</p>
-          <main className="relative flex flex-1 flex-col p-4">{screen}</main>
+          <main className="relative flex flex-1 flex-col">{screen}</main>
         </div>
       </div>
     ) : (

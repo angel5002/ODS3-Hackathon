@@ -234,8 +234,8 @@ function Scenario({ params }: { params?: Record<string, number> }) {
         r ≈ <strong className="font-display text-3xl tabular-nums text-brand">{Math.round(r * 1000) / 10} %</strong> → unas{" "}
         <strong className="tabular-nums">{num(Math.round(annual / 100) * 100)}</strong> citas al año (106,100 × r)
       </p>
-      <div className="relative mt-3 h-3 rounded-full bg-sunken" role="img" aria-label={`r frente al umbral de ${(breakeven * 100).toFixed(1)} %`}>
-        <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (r / 0.2) * 100)}%` }} />
+      <div className="relative mt-3 h-3 rounded-md bg-sunken" role="img" aria-label={`r frente al umbral de ${(breakeven * 100).toFixed(1)} %`}>
+        <div className="h-full rounded-md bg-brand" style={{ width: `${Math.min(100, (r / 0.2) * 100)}%` }} />
         <div className="absolute inset-y-[-4px] w-0.5 bg-risk-alto" style={{ left: `${(breakeven / 0.2) * 100}%` }} />
       </div>
       <p className="mt-1.5 text-xs text-muted">
