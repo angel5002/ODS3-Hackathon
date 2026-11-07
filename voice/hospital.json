@@ -1,0 +1,4 @@
+{
+  "_comment": "Nombre del hospital en UN solo lugar: lo usan las pantallas de llamada (src/lib/voice/hospital.ts) y los textos de los 4 agentes de voz (scripts/voice-sync.mjs reemplaza %HOSPITAL% en voice/agents/*.json). Cambiarlo aquí, luego npm run voice:sync y desplegar. No debe ser el nombre de un hospital real.",
+  "name": "Hospital Mirasur"
+}

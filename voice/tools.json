@@ -40,8 +40,9 @@
     "required": ["patient_name", "document_type", "age", "specialty", "referral", "reason", "channel", "short_notice_ok"]
   },
   "transfer_to_human": {
-    "description": "Pide que una persona del equipo de citas contacte al paciente.",
-    "params": { "reason": { "type": "string", "description": "Motivo breve" } }
+    "description": "Pide que una persona del equipo de citas contacte al paciente. Úsala en cuanto la persona lo pida y después termina la llamada con end_call.",
+    "params": { "reason": { "type": "string", "description": "Motivo breve" } },
+    "interruption_mode": "disable_during_tool_and_turn"
   },
   "flag_alarm": {
     "description": "Signos de alarma: avisa al equipo y registra la derivación a emergencia.",

@@ -65,7 +65,23 @@ export type CallViewProps = {
   scriptOptions: ScriptOption[];
   onScriptOption?: (id: string) => void;
   actions: CallActions;
+  /**
+   * Noisy-room mode ("modo sala ruidosa", final day): present only when the call must use push-to-talk. The
+   * view then draws a "Mantener para hablar" button: onPointerDown → start(), onPointerUp / onPointerCancel /
+   * onPointerLeave → end(); `talking` is true while it is held. The microphone is muted otherwise.
+   * The controller sends it only when PUSH_TO_TALK_BUTTON_READY is true (see below). Optional, additive.
+   */
+  pushToTalk?: PushToTalk;
 };
+
+export type PushToTalk = { talking: boolean; start: () => void; end: () => void };
+
+/**
+ * Set to true by the UI track in the same change that draws the "Mantener para hablar" button from
+ * CallViewProps.pushToTalk. While false, the controllers never mute the microphone for push-to-talk (a muted
+ * microphone with no button would leave the person unable to speak), even if the noisy-room mode is on.
+ */
+export const PUSH_TO_TALK_BUTTON_READY = false;
 
 export type VoiceWaveProps = {
   levels: AudioLevels | null;

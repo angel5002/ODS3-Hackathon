@@ -33,6 +33,9 @@ async function el(path, init = {}) {
 
 const read = (p) => JSON.parse(readFileSync(new URL(`../${p}`, import.meta.url), "utf8"));
 const common = read("voice/agents/common.json");
+// the hospital's name lives in ONE place (voice/hospital.json): %HOSPITAL% in the agents' texts
+const HOSPITAL = read("voice/hospital.json").name;
+const fill = (text) => text.replaceAll("%HOSPITAL%", HOSPITAL);
 const toolsDef = read("voice/tools.json");
 const agentFiles = readdirSync(new URL("../voice/agents/", import.meta.url)).filter((f) => f.startsWith("asistia-"));
 
@@ -79,6 +82,7 @@ for (const [name, def] of Object.entries(toolsDef)) {
     name,
     description: def.description,
     response_timeout_secs: 10,
+    ...(def.interruption_mode ? { interruption_mode: def.interruption_mode } : {}),
     api_schema: {
       url: `${BASE}/api/voice/tools/${name}`,
       method: "POST",
@@ -107,20 +111,33 @@ for (const file of agentFiles) {
     tags: ["asistia", "demo"],
     conversation_config: {
       agent: {
-        first_message: a.first_message,
+        first_message: fill(a.first_message),
         language: common.language,
+        disable_first_message_interruptions: !!common.disable_first_message_interruptions,
         dynamic_variables: { dynamic_variable_placeholders: common.dynamic_variables },
         prompt: {
-          prompt: `${common.base_prompt}\n\n${a.task}`,
+          prompt: fill(`${common.base_prompt}\n\n${a.task}`),
           llm: common.llm,
           temperature: 0.2,
           tool_ids: a.tools.map((t) => toolIds[t]).filter(Boolean),
-          built_in_tools: { end_call: { type: "system", name: "end_call", description: "", params: { system_tool_type: "end_call" } } },
+          built_in_tools: {
+            end_call: {
+              type: "system",
+              name: "end_call",
+              description: "",
+              ...(common.end_call_interruption_mode ? { interruption_mode: common.end_call_interruption_mode } : {}),
+              params: { system_tool_type: "end_call" },
+            },
+          },
         },
       },
-      tts,
-      conversation: { max_duration_seconds: common.max_duration_seconds },
-      turn: { silence_end_call_timeout: common.silence_end_call_timeout },
+      tts: { ...tts, ...(common.tts_expressive_mode === undefined ? {} : { expressive_mode: common.tts_expressive_mode }) },
+      conversation: {
+        max_duration_seconds: common.max_duration_seconds,
+        // without "interruption" the person's voice (and the phone's own echo) cannot cut the agent mid-sentence
+        ...(common.client_events ? { client_events: common.client_events.filter((e) => common.interruptions !== false || e !== "interruption") } : {}),
+      },
+      turn: { silence_end_call_timeout: common.silence_end_call_timeout, ...(common.turn_timeout ? { turn_timeout: common.turn_timeout } : {}) },
     },
     platform_settings: {
       auth: { enable_auth: true, allowlist: common.allowed_hosts.map((hostname) => ({ hostname })) },
