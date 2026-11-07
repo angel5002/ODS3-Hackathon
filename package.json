@@ -21,7 +21,7 @@
     "test:rules": "node scripts/dev/rules-v4.mjs",
     "test:phones": "node scripts/dev/check-phones.mjs",
     "test:reset": "node scripts/dev/reset3.mjs",
-    "test:unit": "node --test tests/voice-machine.test.ts tests/priority-v51.test.ts tests/chat-recovery.test.ts",
+    "test:unit": "node --test tests/voice-machine.test.ts tests/priority-v51.test.ts tests/chat-recovery.test.ts tests/jury.test.ts",
     "test:race": "node scripts/dev/race-v5.mjs",
     "test:priority": "node scripts/dev/priority-v51.mjs",
     "check:secrets": "node scripts/dev/check-secrets.mjs"

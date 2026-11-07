@@ -6,6 +6,8 @@ import { demoNowMin } from "@/lib/labels";
 import { broadcast, rpc, serverDb } from "@/lib/supabase/server";
 import { scrubReason } from "@/lib/scrub";
 import type { DemoState, Status } from "@/lib/types";
+import { juryFail } from "@/lib/jury/server";
+import { isJuryToken } from "@/lib/jury/tokens";
 
 const STAFF = "Admisión";
 const MANUAL: Status[] = ["confirmada", "liberada", "sin_respuesta", "derivada_a_persona", "pendiente"];
@@ -165,11 +167,63 @@ export async function POST(req: Request) {
       case "end_call":
         await voice.updateCall(Number(body.callId), "finalizada", "Terminada desde el panel (usar simulado)");
         return ok();
+
+      // ---------------------------------------------------------------- E5 final: jury cards (docs/jurado.md)
+      case "jury_prepare":
+      case "jury_categorize":
+      case "jury_offer":
+      case "jury_close":
+      case "jury_rearm":
+        return await juryAction(body, actor);
       default:
         return fail("unknown action");
     }
   } catch (e) {
     return fail(e);
+  }
+}
+
+// One click each in /demo. The person decides: categorizing calls the regulator's regulate(), the offer is
+// approve_offer_v51() (candidates in priority order) and closing is close_offer_v51(). Errors in plain words.
+async function juryAction(body: Record<string, unknown>, actor: string) {
+  const token = isJuryToken(body.token) ? body.token : null;
+  try {
+    switch (body.action) {
+      case "jury_prepare":
+        return ok({ cards: await rpc<number>("jury_prepare") });
+      case "jury_categorize": {
+        if (!["P1", "P2", "P3", "P4"].includes(String(body.category))) return juryFail(new Error("invalid category"));
+        let id = Number(body.requestId);
+        if (!Number.isFinite(id) || id <= 0) {
+          const { data } = await serverDb().from("requests").select("id").eq("code", String(body.code ?? "")).maybeSingle();
+          if (!data) return juryFail(new Error("jury request missing"), 404);
+          id = data.id;
+        }
+        await rpc("jury_categorize", { p_request: id, p_category: body.category, p_actor: body.actor ? actor : "Regulador" });
+        return ok({ requestId: id });
+      }
+      case "jury_offer":
+        if (!token) return juryFail(new Error("jury card not found"), 404);
+        return ok({ offerId: await rpc<number>("jury_offer", { p_token: token, p_actor: actor }) });
+      case "jury_close":
+        if (!token) return juryFail(new Error("jury card not found"), 404);
+        return ok({ assignmentId: await rpc<number | null>("jury_close", { p_token: token, p_actor: actor }) });
+      case "jury_rearm": {
+        // one card, or every printed card (body.all) — never the rest of the demo
+        const tokens = token
+          ? [token]
+          : body.all
+            ? ((await serverDb().from("jury_cards").select("token").eq("is_test", false).order("sort")).data ?? []).map((c) => c.token as string)
+            : [];
+        if (!tokens.length) return juryFail(new Error("jury card not found"), 404);
+        for (const t of tokens) await rpc("jury_rearm", { p_token: t });
+        await broadcast("bulk");
+        return ok({ cards: tokens.length });
+      }
+    }
+    return fail("unknown action");
+  } catch (e) {
+    return juryFail(e);
   }
 }
 

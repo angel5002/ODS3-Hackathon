@@ -7,6 +7,12 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { themeColor: "#ffffff" };
 
-export default function PedirCitaPage() {
+type Search = Record<string, string | string[] | undefined>;
+
+// E5 final: /pedir-cita?canal=chat is the QR shown to the audience on the big screen. It enters only by chat
+// (no voice: the voice lines are kept for the jury's cards) and opens the conversation directly.
+export default async function PedirCitaPage({ searchParams }: { searchParams: Promise<Search> }) {
+  const canal = (await searchParams).canal;
+  if ((Array.isArray(canal) ? canal[0] : canal) === "chat") return <PedirCita channels={["chat"]} start="chat" />;
   return <PedirCita />;
 }

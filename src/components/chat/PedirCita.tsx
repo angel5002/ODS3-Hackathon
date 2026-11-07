@@ -30,8 +30,13 @@ export type Msg = { id: number; direction: "saliente" | "entrante"; kind: string
 type ChatData = { alias: string; topic: string; consent: boolean; linkedName: string | null; messages: Msg[]; call: Call | null };
 export type View = "inicio" | "chat" | "voz" | "formulario";
 
-export function PedirCita() {
-  const [view, setView] = useState<View>("inicio");
+/** E5 final: `jury` ties the chat session to a jury card (/j/<token>); `channels` limits the ways in
+ *  (/pedir-cita?canal=chat for the audience QR: no voice); `start` opens a view directly. All optional:
+ *  without them the page behaves exactly as before. */
+export type PedirCitaProps = { jury?: string; channels?: View[]; start?: View };
+
+export function PedirCita({ jury, channels, start }: PedirCitaProps = {}) {
+  const [view, setView] = useState<View>(start ?? "inicio");
   const [data, setData] = useState<ChatData | null>(null);
   const [expired, setExpired] = useState(false);
   const [sound, setSound] = useState(false);
@@ -43,7 +48,7 @@ export function PedirCita() {
   const recoveries = useRef(0);
   const expiredRef = useRef(false);
   const ensureSession = useCallback(() => {
-    ensuring.current ??= post<{ topic: string }>("/api/chat/session", {})
+    ensuring.current ??= post<{ topic: string }>("/api/chat/session", jury ? { jury } : {})
       .catch((e) => {
         console.info("[chat] no se pudo crear la sesión", (e as Error).message);
         return null;
@@ -52,7 +57,7 @@ export function PedirCita() {
         setTimeout(() => (ensuring.current = null), 0);
       });
     return ensuring.current;
-  }, []);
+  }, [jury]);
 
   const load = useCallback(async () => {
     if (expiredRef.current) return;
@@ -138,9 +143,9 @@ export function PedirCita() {
       />
       {expired && <ExpiredNotice onRestart={safeReload} />}
 
-      {!expired && view === "inicio" && <Home onPick={setView} sound={sound ? null : <SoundButton onEnable={enableSound} />} />}
+      {!expired && view === "inicio" && <Home onPick={setView} channels={channels} sound={sound ? null : <SoundButton onEnable={enableSound} />} />}
       {!expired && view === "chat" && data && <ChatView data={data} reload={load} sound={sound ? null : <SoundButton onEnable={enableSound} />} />}
-      {!expired && view === "voz" && <VoiceRegister ready={!!data} onDone={() => setView("chat")} />}
+      {!expired && view === "voz" && <VoiceRegister ready={!!data} jury={jury} onDone={() => setView("chat")} />}
       {!expired && view === "formulario" && (
         <FormWrapper>
           <RegisterForm
@@ -274,12 +279,13 @@ export function FormWrapper({ children }: { children: ReactNode }) {
   );
 }
 
-export function Home({ onPick, sound }: { onPick: (v: View) => void; sound?: ReactNode }) {
-  const items = [
+export function Home({ onPick, sound, channels }: { onPick: (v: View) => void; sound?: ReactNode; channels?: View[] }) {
+  const all = [
     { id: "chat" as const, icon: MessageCircle, title: "Chatear con el asistente", text: "Le hace unas preguntas y registra su solicitud en unos minutos." },
     { id: "voz" as const, icon: Mic, title: "Hablar con el asistente", text: "Una llamada de voz aquí mismo, en el navegador. Necesita el micrófono." },
     { id: "formulario" as const, icon: ClipboardList, title: "Formulario", text: "El mismo formulario de la ventanilla del hospital." },
   ];
+  const items = channels ? all.filter((i) => channels.includes(i.id)) : all;
   return (
     <main className="vc-enter flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-6">
       <h1 style={stagger(0)} className="text-balance text-[28px] font-bold leading-tight text-vc-text">
@@ -454,7 +460,7 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
 /** Registration by voice in the browser with the asistia-registro agent (fallback: chat or form).
  *  E5: waits until the anonymous chat session exists (`ready`), follows the voice state machine (one session,
  *  idempotent start, busy and queue states) and retries once if the session was not ready yet. */
-function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }) {
+function VoiceRegister({ onDone, ready, jury }: { onDone: () => void; ready: boolean; jury?: string }) {
   const [vs, dispatch] = useReducer(voiceReducer, initialVoiceState);
   const [live, setLive] = useState<{ session: VoiceSession; voiceSessionId: string } | null>(null);
   const [callId, setCallId] = useState<number | null>(null);
@@ -487,13 +493,13 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
   };
 
   async function request(id: string): Promise<R> {
-    const body = { mode: "registro", diag: id, callId: callRef.current ?? undefined, queueId: queueId.current };
+    const body = { mode: "registro", diag: id, callId: callRef.current ?? undefined, queueId: queueId.current, jury };
     try {
       return await post<R>("/api/voice/session", body);
     } catch (e) {
       // the chat session may still be on its way: create it (idempotent) and retry once
       voiceDiag(id, "session.reintento", { message: (e as Error).message.slice(0, 120) });
-      await post("/api/chat/session", {}).catch(() => {});
+      await post("/api/chat/session", jury ? { jury } : {}).catch(() => {});
       return post<R>("/api/voice/session", body);
     }
   }

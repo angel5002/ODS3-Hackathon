@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { fail } from "@/lib/api";
 import { rpc, serverDb } from "@/lib/supabase/server";
 import { demoOverview } from "./overview";
+import { buildJuryOverview } from "@/lib/jury/overview";
+import { jurySnapshot } from "@/lib/jury/server";
 
 export const dynamic = "force-dynamic";
 
@@ -110,6 +112,10 @@ export async function GET(req: Request) {
         return NextResponse.json(await demoOverview());
       case "live":
         return NextResponse.json(await rpc("live_overview"));
+      case "jurado":
+        // E5 final: what the jury does with their cards (JuryOverview, src/lib/demo/contract.ts). Read only.
+        // ?test=1 also shows the temporary cards of tests/e2e/jurado_circuito.py.
+        return NextResponse.json(buildJuryOverview(await jurySnapshot(url.searchParams.get("test") === "1")));
       case "params": {
         const [{ data }, { data: rule }] = await Promise.all([
           db.from("params").select("*").order("sort"),
