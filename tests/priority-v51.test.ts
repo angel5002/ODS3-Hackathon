@@ -56,9 +56,9 @@ test("lexicographic: a P3 at 90 % never outranks a P2 at 50 %", () => {
   assert.ok(compareV51(p2, p3) < 0, "P2 goes first");
   assert.deepEqual([p3, p2].sort(compareV51).map((r) => r.id), [2, 1]);
   assert.ok(sortKeyV51("P2", 45) > sortKeyV51("P3", 162));
-  // even at the extremes: P3 at 100 % (21) below P2 at 0 % (30); P4 at 100 % below P3 at 0 %
-  assert.equal(sortKeyV51("P3", 1000), 21);
-  assert.equal(sortKeyV51("P2", 0), 30);
+  // even at the extremes: a P3 waiting 1000 days (fraction 5.6) stays below a P2 at 0 %
+  assert.ok(sortKeyV51("P3", 1000) < sortKeyV51("P2", 0));
+  assert.equal(sortKeyV51("P2", 0), 3000);
   assert.ok(compareV51(req(1, "P1", 0), req(2, "P2", 1000)) < 0);
   assert.ok(compareV51(req(1, "P4", 1000), req(2, "P3", 0)) > 0);
 });
@@ -66,7 +66,7 @@ test("lexicographic: a P3 at 90 % never outranks a P2 at 50 %", () => {
 test("same category: the higher deadline fraction wins", () => {
   assert.ok(compareV51(req(1, "P2", 62), req(2, "P2", 40)) < 0, "Ana 0.69 before Julio 0.44");
   assert.ok(sortKeyV51("P2", 62) > sortKeyV51("P2", 40));
-  assert.equal(sortKeyV51("P2", 62), 30.6889);
+  assert.equal(sortKeyV51("P2", 62), 3000.6889);
 });
 
 test("no bonuses: first visit and preferential care do not exist in the v5.1 order", () => {
@@ -128,4 +128,14 @@ test("a very overdue P3 (fraction 12) never outranks a P2 at fraction 0.1", () =
   assert.ok(sortKeyV51("P2", 9) > sortKeyV51("P3", 2160), "P2 key above the P3 key");
   assert.ok(compareV51(p2, p3) < 0, "P2 goes first");
   assert.deepEqual([p3, p2].sort(compareV51).map((r) => r.id), [2, 1]);
+});
+
+test("two overdue P2: fraction 3.0 goes before fraction 1.2 (no tie at the 100 % cap)", () => {
+  const a = req(1, "P2", 108, "2023-07-01"); // 108 / 90 = 1.2
+  const b = req(2, "P2", 270, "2023-07-01"); // 270 / 90 = 3.0 (same first-attempt date on purpose: the fraction decides)
+  assert.equal(priorityV51(108, 90), 1, "the displayed value stays capped at 100 %");
+  assert.equal(priorityV51(270, 90), 1);
+  assert.ok(sortKeyV51("P2", 270) > sortKeyV51("P2", 108), "the key is not capped");
+  assert.ok(compareV51(b, a) < 0, "fraction 3.0 first");
+  assert.deepEqual([a, b].sort(compareV51).map((r) => r.id), [2, 1]);
 });

@@ -86,7 +86,7 @@ export function PedirCita() {
     const mic = await unlockAudio({ microphone: true });
     setSound(true);
     await post("/api/chat/messages", { soundReady: true }).catch(() => {});
-    toast.success(mic ? "Sonido y micrófono listos para las llamadas" : "Sonido listo. El micrófono se pedirá al contestar.");
+    toast.success(mic ? "Sonido y micrófono listos para las llamadas" : "Sonido listo. El micrófono se pedirá al contestar.", { position: "bottom-center" }); // never over the header
   }
 
   async function wipe() {

@@ -143,12 +143,33 @@ try {
   ]);
   assert(Number(sk12[1]) > Number(sk12[0]), `P3 muy vencido (fracción 12 → clave ${sk12[0]}) queda debajo de P2 a 0.1 (clave ${sk12[1]})`);
 
+  // ---- within a category the MOST overdue goes first (no tie at the 100 % display cap): two overdue P2
+  {
+    const today = await rpc("demo_today");
+    const dayMinus = (n) => new Date(Date.parse(`${today}T00:00:00Z`) - n * 86400000).toISOString().slice(0, 10);
+    const list0 = await rpc("staff_requests_v51");
+    const [j, m] = ["Julio Gonzales", "Marta Ccori"].map((n) => byName(list0, n));
+    // Julio: 108 days of a 90-day P2 deadline (fraction 1.2); Marta: 270 days (fraction 3.0)
+    for (const [id, days] of [[j.id, 108], [m.id, 270]]) {
+      const { error } = await db.from("requests").update({ first_attempt_at: dayMinus(days) }).eq("id", id);
+      if (error) throw new Error(error.message);
+    }
+    const { data: two } = await db.from("v_requests_v51").select("id,idx,sort_key").in("id", [j.id, m.id]);
+    const jj = two.find((x) => x.id === j.id), mm = two.find((x) => x.id === m.id);
+    assert(Number(jj.idx) === 1 && Number(mm.idx) === 1, "los dos se muestran al 100 % de su plazo (tope de lo que se muestra)");
+    assert(Number(mm.sort_key) > Number(jj.sort_key), `clave sin tope: P2 a 3.0 (${mm.sort_key}) por encima de P2 a 1.2 (${jj.sort_key})`);
+    const list1 = (await rpc("staff_requests_v51")).filter((x) => x.ord === 0);
+    const pj = list1.findIndex((x) => x.id === j.id), pm = list1.findIndex((x) => x.id === m.id);
+    assert(pm >= 0 && pj >= 0 && pm < pj, `en la lista va primero el más vencido: Marta (3.0) en ${pm + 1}.º, Julio (1.2) en ${pj + 1}.º`);
+    await rpc("reset_demo");
+  }
+
   // ---- v5.1: idx depends only on days and deadline (no bonuses, no insurance / sex / no-shows)
   const rows = await allRows("v_requests_v51", "id,code,category,eff_category,days_waited,eff_deadline,idx,sort_key,first_visit,preferential");
   const rank = (c) => Number((c ?? "P3").slice(1));
   const wrong = rows.filter(
     (r) => Number(r.idx) !== priorityV51(r.days_waited, r.eff_deadline) ||
-      Math.abs(Number(r.sort_key) - ((5 - rank(r.category)) * 10 + priorityV51(r.days_waited, r.eff_deadline))) > 1e-9,
+      Math.abs(Number(r.sort_key) - ((5 - rank(r.category)) * 1000 + Math.round(Math.min(r.days_waited / r.eff_deadline, 999.9999) * 1e4) / 1e4)) > 1e-6,
   );
   assert(rows.length > 0 && wrong.length === 0, `idx = min(días/plazo, 1) y clave = categoría + idx en las ${rows.length} filas${wrong.length ? ` (${wrong.slice(0, 3).map((r) => r.code).join(", ")}…)` : ""}`);
   const withBonus = rows.filter((r) => r.first_visit || r.preferential).length;

@@ -90,7 +90,7 @@ export function PhoneApp({ token }: { token: string }) {
   async function enableSound() {
     const okMic = await unlockAudio({ microphone: true });
     setSoundReady(true);
-    toast.success(okMic ? "Sonido y micrófono listos para las llamadas" : "Sonido listo. El micrófono se pedirá al contestar.");
+    toast.success(okMic ? "Sonido y micrófono listos para las llamadas" : "Sonido listo. El micrófono se pedirá al contestar.", { position: "bottom-center" }); // never over the header
   }
 
   if (missing) {

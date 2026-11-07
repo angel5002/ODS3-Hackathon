@@ -33,12 +33,20 @@ export function priorityV51(daysWaited: number, deadlineDays: number): number | 
   return round4(Math.min(days / deadlineDays, 1));
 }
 
+/** Deadline fraction WITHOUT the 100 % cap (used to order: the most overdue first), bounded to 999.9999. */
+export function overdueFractionV51(daysWaited: number, deadlineDays: number): number {
+  if (!Number.isFinite(deadlineDays) || deadlineDays <= 0) return 0;
+  const days = Math.max(0, Number.isFinite(daysWaited) ? daysWaited : 0);
+  return round4(Math.min(days / deadlineDays, 999.9999));
+}
+
 /**
- * Sort key, descending, that encodes the category first: P1 = 40, P2 = 30, P3 = 20, P4 = 10, plus R in [0, 1].
- * As R <= 1 < 10, a P3 at 100 % (21) stays below a P2 at 0 % (30). Same as public.priority_sort_key_v51().
+ * Sort key, descending: the category in the thousands (P1 = 4000 … P4 = 1000) plus the UNCAPPED deadline fraction.
+ * The category always decides first (a lower one would need a fraction above 1000: centuries of waiting), and
+ * within a category the most overdue goes first. Same as public.priority_sort_key_v51().
  */
 export function sortKeyV51(category: Category | null | undefined, daysWaited: number): number {
-  return round4((5 - categoryRank(category)) * 10 + (priorityV51(daysWaited, deadlineFor(category)) ?? 0));
+  return round4((5 - categoryRank(category)) * 1000 + overdueFractionV51(daysWaited, deadlineFor(category)));
 }
 
 /** v4 (superseded): 0.75·R + 0.15·N + 0.10·E. Kept to check that production still shows the old values. */
@@ -54,8 +62,9 @@ export function compareV51(a: RankedRequest, b: RankedRequest): number {
   const ra = categoryRank(a.category);
   const rb = categoryRank(b.category);
   if (ra !== rb) return ra - rb;
-  const ia = priorityV51(a.daysWaited, deadlineFor(a.category)) ?? 0;
-  const ib = priorityV51(b.daysWaited, deadlineFor(b.category)) ?? 0;
+  // uncapped: two overdue requests of the same category do not tie (the most overdue goes first)
+  const ia = overdueFractionV51(a.daysWaited, deadlineFor(a.category));
+  const ib = overdueFractionV51(b.daysWaited, deadlineFor(b.category));
   if (ia !== ib) return ib - ia;
   if (a.firstAttemptAt !== b.firstAttemptAt) return a.firstAttemptAt < b.firstAttemptAt ? -1 : 1;
   return a.id - b.id;
