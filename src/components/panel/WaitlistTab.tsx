@@ -336,7 +336,8 @@ export function RegisterForm({ onDone, endpoint = "/api/staff", compact }: { onD
         </select>
       </label>
       <label className="text-sm">
-        <span className="font-semibold">Distrito</span> <span className="text-muted">(solo para auditar equidad)</span>
+        <span className="font-semibold">Distrito</span>{" "}
+        <span className="text-muted">{compact ? "(opcional; solo para revisar que la atención sea justa)" : "(solo para auditar equidad)"}</span>
         <input value={f.district} onChange={(e) => set("district", e.target.value)} className={`${input} mt-1`} maxLength={60} />
       </label>
       <fieldset className="grid gap-1.5 text-sm sm:col-span-2 sm:grid-cols-2">
@@ -356,10 +357,17 @@ export function RegisterForm({ onDone, endpoint = "/api/staff", compact }: { onD
           </label>
         ))}
       </fieldset>
-      <p className="text-xs text-muted sm:col-span-2">
-        La solicitud entra como <strong>pendiente de regulación</strong> (se ordena como P3 hasta que un profesional la revise). La
-        fecha de hoy queda como primer intento y no se reinicia nunca.
-      </p>
+      {compact ? (
+        <p className="text-xs text-muted sm:col-span-2">
+          Un profesional de salud revisará su solicitud y le avisaremos en el chat de esta página. Su tiempo de espera cuenta desde hoy
+          y no se reinicia nunca.
+        </p>
+      ) : (
+        <p className="text-xs text-muted sm:col-span-2">
+          La solicitud entra como <strong>pendiente de regulación</strong> (se ordena como P3 hasta que un profesional la revise). La
+          fecha de hoy queda como primer intento y no se reinicia nunca.
+        </p>
+      )}
       <Button type="submit" variant="primary" disabled={busy} className="min-h-11 rounded-full sm:col-span-2">
         {busy ? "Registrando…" : "Registrar solicitud"}
       </Button>

@@ -217,10 +217,10 @@ function SlotCard({ slot: s, busy, act }: { slot: Slot; busy: string; act: (k: s
             <>
               <p className="mt-3 text-sm">
                 <strong>
-                  {pct(p.fill_probability)} con {p.k} {p.k === 1 ? "candidato" : "candidatos"}
+                  {pct(p.fill_probability)} de probabilidad de llenarlo con {p.k} {p.k === 1 ? "candidato" : "candidatos"}
                 </strong>
-                {allOfZone ? ", todos los de la zona" : ` de ${p.available} en la zona`}. k es el menor número que llega al{" "}
-                {pct(p.target)} de probabilidad de llenarlo (tope 8).
+                {allOfZone ? ", todos los de la zona" : ` de ${p.available} en la zona`}. Se ofrece al menor número de personas que llega al{" "}
+                {pct(p.target)} de probabilidad (máximo 8).
               </p>
               <CandidateList list={p.candidates} />
               <Button
@@ -304,7 +304,7 @@ function CandidateList({
             </p>
             <p className="text-xs text-muted">
               Prioridad <strong className="text-ink">{c.reason}</strong>
-              {c.a != null ? ` · acepta con prob. ${Math.round(c.a * 100)} %` : ""}
+              {c.a != null ? ` · probabilidad de aceptar: ${Math.round(c.a * 100)} %` : ""}
               {c.current_date ? ` · cita actual ${dateShort(c.current_date)}` : ""}
             </p>
           </div>

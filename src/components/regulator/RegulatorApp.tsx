@@ -56,7 +56,7 @@ export function RegulatorApp() {
       <aside className="flex items-start gap-3 rounded-2xl bg-night p-4 text-white" role="note">
         <EyeOff className="mt-0.5 size-5 shrink-0 text-mint" aria-hidden />
         <p className="text-sm leading-relaxed">
-          <strong>No ves nombre, documento, seguro ni distrito para que la prioridad dependa solo de la necesidad clínica.</strong>{" "}
+          <strong>No se muestran nombre, documento, seguro ni distrito para que la prioridad dependa solo de la necesidad clínica.</strong>{" "}
           El servidor no envía esos datos a esta pantalla por ninguna vía.
         </p>
       </aside>

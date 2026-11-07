@@ -31,6 +31,9 @@ export function StaffHeader({ role }: { role: Role | null }) {
                   href={href}
                   prefetch={false}
                   aria-current={active ? "page" : undefined}
+                  // on a phone only the icon shows: the name goes to screen readers and the tooltip
+                  aria-label={label}
+                  title={label}
                   className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ${
                     active ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
                   }`}
@@ -48,7 +51,8 @@ export function StaffHeader({ role }: { role: Role | null }) {
             className="press inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-muted hover:text-ink"
             title="Cambiar de rol"
           >
-            <Repeat className="size-3.5" aria-hidden /> {ROLE_LABEL[role]}
+            {/* "Rol:" so it does not read as a second copy of the section tab next to it */}
+            <Repeat className="size-3.5" aria-hidden /> Rol: {ROLE_LABEL[role]}
           </a>
         )}
       </div>

@@ -15,8 +15,11 @@ export function SiteFooter() {
           <p className="mt-4 text-xs text-white/50">CientíficaHack 2026 · Desafío 4 · ODS 3</p>
         </div>
         <div className="text-sm">
-          <p className="font-semibold text-white">Prototipo</p>
+          <p className="font-semibold text-white">Explorar AsistIA</p>
           <ul className="mt-3 space-y-2">
+            <li>
+              <Link prefetch={false} href="/pedir-cita" className="hover:text-white">Pedir una cita</Link>
+            </li>
             <li>
               <Link prefetch={false} href="/panel" className="hover:text-white">Panel de citas</Link>
             </li>

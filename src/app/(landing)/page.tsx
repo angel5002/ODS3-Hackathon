@@ -60,11 +60,13 @@ export default async function Landing() {
         />
         <header className="relative mx-auto flex max-w-[1200px] items-center justify-between px-5 py-5 sm:px-8">
           <Brand tone="light" />
+          {/* no prefetch: /panel redirects to the PIN screen and the prefetch ended as an aborted request */}
           <Link
             href="/panel"
+            prefetch={false}
             className="press rounded-full bg-white/10 px-4 py-2 text-sm font-semibold ring-1 ring-white/15 hover:bg-white/15"
           >
-            Entrar al prototipo
+            Acceso del equipo
           </Link>
         </header>
         <div className="relative mx-auto grid max-w-[1200px] items-center gap-12 px-5 pb-20 pt-8 sm:px-8 md:grid-cols-[1.15fr_1fr] md:pb-28 md:pt-14">
@@ -210,11 +212,14 @@ export default async function Landing() {
           <div className="mt-16 flex flex-col items-start justify-between gap-6 rounded-3xl bg-brand p-8 text-white md:flex-row md:items-center md:p-10">
             <div>
               <h2 className="font-display text-3xl font-bold tracking-tight">Véalo funcionar en vivo</h2>
-              <p className="mt-1 text-white/75">Panel, tablero y teléfonos de pacientes, conectados en tiempo real.</p>
+              <p className="mt-1 text-white/75">Panel, tablero, teléfonos de pacientes y la página para pedir una cita, conectados en tiempo real.</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link prefetch={false} href="/panel" className="press inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-brand hover:bg-mint-soft">
                 Abrir el panel <ArrowRight className="size-4" aria-hidden />
+              </Link>
+              <Link prefetch={false} href="/pedir-cita" className="press rounded-full px-5 py-3 font-semibold ring-1 ring-white/40 hover:bg-white/10">
+                Pedir una cita
               </Link>
               <Link prefetch={false} href="/demo" className="press rounded-full px-5 py-3 font-semibold ring-1 ring-white/40 hover:bg-white/10">
                 Códigos QR
