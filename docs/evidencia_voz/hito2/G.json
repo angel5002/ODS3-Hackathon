@@ -1,0 +1,276 @@
+[
+ {
+  "t": 42.61,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "G"
+ },
+ {
+  "t": 43.92,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P0015",
+  "status": 200,
+  "callId": 4508
+ },
+ {
+  "t": 44.3,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] screen.mount {callId: 4508, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 44.75,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 44.79,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] ui.answer {callId: 4508, clicks: 1}"
+ },
+ {
+  "t": 45.24,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] session.request {callId: 4508, queued: false}"
+ },
+ {
+  "t": 45.24,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 46.24,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] session.response {callId: 4508, ok: true, busy: null, reason: null}"
+ },
+ {
+  "t": 46.25,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4508, \"voiceSessionId\": \"ada0dd55-3df3-4e40-9479-4bc878fb7867\", \"session\": true}"
+ },
+ {
+  "t": 46.55,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] sdk.start_session {callId: 4508, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 46.55,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] sdk.status {callId: 4508, status: connecting}"
+ },
+ {
+  "t": 46.67,
+  "who": "rosa",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 46.67,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 46.68,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 46.76,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 47.03,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] sdk.status {callId: 4508, status: connected}"
+ },
+ {
+  "t": 47.04,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] sdk.connect {callId: 4508}"
+ },
+ {
+  "t": 47.16,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 47.18,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/heartbeat",
+  "status": 200,
+  "body": "{\"alive\": true, \"state\": \"activa\", \"accepted\": true, \"call_status\": \"en_curso\"}"
+ },
+ {
+  "t": 47.19,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 47.26,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] sdk.first_agent_turn {callId: 4508, ms: 224}"
+ },
+ {
+  "t": 47.4,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 47.76,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 54.8,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "cerró la pestaña"
+ },
+ {
+  "t": 54.8,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz be5fda5b] page.pagehide {callId: 4508}"
+ },
+ {
+  "t": 60.97,
+  "who": "staff",
+  "kind": "llamadas",
+  "calls": [
+   {
+    "id": 4508,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 62.09,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 65.11,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 68.12,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 71.13,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 74.46,
+  "who": "staff",
+  "kind": "llamadas",
+  "calls": [
+   {
+    "id": 4508,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 74.47,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "G"
+ },
+ {
+  "t": 74.61,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 4508,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4507,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4506,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 74.75,
+  "who": "staff",
+  "kind": "voz_al_final",
+  "activas": 0,
+  "en_fila": 0,
+  "sesiones": [
+   {
+    "id": "ada0dd55",
+    "call_id": 4508,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   },
+   {
+    "id": "c66038f1",
+    "call_id": 4507,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   }
+  ]
+ }
+]

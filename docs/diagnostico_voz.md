@@ -268,7 +268,44 @@ Al terminar, la base quedó sin solicitudes ni tareas nuevas y sin llamadas abie
 - **Webhook de fin de llamada:** el código está listo, pero falta crearlo en ElevenLabs (Agents → Settings → Post-call webhook, URL `https://ods3-hackathon.vercel.app/api/voice/post-call`, eventos de transcripción) y guardar su secreto como `ELEVENLABS_WEBHOOK_SECRET` en `.env.local` y en Vercel. No lo hice porque no puedo escribir en `.env.local`.
 - **`.env.example`:** falta agregar `VOICE_MAX_CONCURRENT` (opcional, por defecto 10). No lo toqué por la regla de no modificarlo.
 
-## 11. Archivos de este diagnóstico
+## 11. Resultados del hito 2 (7/11)
+
+**Migración aplicada:** solo `20261107010000_e5_voice_sessions.sql`, con `supabase db push --remote` y autorización del equipo.
+- La revisión previa no encontró `create or replace` sobre funciones existentes (las 8 funciones son `create function`), ni `alter`, `drop`, triggers o cambios de permisos de objetos existentes.
+- La única dependencia de algo existente es la FK de `voice_sessions.call_id` hacia `calls`.
+- Respaldo en JSON de las 22 tablas de `public`, en `..\respaldos-db\20261107-0052\`, fuera de git. Las tablas de `identity` no están expuestas a la API y las vuelve a sembrar `reset_demo`.
+- La reversión, sin aplicar, está en `supabase/rollback/`.
+- El navegador no puede leer `voice_sessions` ni `voice_events`.
+
+**`npm run test:race`:** 8 de 8.
+- 2 aceptaciones simultáneas registran 2 respuestas, y la repetida no duplica.
+- 2 cierres simultáneos de la misma oferta dejan **1 asignación**.
+- 2 reclamos simultáneos de la misma llamada: **uno gana**.
+- Las transiciones son condicionales.
+- Con capacidad 1, la segunda llamada queda en la fila; cuando la primera se cierra, la segunda obtiene la línea.
+- Al cerrar la pestaña, la llamada queda `finalizada`.
+- No quedan sesiones activas.
+
+**Playwright** sobre la compilación de `e5` contra la base compartida (evidencia en `docs/evidencia_voz/hito2/`):
+
+| Escenario | Antes (hito 1) | Ahora |
+|---|---|---|
+| B: dos pestañas contestan la misma llamada | 2 sesiones de ElevenLabs; al colgar una, la otra se cortaba | **1 sesión.** La pestaña 2 recibe `busy: otro_dispositivo` y muestra «Esta llamada ya se está atendiendo en otro dispositivo». La pestaña 1 habla hasta colgar. Al final: 0 sesiones activas |
+| G: cerrar la pestaña en plena llamada | La llamada quedaba `en_curso` y la pantalla reabierta, en «Conectando…» | `pagehide` envía el fin con `sendBeacon`; **6 s después la llamada ya está `finalizada`**, con la sesión cerrada por «pestaña cerrada». La pantalla reabierta no muestra ninguna llamada colgada |
+| A: 3 teléfonos y 1 registro a la vez | 4 conectaban (sin falla) | 4 conectan; **0 errores de consola**; al colgar, **0 sesiones activas** y las 4 llamadas `finalizada` |
+
+**Webhook de fin de llamada (producción):**
+- Llamada de prueba 4506 al teléfono simulado de producción: conectó con ElevenLabs.
+- ElevenLabs tiene configurado el webhook `asistia-post-call` (HMAC, solo transcripción, sin audio, para todo el espacio de trabajo). Su último intento, a las 05:54:46 UTC, registra una **falla 401**.
+- La causa **no es la firma ni el formato del encabezado `ElevenLabs-Signature`**: el despliegue de producción no tiene `ELEVENLABS_WEBHOOK_SECRET`.
+  - La API de Vercel no la lista en el proyecto `ods3-hackathon`, que es el único del equipo.
+  - El último despliegue de producción sigue siendo el del 6/11 a las 17:51 UTC.
+  - Sin secreto, la verificación rechaza todo.
+- La fila de la llamada no recibió `external_id` ni resumen, lo que confirma que el webhook no se procesó.
+- Cuando el secreto esté en Vercel y se vuelva a desplegar, hay que repetir la prueba.
+- Que el webhook **cierre** la sesión requiere el código de `e5`; `main` solo guarda el resumen.
+
+## 12. Archivos de este diagnóstico
 
 - **Instrumentación:**
   - `src/lib/voice/diag.ts` y `src/app/api/voice/diag/route.ts`;
