@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { JURY_ALPHABET, isJuryToken, juryToken, newJuryTokens, testJuryToken } from "../src/lib/jury/tokens.ts";
-import { buildActivity, buildJuryOverview, type JurySnapshot } from "../src/lib/jury/overview.ts";
+import { buildActivity, buildJuryOps, buildJuryOverview, type JurySnapshot } from "../src/lib/jury/overview.ts";
 
 const rand = (n: number) => new Uint8Array(randomBytes(n));
 /** deterministic byte source that walks 0, 1, 2, ... */
@@ -184,4 +184,17 @@ test("a card that was only opened is 'abierta'; the slot offered and not yet tak
   assert.equal(o.carmenSlot!.assignedTo, null);
   s.scene = null;
   assert.equal(buildJuryOverview(s).carmenSlot, null);
+});
+
+test("operator's next step per card: categorize, offer, close", () => {
+  const s = snapshot();
+  const next = () => Object.fromEntries(buildJuryOps(s).map((o) => [o.character, o.next]));
+  assert.deepEqual(next(), { Carmen: null, Jorge: null, Óscar: null, Teresa: "ofrecer", Raúl: null });
+  s.requests[0] = { ...s.requests[0], category: null, state: "pendiente_regulacion" };
+  s.requests[1] = { ...s.requests[1], state: "con_oferta" };
+  s.scene = { ...s.scene!, state: "libre", openOffer: false, assignment: null };
+  assert.deepEqual(next(), { Carmen: "ofrecer", Jorge: null, Óscar: "categorizar", Teresa: "cerrar", Raúl: null });
+  s.scene = { ...s.scene!, state: "retenido", openOffer: true };
+  assert.equal(next().Carmen, "cerrar");
+  assert.equal(buildJuryOps(s).find((o) => o.character === "Óscar")!.request!.code, "S-0700");
 });

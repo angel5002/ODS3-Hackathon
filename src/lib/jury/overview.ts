@@ -162,6 +162,51 @@ function complete(card: SnapshotCard, s: JurySnapshot): boolean {
   return s.reqEvents.some((e) => e.token === card.token && e.type === "confirmacion");
 }
 
+/** What the operator can do next on each card (/demo OPERAR, one click each). */
+export type JuryOp = {
+  token: string;
+  character: string;
+  kind: SnapshotCard["kind"];
+  /** the request to categorize, offer or close (pide_cita / acepta_oferta) */
+  request: { code: string; specialty: string; category: string | null; state: string } | null;
+  next: "categorizar" | "ofrecer" | "cerrar" | null;
+  /** plain words for the operator */
+  status: string;
+};
+
+const WAITING = ["priorizada_sin_cupo", "en_espera_prioritaria"];
+
+export function buildJuryOps(s: JurySnapshot): JuryOp[] {
+  return s.cards.map((c) => {
+    const base = { token: c.token, character: c.character, kind: c.kind };
+    if (c.kind === "cancela" || c.kind === "confirma") {
+      const st = c.appointment?.status ?? null;
+      const scene = c.scene ? s.scene : null;
+      if (c.kind === "cancela" && scene) {
+        if (scene.openOffer) return { ...base, request: null, next: "cerrar", status: "Su cupo está ofrecido" };
+        if (scene.assignment) return { ...base, request: null, next: null, status: `Su cupo es de ${scene.assignment.name}` };
+        if (scene.state === "libre") return { ...base, request: null, next: "ofrecer", status: "Liberó su cupo" };
+      }
+      const status =
+        st === "confirmada" ? "Confirmó su cita" : st === "liberada" || st === "reasignada" ? "Liberó su cupo" : st === "en_llamada" ? "En llamada" : c.firstVisit ? "Abrió su cartilla" : "Sin abrir";
+      return { ...base, request: null, next: null, status };
+    }
+    const mine = s.requests.filter((r) => r.token === c.token).sort((a, b) => b.id - a.id);
+    const r = mine.find((x) => !["cerrada_con_causal", "atendida", "derivada_emergencia"].includes(x.state)) ?? mine[0] ?? null;
+    if (!r) return { ...base, request: null, next: null, status: c.firstVisit ? "Abrió su cartilla" : "Sin abrir" };
+    const request = { code: r.code, specialty: r.specialty, category: r.category, state: r.state };
+    const next: JuryOp["next"] =
+      r.state === "pendiente_regulacion" || r.state === "pendiente_informacion" || (!r.category && r.state === "registrada")
+        ? "categorizar"
+        : r.state === "con_oferta"
+          ? "cerrar"
+          : WAITING.includes(r.state) && r.category
+            ? "ofrecer"
+            : null;
+    return { ...base, request, next, status: REQUEST_STATE[r.state] ?? r.state };
+  });
+}
+
 export function buildJuryOverview(s: JurySnapshot): JuryOverview {
   const activity = buildActivity(s);
   const cards = s.cards.map((c) => {
