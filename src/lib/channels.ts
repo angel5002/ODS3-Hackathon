@@ -3,7 +3,7 @@
 // MessagingChannel
 //   SimulatedChannel  -> the phones of /t/[token] and the 1,473 appointments of the demo day
 //   WebChatChannel    -> the live web chat of /pedir-cita (anonymous signed session + Realtime)
-//   (pilot) WhatsAppChannel would implement the same interface. NOT integrated in this execution.
+//   (pilot) messaging from the establishment's own number would implement the same interface. Not integrated.
 //
 // VoiceChannel
 //   BrowserVoiceChannel -> the "call" rings inside the browser of the simulated phone or the chat;

@@ -31,8 +31,8 @@ async function loadFigures() {
 
 const STEPS = [
   { icon: Brain, title: "Estima el riesgo", text: "Ordena las citas de mañana por probabilidad de inasistencia y dice por qué." },
-  { icon: BellRing, title: "Recuerda a todos", text: "Un mensaje con tres botones: confirmo, no podré ir, hablar con alguien." },
-  { icon: Bot, title: "Llama a quien no responde", text: "Un asistente automático confirma la cita o libera el cupo." },
+  { icon: BellRing, title: "Recuerda a todos", text: "Un mensaje con cuatro opciones: confirmo, no podré asistir, reprogramar o hablar con una persona." },
+  { icon: Bot, title: "Llama a quien no responde", text: "Un asistente automatizado, en el navegador, confirma la cita o, si el paciente avisa, libera el cupo." },
   { icon: Repeat2, title: "Ofrece el cupo", text: "El personal elige a quién de la lista de espera se le ofrece." },
 ];
 

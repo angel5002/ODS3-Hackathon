@@ -1,6 +1,6 @@
-# AsistIA · Requisitos del prototipo, versión 4
+# AsistIA · Requisitos del prototipo (versión 4, actualizada a la propuesta v5.1)
 
-> Fuente de verdad: `insumos/AsistIA_Propuesta_Final_Algorritmia_v4.pdf`. Este documento reemplaza a `AsistIA_Requerimientos_App.md` y a `docs/requisitos.md` en todo lo que los contradiga.
+> Fuente de verdad: `insumos/AsistIA_Propuesta_Final_Algorritmia_v5.1.pdf`. Este documento nació con la v4 y se actualizó a la v5.1: sin telefonía ni números reales (la voz es en el navegador y la mensajería es el chat web), lista de espera ordenada por categoría clínica y fracción del plazo consumida (sin bonos) y sin botón de autoaviso del paciente. Lo que la v5.1 pide y el prototipo todavía no tiene está en la sección 8. Reemplaza a `AsistIA_Requerimientos_App.md` y a `docs/requisitos.md` en todo lo que los contradiga.
 >
 > Prioridades:
 > - **P0:** sin esto, la demo no cumple lo que promete la propuesta.
@@ -28,21 +28,23 @@ Todo se siembra con semilla fija. "Reiniciar demo" deja todo exactamente así.
 | Luis Ramos | 52 años · Cardiología · P3 · hace 30 días · sin cita | Recibe el cupo liberado por efecto dominó |
 
 **Candidatos simulados de Cardiología:**
-- Zona cercana: dos pacientes P2 con índice menor que Julio. Uno declina y el otro no responde.
-- Zona lejana: tres pacientes P3 o P4, con índice menor que Luis.
+- Zona cercana: dos pacientes P2 con menor fracción del plazo consumida que Julio. Uno declina y el otro no responde.
+- Zona lejana: tres pacientes P3 o P4, con menor prioridad que Luis.
 
 **Para la prueba en vivo del jurado** (sección 6):
 - Dermatología y Oftalmología tienen 2 cupos libres cada una, en zona media (lunes 23/10) y en zona lejana (jueves 02/11).
 - Sus listas de espera solo tienen pacientes P4.
 - Así, una solicitud nueva clasificada como P2 o P3 recibe una oferta real en minutos.
 
-**Índices esperados:**
+**Prioridad esperada** (v5.1: categoría y, dentro de ella, fracción del plazo consumida):
 
-| Paciente | Índice | Razón que se muestra |
+| Paciente | Fracción del plazo | Razón que se muestra |
 |---|---|---|
-| Ana | 0.77 | "P2 · 69 % de su plazo · primera consulta · adulta mayor" |
-| Julio | 0.48 | "P2 · 44 % de su plazo · primera consulta" |
-| Luis | 0.28 | "P3 · 17 % de su plazo · primera consulta" |
+| Ana | 0.69 | "P2 · 69 % de su plazo" |
+| Julio | 0.44 | "P2 · 44 % de su plazo" |
+| Luis | 0.17 | "P3 · 17 % de su plazo" |
+
+El orden es el mismo que en la v4 (Ana antes que Julio; Luis en P3). Pendiente en el código: el esquema v4 todavía suma bonos por primera consulta y atención preferente (0.77, 0.48 y 0.28); con la v5.1, los parámetros `w_r`, `w_n` y `w_e` deben quedar en 1, 0 y 0.
 
 ## 2. Modelo de datos (P0)
 
@@ -63,7 +65,7 @@ Este esquema solo se lee para auditar y para contactar.
 
 | Tabla | Campos y reglas |
 |---|---|
-| `requests` | `id`, `code` (S-0001…), `person_id`, `specialty`, `modality`, `first_attempt_at`, `referral` (sí/no), `reason_text` (sin datos que identifiquen), `age`, `pregnant`, `disability`, `preferred_channel`, `short_notice_ok`, `current_appointment_id`, `category` (P1–P4 o null), `deadline_days`, `due_date`, `state`, `priority_index`, `priority_reason` |
+| `requests` | `id`, `code` (S-0001…), `person_id`, `specialty`, `modality`, `first_attempt_at`, `referral` (sí/no), `reason_text` (sin datos que identifiquen), `age`, `pregnant`, `disability`, `preferred_channel`, `short_notice_ok`, `current_appointment_id`, `category` (P1–P4 o null), `deadline_days`, `due_date`, `state`, `priority_index` (fracción del plazo consumida), `priority_reason` |
 | `request_events` | `request_id`, `type`, `at`, `actor` (persona, rol o agente), `payload` |
 | `slots` | `id`, `specialty`, `starts_at`, `state` (libre, retenido, ocupado), `appointment_id` |
 | `appointments` | Las citas, con sus estados actuales más `reprogramacion_pendiente` y `validacion_pendiente` |
@@ -155,10 +157,11 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
 - "Derivar a emergencia" la mueve a `derivada_emergencia`, crea una tarea `alarma` en el call center y envía al paciente las instrucciones de emergencia.
 - La vista ciega se implementa según la sección 2, con su prueba de no filtración.
 
-### RF-03 · Índice de prioridad y lista ordenada (P0)
-- Fórmula y razón en una línea, como en la sección 1.
-- Orden: primero la categoría, luego el índice de mayor a menor.
-- Columnas: código, especialidad, categoría, días esperados, % del plazo, primera consulta, grupo preferente, índice, razón, estado y canal.
+### RF-03 · Prioridad y lista ordenada (P0)
+- v5.1, sección 3.5: primero la categoría clínica que asigna un profesional y, dentro de ella, la fracción del plazo máximo ya consumida desde el primer intento, `R = min(días/plazo, 1)`, con plazos de 30, 90, 180 y 360 días. **Sin bonos.** La razón se muestra en una línea, como en la sección 1.
+- Orden: primero la categoría, luego la fracción del plazo, de mayor a menor.
+- La lista nunca usa el seguro, el sexo ni el historial de inasistencias.
+- Columnas: código, especialidad, categoría, días esperados, % del plazo, primera consulta y grupo preferente (solo informativos, no suman), razón, estado y canal.
 - **El nombre solo lo ve Admisión.**
 
 ### RF-04 · Confirmación escalonada (P0)
@@ -203,9 +206,10 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
   - los teléfonos dicen: "Recibes la oferta junto con otros pacientes de la lista";
   - declinar: "Conservas tu lugar en la lista".
 
-### RF-07 · Asignación al de mayor índice (P0)
-- Al cerrar la oferta, gana el de mayor índice entre quienes aceptaron. La asignación queda `asignada_por_validar` y los demás aceptantes pasan a `en_espera_prioritaria`.
-- Mensaje en el panel: *"Asignado a Ana G. (prioridad 0.77: P2, 69 % de su plazo) aunque Julio respondió primero (0.48)."*
+### RF-07 · Regla de asignación (P0)
+- La v5.1 compara dos reglas: **"primero que acepta"** (como Mayo Clinic) y **"mayor prioridad al cierre de la ventana"** (la propuesta de AsistIA, sin validar). La demostración usa la segunda; en `/demo`, un selector debe permitir comparar ambas (pendiente, sección 8).
+- Con "mayor prioridad al cierre de la ventana": al cerrar la oferta, gana el de mayor prioridad entre quienes aceptaron. La asignación queda `asignada_por_validar` y los demás aceptantes pasan a `en_espera_prioritaria`.
+- Mensaje en el panel: *"Asignado a Ana G. (P2, 69 % de su plazo) aunque Julio respondió primero (P2, 44 %)."* Hoy la pantalla todavía muestra la prioridad con bonos (0.77 y 0.48).
 - **Si nadie acepta:** se abre una nueva ronda en la zona siguiente. A 24 h, pasa a cupo del día (RF-11).
 - **"Revertir"** exige un motivo y devuelve todo a su estado anterior.
 
@@ -218,7 +222,7 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
   - la solicitud pasa a `con_cita`;
   - se dispara el efecto dominó (RF-09).
 - **Si falla:** dos intentos del agente sin éxito crean una tarea `validacion_fallida` en el call center.
-- **Si vence `validation_timeout_min`:** el cupo pasa al siguiente aceptante, en orden de índice.
+- **Si vence `validation_timeout_min`:** el cupo pasa al siguiente aceptante, en orden de prioridad.
 
 ### RF-09 · Efecto dominó (P0)
 - Si el ganador tenía una cita más lejana, al validar se libera con el origen "dominó" y entra al mismo ciclo: zona, aprobación, oferta, asignación y validación.
@@ -271,7 +275,7 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
   - la solicitud aparece en `/regulador` en menos de 2 s.
 
 ### RF-15 · Agentes de voz de ElevenLabs en el navegador (P1)
-- **Cuatro agentes**, creados y actualizados por API con `npm run voice:sync`. Su configuración, sin secretos, se versiona en `voice/agents/*.json`. Los prompts están en `docs/conversaciones.md` §3.
+- **Cuatro agentes**, creados y actualizados por API con `npm run voice:sync`. Su configuración, sin secretos, se versiona en `voice/agents/*.json`. Los prompts están en `docs/conversaciones.md` §4.
   1. `asistia-confirmacion`
   2. `asistia-oferta`
   3. `asistia-validacion`
@@ -285,7 +289,8 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
   - Estados visibles en el panel: sonando, en curso, finalizada, no contestó, rechazada, falló.
 - **Webhook posterior a la llamada:** valida la firma HMAC y guarda el resumen y las acciones en `calls`. La transcripción completa no se guarda.
 - **Registro por voz en el navegador:** desde `/pedir-cita`, con una URL firmada que emite el servidor. La clave nunca llega al navegador.
-- **Sin telefonía:** no se integra Twilio ni ningún proveedor telefónico. La interfaz `VoiceChannel` queda preparada para un `PhoneVoiceChannel` en el piloto.
+- **Sin telefonía:** no se integra ningún proveedor telefónico ni se usan números reales. La interfaz `VoiceChannel` queda preparada para conectar el mismo agente a la línea del establecimiento en un piloto.
+- **Identificación y seguridad** (v5.1, sección 4.3): el agente se presenta como "Asistente automatizado del Hospital de demostración", dice que nunca pide pagos, claves, códigos ni el DNI completo y ofrece hablar con una persona. Textos exactos en `docs/conversaciones.md` §4.
 - **Respaldo:**
   - si falla ElevenLabs (cuota, red o error), se usa Gemini Live en la misma pantalla de llamada;
   - si también falla Gemini, se usa el guion fijo.
@@ -302,6 +307,7 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
 ### RF-17 · Tablero (P0)
 - **Tarjetas de la propuesta (sección 13):**
   - personas registradas sin cupo;
+  - **consultas netas adicionales**, separadas de los simples adelantos de una cita que igual iba a ocurrir (v5.1, sección 3.5);
   - % de solicitudes con atención;
   - mediana y percentil 90 de la espera;
   - % fuera de plazo;
@@ -312,10 +318,10 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
   - carga del personal;
   - inasistencia.
 - **Equidad:** participación de cada grupo en las ofertas y asignaciones frente a la lista, siempre dentro de la misma categoría. Los grupos son 60+, menores de 12 y sin seguro, y se leen de `equity_attributes` en el servidor. Si un grupo tiene menos de 5 personas, se muestra "Grupo pequeño".
-- **Escenario `r ≈ s + c·f`:**
-  - valores por defecto: s = 0, c = 1/3 y f = 0.30, que dan "r ≈ 10 % → unas 10,600 citas al año";
+- **Escenario `r ≈ s + c·f`** (viene de la v4; se rotula como supuesto editable):
+  - valores por defecto: s = 0, c = 1/3 y f = 0.30, que dan "r ≈ 10 % → unas 10,600 consultas al año", el mismo escenario de la v5.1 (con 4 %, unas 4,200);
   - el anual se calcula como 106,100 × r;
-  - línea de referencia: "El hospital obtiene beneficio desde 5.3 %".
+  - línea de referencia según la v5.1: el HMA cubre el costo de AsistIA con unas 461 consultas netas al mes, **5.2 %** de sus citas perdidas. Hoy el parámetro `breakeven_r` vale 0.053 (v4) y debe pasar a 0.052.
   - **Eliminar el 26,604.**
 
 ### RF-18 · Exportación FHIR (P2)
@@ -341,7 +347,7 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
   - termina en menos de 10 s;
   - funciona 3 veces seguidas.
 - Funciona con el hotspot del equipo. Cada canal en vivo tiene un respaldo simulado que se activa con un clic.
-- Todas las cifras coinciden con la propuesta v4 (CLAUDE.md, "Reglas de datos").
+- Todas las cifras coinciden con la propuesta v5.1 (CLAUDE.md, "Reglas de datos").
 - Se puede usar sin manual: cada estado tiene un texto claro y cada botón dice qué va a pasar antes de ejecutarlo.
 
 ## 6. Guion de la demostración en vivo (unos 5 minutos)
@@ -353,7 +359,7 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
 | 2 | El regulador la clasifica como P3 | La solicitud aparece en la Lista de espera, en su posición, con su razón | — |
 | 3 | "Enviar recordatorios (72 h)". Carmen toca "No podré asistir" | Cupo libre en Por reasignar: "Zona cercana · P1–P2" | — |
 | 4 | Cerrar el plazo. El celular de Rosa suena con la pantalla de llamada entrante; el integrante contesta en altavoz y conversa con el agente | Llamada en curso en el panel, con las acciones del agente en vivo | Gemini o el guion fijo |
-| 5 | "Aprobar y enviar oferta". Julio (chat real en el celular de un integrante) acepta primero; Ana (simulada) acepta después. "Cerrar oferta" | Asignado a Ana, con el mensaje de prioridad. Julio queda en espera prioritaria y recibe el aviso en el chat | — |
+| 5 | "Aprobar y enviar oferta". Julio (chat real en el celular de un integrante) acepta primero; Ana (simulada) acepta después. "Cerrar oferta" | Con la regla "mayor prioridad al cierre de la ventana": asignado a Ana, con el mensaje de prioridad. Julio queda en espera prioritaria y recibe el aviso en el chat | — |
 | 6 | Validación de Ana en su teléfono simulado | Cita confirmada. Su cita del 09/11 se libera por efecto dominó, se aprueba y termina en Luis | — |
 | 7 | En Dermatología hay un cupo libre en zona media; se aprueba la oferta | Al chat del jurado llega la oferta; toca "Acepto", luego "Sí, confirmo", y queda con cita | Simulado |
 | 8 | Tablero | Cupos llenados, validaciones, equidad, carga del personal y escenario de r ≈ 10 % | — |
@@ -361,10 +367,10 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
 ## 7. Pruebas obligatorias antes de congelar
 
 **Automáticas:**
-- [ ] Índice y orden (Ana 0.77 > Julio 0.48 aunque Julio responda primero).
+- [ ] Prioridad y orden (Ana, 69 % de su plazo, antes que Julio, 44 %, aunque Julio responda primero).
 - [ ] Zonas.
 - [ ] Cálculo de k con probabilidad objetivo y tope.
-- [ ] Asignación al de mayor índice.
+- [ ] Asignación con cada regla: "mayor prioridad al cierre de la ventana" y "primero que acepta".
 - [ ] Validación vencida: pasa al siguiente aceptante.
 - [ ] Efecto dominó: solo hacia adelante y una vez por semana.
 - [ ] Retiro sin motivo: rechazado.
@@ -372,7 +378,7 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
 - [ ] La vista del regulador no filtra identidad (sección 2).
 - [ ] Una sesión de chat no puede leer ni escribir en otra (cookie ajena o alterada: 401).
 - [ ] Herramienta de ElevenLabs sin secreto, con otro `callId` o con una llamada terminada: rechazada.
-- [ ] Ningún número completo aparece en los registros: buscar con un patrón `+51\d{9}`.
+- [ ] Ningún número de teléfono aparece en los registros (no se piden): buscar con un patrón `+51\d{9}`.
 
 **Punta a punta** con `webapp-testing`, contra producción: la tabla de la sección 6 con los canales simulados, y capturas de cada paso.
 
@@ -385,3 +391,14 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
 - [ ] Medir y anotar las latencias.
 
 **Reinicio:** 3 veces seguidas. Luego, `tests/e2e/demo_flow.py`, el flujo anterior.
+
+## 8. Pendiente para alinear con la propuesta v5.1
+
+Lo que la v5.1 (secciones 3 y 4) pide y el prototipo todavía no tiene. Ninguno de estos puntos se presenta en la demostración como si existiera.
+
+- **Lista de espera:** quitar los bonos del cálculo (`w_r` en 1, `w_n` y `w_e` en 0); selector en `/demo` que compare "primero que acepta" y "mayor prioridad al cierre de la ventana"; métricas que separen las consultas netas adicionales de los adelantos.
+- **Preconsulta** (sección 3.1): opcional, con consentimiento explícito, preguntas breves y adaptativas, y respuestas "no sé" o "prefiero decirlo en la consulta". Una lista fija de signos de alarma interrumpe la entrevista, da una instrucción de seguridad y crea una tarea para el personal. El resumen usa la plantilla fija ("Preconsulta referida por el paciente · pendiente de verificación profesional"), con campos críticos, "no evaluado" cuando falta una respuesta y enlace a las respuestas originales. El médico puede editarlo y cada cambio queda registrado. Nunca incluye un diagnóstico.
+- **Emergencia** (secciones 3.2, 3.3 y 3.6): tablero del recorrido con eventos que guardan por separado `ocurrido_en` y `registrado_en`; mediana y percentil 90 por tramo y por prioridad I a IV (NTS 042); completitud por recorrido; alertas de reevaluación dirigidas a un responsable por turno, con escalamiento. Sin botón de autoaviso del paciente. Etiqueta visible "Datos simulados".
+- **Alta** (sección 3.4): separar "control reservado" de "control realizado".
+- **Datos reales en la demo:** una tarjeta con la inasistencia del HMA (25.7 %, y 31.9 % con todas las especialidades) y el desempeño del modelo (52 % de inasistencia en la lista diaria de mayor riesgo frente a 27 % de promedio).
+- **Agente** (sección 4.3): la pantalla de llamada, el guion fijo (`src/lib/voice/scripted.ts`) y los agentes publicados en ElevenLabs (`npm run voice:sync`) deben usar la misma identificación y las mismas líneas de seguridad que `docs/conversaciones.md`.

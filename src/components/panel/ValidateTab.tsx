@@ -92,7 +92,7 @@ export function ValidateTab() {
                   <PhoneCall className="size-3.5" aria-hidden /> Llamar con el agente
                 </Button>
                 <Button className="min-h-9 text-xs" disabled={!!busy} onClick={() => act(`p${a.id}`, { action: "validate", assignmentId: a.id, ok: true, by: "persona" }, "Validada por una persona")}>
-                  <UserCheck className="size-3.5" aria-hidden /> Validé por teléfono
+                  <UserCheck className="size-3.5" aria-hidden /> Validé con el paciente
                 </Button>
                 <Button
                   variant="primary"

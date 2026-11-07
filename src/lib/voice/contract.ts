@@ -79,5 +79,5 @@ export type VoiceWaveProps = {
 };
 
 /** Identification and safety lines (propuesta v5.1, sección 4.3). The v5.1 track may refine the wording. */
-export const AGENT_IDENTIFICATION = (establishment: string) => `Asistente automatizado de ${establishment}`;
-export const SAFETY_LINES = ["Nunca le pedirá pagos, claves ni su DNI completo.", "Puede pedir hablar con una persona en cualquier momento."];
+export const AGENT_IDENTIFICATION = (establishment: string) => `Asistente automatizado del ${establishment}`;
+export const SAFETY_LINES = ["Nunca le pedirá pagos, claves, códigos ni su DNI completo.", "Puede pedir hablar con una persona en cualquier momento."];

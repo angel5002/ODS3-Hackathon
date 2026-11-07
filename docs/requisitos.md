@@ -1,5 +1,7 @@
 # Requisitos del prototipo — v2 (2 de noviembre de 2026)
 
+> Documento histórico: describe una versión anterior. Los requisitos vigentes están en `docs/requisitos_v4.md`, actualizado a la propuesta v5.1.
+
 Prioridad: **Debe** (sin esto no hay demo) · **Debería** · **Podría**.
 Ejecución: **E1** = núcleo (esta noche) · **E2** = agente de voz.
 
@@ -50,7 +52,7 @@ Toda transición queda en la bitácora (`eventos`): qué, cuándo (hora de demo 
 | RF-13 | Plantilla con botones: Confirmo · No podré asistir (libera el cupo) · Hablar con una persona | Debe |
 | RF-14 | La respuesta en el simulador cambia el estado en todas las pantallas | Debe |
 | RF-15 | Sin respuesta tras un plazo configurable en tiempo de demo → `sin_respuesta` y propuesta de llamada | Debería |
-| RF-16 | Chat con aspecto de app de mensajería genérica, sin marca ni logo de WhatsApp | Debe |
+| RF-16 | Chat con aspecto de app de mensajería genérica, sin marcas ni logos de terceros | Debe |
 | RF-17 | Simulación de respuestas del resto de pacientes (los que no tienen QR) con probabilidades basadas en su riesgo, para que el tablero se mueva de forma realista | Debería |
 
 ### M4. Agente de voz (E1 la estructura, E2 la IA)
@@ -119,7 +121,7 @@ Toda transición queda en la bitácora (`eventos`): qué, cuándo (hora de demo 
 
 ## Fuera de alcance
 
-Telefonía real y API de WhatsApp (fase 2 del proyecto) · integración con sistemas del hospital · reprogramación automática (solo se registra la solicitud) · quechua · modelos de voz locales (no hay GPU NVIDIA; NVIDIA PersonaPlex solo maneja inglés).
+Telefonía real y mensajería desde el número del establecimiento (piloto) · integración con sistemas del hospital · reprogramación automática (solo se registra la solicitud) · quechua · modelos de voz locales (no hay GPU NVIDIA; NVIDIA PersonaPlex solo maneja inglés).
 
 ## Notas de datos
 

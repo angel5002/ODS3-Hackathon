@@ -1,3 +1,5 @@
+> Documento histórico: describe una versión anterior de AsistIA. La propuesta vigente es la v5.1 (ver `CLAUDE.md`).
+
 # Informe de la ejecución 4 (AsistIA v4: chat web y voz en vivo)
 
 Fecha: 6 de noviembre de 2026. Fuente de verdad: `insumos/AsistIA_Propuesta_Final_Algorritmia_v4.pdf`, `docs/requisitos_v4.md`, `docs/conversaciones.md`.

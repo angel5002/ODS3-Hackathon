@@ -26,13 +26,13 @@ export class ScriptedVoiceAgent implements VoiceAgent {
     this.purpose = purpose;
     const name = context.patient_name || "la persona de la cita";
     if (purpose === "prueba" || purpose === "registro") {
-      this.say("Hola, le llama el asistente automático de citas, en una demostración. Esta es una llamada de prueba: si me escucha, todo funciona. Gracias.");
+      this.say("Hola, le llama el asistente automatizado de citas, en una demostración. Esta es una llamada de prueba: si me escucha, todo funciona. Gracias.");
       return this.end("Llamada de prueba");
     }
     this.say(
       purpose === "oferta"
         ? `Hola, le llama el asistente de citas, en una demostración. ¿Hablo con ${name}? Le llamo porque se liberó un cupo de ${context.specialty}.`
-        : `Hola, le llama el asistente automático de citas, en una demostración. Si prefiere hablar con una persona, solo dígalo. ¿Hablo con ${name} o con su cuidador?`,
+        : `Hola, le llama el asistente automatizado de citas, en una demostración. Si prefiere hablar con una persona, solo dígalo. ¿Hablo con ${name} o con su cuidador?`,
     );
     this.options([
       { id: "yes", label: context.role === "cuidador" ? `Sí, soy quien cuida a ${name}` : "Sí, soy yo", tone: "primary" },
