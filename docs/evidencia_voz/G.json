@@ -1,0 +1,267 @@
+[
+ {
+  "t": 170.33,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "G"
+ },
+ {
+  "t": 171.58,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P0015",
+  "status": 200,
+  "callId": 3996
+ },
+ {
+  "t": 171.97,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] screen.mount {callId: 3996, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 172.42,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 172.47,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] ui.answer {callId: 3996, clicks: 1}"
+ },
+ {
+  "t": 172.87,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] session.request {callId: 3996}"
+ },
+ {
+  "t": 172.87,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 173.5,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] session.response {callId: 3996, ok: true, reason: null}"
+ },
+ {
+  "t": 173.51,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3996, \"session\": true}"
+ },
+ {
+  "t": 173.6,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] effect.run {callId: 3996, alreadyStarted: false}"
+ },
+ {
+  "t": 173.6,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] sdk.start_session {callId: 3996, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 173.61,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] sdk.status {callId: 3996, status: connecting}"
+ },
+ {
+  "t": 173.73,
+  "who": "rosa",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 173.99,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 174.09,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] sdk.status {callId: 3996, status: connected}"
+ },
+ {
+  "t": 174.09,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] sdk.connect {callId: 3996}"
+ },
+ {
+  "t": 174.28,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] sdk.first_agent_turn {callId: 3996, ms: 188}"
+ },
+ {
+  "t": 174.78,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 182.51,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "cerró la pestaña"
+ },
+ {
+  "t": 182.51,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 0cac6fc3] page.pagehide {callId: 3996, ended: false}"
+ },
+ {
+  "t": 188.78,
+  "who": "staff",
+  "kind": "llamadas",
+  "calls": [
+   {
+    "id": 3996,
+    "status": "en_curso",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 189.6,
+  "who": "rosa-reabierta",
+  "kind": "console.info",
+  "text": "[voz ea4d528a] screen.mount {callId: 3996, status: en_curso, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 196.95,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 199.97,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 202.98,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 206.01,
+  "who": "rosa-reabierta",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 209.33,
+  "who": "staff",
+  "kind": "llamadas",
+  "calls": [
+   {
+    "id": 3996,
+    "status": "en_curso",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 209.33,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "G"
+ },
+ {
+  "t": 209.48,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 3996,
+    "status": "en_curso",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3995,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3994,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3993,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3992,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3991,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3990,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3989,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3988,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3987,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3986,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ }
+]

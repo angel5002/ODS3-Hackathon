@@ -1,0 +1,130 @@
+[
+ {
+  "t": 1.45,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "C0"
+ },
+ {
+  "t": 1.85,
+  "who": "registro",
+  "kind": "ui",
+  "action": "empezar"
+ },
+ {
+  "t": 1.9,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 0a817fc2] ui.start {clicks: 1, mode: registro}"
+ },
+ {
+  "t": 2.05,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 0a817fc2] mic.unlock {ok: true}"
+ },
+ {
+  "t": 2.06,
+  "who": "registro",
+  "kind": "console.error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "t": 2.06,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 0a817fc2] session.error {message: Su sesión de chat venció. Recargue la página.}"
+ },
+ {
+  "t": 2.07,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 401,
+  "body": "{\"error\": \"Su sesión de chat venció. Recargue la página.\"}"
+ },
+ {
+  "t": 6.02,
+  "who": "registro",
+  "kind": "sesión_lista_después"
+ },
+ {
+  "t": 6.03,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "C0"
+ },
+ {
+  "t": 6.17,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 3996,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3995,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3994,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3993,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3992,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3991,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3990,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3989,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3988,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3987,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3986,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ }
+]

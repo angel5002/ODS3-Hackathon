@@ -1,0 +1,903 @@
+[
+ {
+  "t": 6.5,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "A"
+ },
+ {
+  "t": 14.07,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P0015",
+  "status": 200,
+  "callId": 3986
+ },
+ {
+  "t": 14.08,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P1126",
+  "status": 200,
+  "callId": 3987
+ },
+ {
+  "t": 14.09,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P1393",
+  "status": 200,
+  "callId": 3988
+ },
+ {
+  "t": 14.18,
+  "who": "registro",
+  "kind": "ui",
+  "action": "empezar"
+ },
+ {
+  "t": 14.24,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] ui.start {clicks: 1, mode: registro}"
+ },
+ {
+  "t": 14.3,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] mic.unlock {ok: true}"
+ },
+ {
+  "t": 14.47,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] screen.mount {callId: 3986, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 14.55,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] screen.mount {callId: 3987, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 14.67,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] screen.mount {callId: 3988, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 14.9,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 14.93,
+  "who": "carmen",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 14.93,
+  "who": "julio",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 14.96,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] ui.answer {callId: 3986, clicks: 1}"
+ },
+ {
+  "t": 14.99,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] ui.answer {callId: 3987, clicks: 1}"
+ },
+ {
+  "t": 15.0,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] ui.answer {callId: 3988, clicks: 1}"
+ },
+ {
+  "t": 15.03,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 15.04,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 15.05,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 15.38,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] session.request {callId: 3986}"
+ },
+ {
+  "t": 15.38,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 15.39,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] session.request {callId: 3987}"
+ },
+ {
+  "t": 15.39,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 15.47,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] session.response {callId: 3989, ok: true, reason: null}"
+ },
+ {
+  "t": 15.48,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3989, \"session\": true}"
+ },
+ {
+  "t": 15.51,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] session.request {callId: 3988}"
+ },
+ {
+  "t": 15.52,
+  "who": "julio",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 15.78,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] effect.run {callId: 3989, alreadyStarted: false}"
+ },
+ {
+  "t": 15.79,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.start_session {callId: 3989, agent: asistia-registro}"
+ },
+ {
+  "t": 15.79,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.status {callId: 3989, status: connecting}"
+ },
+ {
+  "t": 15.9,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] session.response {callId: 3986, ok: true, reason: null}"
+ },
+ {
+  "t": 15.9,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3986, \"session\": true}"
+ },
+ {
+  "t": 15.94,
+  "who": "registro",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 16.02,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] session.response {callId: 3987, ok: true, reason: null}"
+ },
+ {
+  "t": 16.02,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3987, \"session\": true}"
+ },
+ {
+  "t": 16.2,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] session.response {callId: 3988, ok: true, reason: null}"
+ },
+ {
+  "t": 16.2,
+  "who": "julio",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3988, \"session\": true}"
+ },
+ {
+  "t": 16.23,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] effect.run {callId: 3986, alreadyStarted: false}"
+ },
+ {
+  "t": 16.24,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.start_session {callId: 3986, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 16.24,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.status {callId: 3986, status: connecting}"
+ },
+ {
+  "t": 16.24,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] effect.run {callId: 3987, alreadyStarted: false}"
+ },
+ {
+  "t": 16.24,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.start_session {callId: 3987, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 16.24,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.status {callId: 3987, status: connecting}"
+ },
+ {
+  "t": 16.39,
+  "who": "rosa",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 16.39,
+  "who": "carmen",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 16.45,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 16.46,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.status {callId: 3989, status: connected}"
+ },
+ {
+  "t": 16.46,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.connect {callId: 3989}"
+ },
+ {
+  "t": 16.51,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] effect.run {callId: 3988, alreadyStarted: false}"
+ },
+ {
+  "t": 16.51,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.start_session {callId: 3988, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 16.51,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.status {callId: 3988, status: connecting}"
+ },
+ {
+  "t": 16.58,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.first_agent_turn {callId: 3989, ms: 122}"
+ },
+ {
+  "t": 16.63,
+  "who": "julio",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 16.86,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.status {callId: 3987, status: connected}"
+ },
+ {
+  "t": 16.86,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.connect {callId: 3987}"
+ },
+ {
+  "t": 16.87,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.status {callId: 3986, status: connected}"
+ },
+ {
+  "t": 16.87,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.connect {callId: 3986}"
+ },
+ {
+  "t": 16.96,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 17.02,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.status {callId: 3988, status: connected}"
+ },
+ {
+  "t": 17.02,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.connect {callId: 3988}"
+ },
+ {
+  "t": 17.05,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.first_agent_turn {callId: 3987, ms: 189}"
+ },
+ {
+  "t": 17.06,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.first_agent_turn {callId: 3986, ms: 180}"
+ },
+ {
+  "t": 17.21,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.first_agent_turn {callId: 3988, ms: 194}"
+ },
+ {
+  "t": 17.24,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 17.25,
+  "who": "julio",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 17.59,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 17.59,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 17.81,
+  "who": "julio",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 18.05,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:02 · habla el asistente"
+ },
+ {
+  "t": 18.06,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:02 · habla el asistente"
+ },
+ {
+  "t": 18.07,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:01 · habla el asistente"
+ },
+ {
+  "t": 21.07,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:05 · habla el asistente"
+ },
+ {
+  "t": 21.07,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:05 · habla el asistente"
+ },
+ {
+  "t": 21.08,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:04 · habla el asistente"
+ },
+ {
+  "t": 24.08,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:08 · le escucha"
+ },
+ {
+  "t": 24.09,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:08 · le escucha"
+ },
+ {
+  "t": 24.09,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:07 · le escucha"
+ },
+ {
+  "t": 27.08,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:11 · le escucha"
+ },
+ {
+  "t": 27.09,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:11 · le escucha"
+ },
+ {
+  "t": 27.09,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:10 · le escucha"
+ },
+ {
+  "t": 30.09,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:14 · le escucha"
+ },
+ {
+  "t": 30.1,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:14 · le escucha"
+ },
+ {
+  "t": 30.11,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:13 · le escucha"
+ },
+ {
+  "t": 33.12,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:17 · le escucha"
+ },
+ {
+  "t": 33.13,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:17 · le escucha"
+ },
+ {
+  "t": 33.14,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:16 · le escucha"
+ },
+ {
+  "t": 36.16,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:20 · habla el asistente"
+ },
+ {
+  "t": 36.17,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:20 · habla el asistente"
+ },
+ {
+  "t": 36.18,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:19 · habla el asistente"
+ },
+ {
+  "t": 39.16,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "0:23 · habla el asistente"
+ },
+ {
+  "t": 39.17,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:23 · habla el asistente"
+ },
+ {
+  "t": 39.17,
+  "who": "julio",
+  "kind": "pantalla",
+  "line": "0:22 · le escucha"
+ },
+ {
+  "t": 42.18,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] ui.hangup {callId: 3986, live: true}"
+ },
+ {
+  "t": 42.18,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] ui.hangup_end_session {callId: 3986}"
+ },
+ {
+  "t": 42.18,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.status {callId: 3986, status: disconnecting}"
+ },
+ {
+  "t": 42.18,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] finish {callId: 3986, result: La persona colgó, alreadyEnded: false}"
+ },
+ {
+  "t": 42.19,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.status {callId: 3986, status: disconnected}"
+ },
+ {
+  "t": 42.2,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] sdk.disconnect {callId: 3986, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 42.2,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] finish {callId: 3986, result: La persona colgó, alreadyEnded: true}"
+ },
+ {
+  "t": 42.21,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 42.23,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] ui.hangup {callId: 3987, live: true}"
+ },
+ {
+  "t": 42.23,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] ui.hangup_end_session {callId: 3987}"
+ },
+ {
+  "t": 42.23,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.status {callId: 3987, status: disconnecting}"
+ },
+ {
+  "t": 42.23,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] finish {callId: 3987, result: La persona colgó, alreadyEnded: false}"
+ },
+ {
+  "t": 42.24,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.status {callId: 3987, status: disconnected}"
+ },
+ {
+  "t": 42.24,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] sdk.disconnect {callId: 3987, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 42.24,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] finish {callId: 3987, result: La persona colgó, alreadyEnded: true}"
+ },
+ {
+  "t": 42.25,
+  "who": "carmen",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 42.28,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] ui.hangup {callId: 3988, live: true}"
+ },
+ {
+  "t": 42.28,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] ui.hangup_end_session {callId: 3988}"
+ },
+ {
+  "t": 42.28,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.status {callId: 3988, status: disconnecting}"
+ },
+ {
+  "t": 42.28,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] finish {callId: 3988, result: La persona colgó, alreadyEnded: false}"
+ },
+ {
+  "t": 42.29,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.status {callId: 3988, status: disconnected}"
+ },
+ {
+  "t": 42.29,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] sdk.disconnect {callId: 3988, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 42.29,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] finish {callId: 3988, result: La persona colgó, alreadyEnded: true}"
+ },
+ {
+  "t": 42.3,
+  "who": "julio",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 42.33,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] ui.hangup_end_session {callId: 3989}"
+ },
+ {
+  "t": 42.33,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.status {callId: 3989, status: disconnecting}"
+ },
+ {
+  "t": 42.33,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.status {callId: 3989, status: disconnected}"
+ },
+ {
+  "t": 42.33,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] sdk.disconnect {callId: 3989, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 42.34,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] finish {callId: 3989, result: La persona colgó}"
+ },
+ {
+  "t": 42.34,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 26866ad3] effect.cleanup_end_session {callId: 3989}"
+ },
+ {
+  "t": 42.35,
+  "who": "registro",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 42.42,
+  "who": "rosa",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 42.46,
+  "who": "carmen",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 42.5,
+  "who": "julio",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 42.54,
+  "who": "registro",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 42.6,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 42.64,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 42.77,
+  "who": "julio",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 42.8,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 43.15,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] screen.unmount {callId: 3986, ended: true}"
+ },
+ {
+  "t": 43.15,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 6d2f19f3] effect.cleanup_end_session {callId: 3986}"
+ },
+ {
+  "t": 43.16,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] screen.unmount {callId: 3987, ended: true}"
+ },
+ {
+  "t": 43.16,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 0bbb1b86] effect.cleanup_end_session {callId: 3987}"
+ },
+ {
+  "t": 43.18,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] screen.unmount {callId: 3988, ended: true}"
+ },
+ {
+  "t": 43.19,
+  "who": "julio",
+  "kind": "console.info",
+  "text": "[voz 6e964090] effect.cleanup_end_session {callId: 3988}"
+ },
+ {
+  "t": 46.41,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "A"
+ },
+ {
+  "t": 46.56,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 3989,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3988,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3987,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3986,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ }
+]

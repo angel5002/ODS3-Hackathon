@@ -1,0 +1,759 @@
+[
+ {
+  "t": 35.25,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "D"
+ },
+ {
+  "t": 36.49,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P0052",
+  "status": 200,
+  "callId": 3998
+ },
+ {
+  "t": 36.91,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] screen.mount {callId: 3998, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 37.32,
+  "who": "valeria",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 37.37,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] ui.answer {callId: 3998, clicks: 1}"
+ },
+ {
+  "t": 37.74,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] session.request {callId: 3998}"
+ },
+ {
+  "t": 37.75,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 38.32,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] session.response {callId: 3998, ok: true, reason: null}"
+ },
+ {
+  "t": 38.33,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3998, \"session\": true}"
+ },
+ {
+  "t": 38.48,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] effect.run {callId: 3998, alreadyStarted: false}"
+ },
+ {
+  "t": 38.48,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.start_session {callId: 3998, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 38.49,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.status {callId: 3998, status: connecting}"
+ },
+ {
+  "t": 38.6,
+  "who": "valeria",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 38.84,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 38.97,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.status {callId: 3998, status: connected}"
+ },
+ {
+  "t": 38.97,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.connect {callId: 3998}"
+ },
+ {
+  "t": 39.19,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.first_agent_turn {callId: 3998, ms: 224}"
+ },
+ {
+  "t": 39.72,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 41.42,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] ui.hangup {callId: 3998, live: true}"
+ },
+ {
+  "t": 41.42,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] ui.hangup_end_session {callId: 3998}"
+ },
+ {
+  "t": 41.42,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.status {callId: 3998, status: disconnecting}"
+ },
+ {
+  "t": 41.42,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] finish {callId: 3998, result: La persona colgó, alreadyEnded: false}"
+ },
+ {
+  "t": 41.42,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.status {callId: 3998, status: disconnected}"
+ },
+ {
+  "t": 41.43,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] sdk.disconnect {callId: 3998, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 41.43,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] finish {callId: 3998, result: La persona colgó, alreadyEnded: true}"
+ },
+ {
+  "t": 41.44,
+  "who": "valeria",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 41.66,
+  "who": "valeria",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 41.8,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 42.2,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] screen.unmount {callId: 3998, ended: true}"
+ },
+ {
+  "t": 42.2,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 8c9fd7b0] effect.cleanup_end_session {callId: 3998}"
+ },
+ {
+  "t": 42.58,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P0052",
+  "status": 200,
+  "callId": 3999
+ },
+ {
+  "t": 42.98,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] screen.mount {callId: 3999, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 43.4,
+  "who": "valeria",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 43.43,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] ui.answer {callId: 3999, clicks: 1}"
+ },
+ {
+  "t": 43.8,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] session.request {callId: 3999}"
+ },
+ {
+  "t": 43.8,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 44.39,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] session.response {callId: 3999, ok: true, reason: null}"
+ },
+ {
+  "t": 44.39,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] effect.run {callId: 3999, alreadyStarted: false}"
+ },
+ {
+  "t": 44.39,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.start_session {callId: 3999, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 44.4,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.status {callId: 3999, status: connecting}"
+ },
+ {
+  "t": 44.4,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3999, \"session\": true}"
+ },
+ {
+  "t": 44.52,
+  "who": "valeria",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 44.96,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.status {callId: 3999, status: connected}"
+ },
+ {
+  "t": 44.96,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.connect {callId: 3999}"
+ },
+ {
+  "t": 45.07,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 45.15,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.first_agent_turn {callId: 3999, ms: 190}"
+ },
+ {
+  "t": 45.63,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 47.48,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] ui.hangup {callId: 3999, live: true}"
+ },
+ {
+  "t": 47.48,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] ui.hangup_end_session {callId: 3999}"
+ },
+ {
+  "t": 47.48,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.status {callId: 3999, status: disconnecting}"
+ },
+ {
+  "t": 47.48,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] finish {callId: 3999, result: La persona colgó, alreadyEnded: false}"
+ },
+ {
+  "t": 47.49,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.status {callId: 3999, status: disconnected}"
+ },
+ {
+  "t": 47.49,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] sdk.disconnect {callId: 3999, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 47.49,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] finish {callId: 3999, result: La persona colgó, alreadyEnded: true}"
+ },
+ {
+  "t": 47.5,
+  "who": "valeria",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 47.69,
+  "who": "valeria",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 47.89,
+  "who": "valeria",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 48.27,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] screen.unmount {callId: 3999, ended: true}"
+ },
+ {
+  "t": 48.27,
+  "who": "valeria",
+  "kind": "console.info",
+  "text": "[voz 72191d93] effect.cleanup_end_session {callId: 3999}"
+ },
+ {
+  "t": 48.53,
+  "who": "valeria",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 51.55,
+  "who": "valeria",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 56.67,
+  "who": "registro",
+  "kind": "sesión_lista",
+  "ms": 2035
+ },
+ {
+  "t": 56.72,
+  "who": "registro",
+  "kind": "ui",
+  "action": "empezar"
+ },
+ {
+  "t": 56.75,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] ui.start {clicks: 1, mode: registro}"
+ },
+ {
+  "t": 56.8,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] mic.unlock {ok: true}"
+ },
+ {
+  "t": 57.68,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] session.response {callId: 4000, ok: true, reason: null}"
+ },
+ {
+  "t": 57.69,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4000, \"session\": true}"
+ },
+ {
+  "t": 58.0,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] effect.run {callId: 4000, alreadyStarted: false}"
+ },
+ {
+  "t": 58.0,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.start_session {callId: 4000, agent: asistia-registro}"
+ },
+ {
+  "t": 58.0,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.status {callId: 4000, status: connecting}"
+ },
+ {
+  "t": 58.13,
+  "who": "registro",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 58.48,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.status {callId: 4000, status: connected}"
+ },
+ {
+  "t": 58.48,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.connect {callId: 4000}"
+ },
+ {
+  "t": 58.68,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.first_agent_turn {callId: 4000, ms: 201}"
+ },
+ {
+  "t": 59.08,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 60.78,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] ui.hangup_end_session {callId: 4000}"
+ },
+ {
+  "t": 60.78,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.status {callId: 4000, status: disconnecting}"
+ },
+ {
+  "t": 60.79,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.status {callId: 4000, status: disconnected}"
+ },
+ {
+  "t": 60.79,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] sdk.disconnect {callId: 4000, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 60.79,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] finish {callId: 4000, result: La persona colgó}"
+ },
+ {
+  "t": 60.8,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz fb7b2f38] effect.cleanup_end_session {callId: 4000}"
+ },
+ {
+  "t": 60.8,
+  "who": "registro",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 61.0,
+  "who": "registro",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 61.07,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 61.97,
+  "who": "registro",
+  "kind": "ui",
+  "action": "empezar"
+ },
+ {
+  "t": 62.01,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] ui.start {clicks: 1, mode: registro}"
+ },
+ {
+  "t": 62.04,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] mic.unlock {ok: true}"
+ },
+ {
+  "t": 62.96,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] session.response {callId: 4001, ok: true, reason: null}"
+ },
+ {
+  "t": 62.96,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] effect.run {callId: 4001, alreadyStarted: false}"
+ },
+ {
+  "t": 62.96,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.start_session {callId: 4001, agent: asistia-registro}"
+ },
+ {
+  "t": 62.96,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.status {callId: 4001, status: connecting}"
+ },
+ {
+  "t": 62.97,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4001, \"session\": true}"
+ },
+ {
+  "t": 63.09,
+  "who": "registro",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 63.45,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.status {callId: 4001, status: connected}"
+ },
+ {
+  "t": 63.45,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.connect {callId: 4001}"
+ },
+ {
+  "t": 63.66,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.first_agent_turn {callId: 4001, ms: 204}"
+ },
+ {
+  "t": 64.1,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 70.03,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] ui.hangup_end_session {callId: 4001}"
+ },
+ {
+  "t": 70.03,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.status {callId: 4001, status: disconnecting}"
+ },
+ {
+  "t": 70.03,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.status {callId: 4001, status: disconnected}"
+ },
+ {
+  "t": 70.04,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] sdk.disconnect {callId: 4001, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 70.04,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] finish {callId: 4001, result: La persona colgó}"
+ },
+ {
+  "t": 70.04,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 36aa1c6f] effect.cleanup_end_session {callId: 4001}"
+ },
+ {
+  "t": 70.05,
+  "who": "registro",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 70.25,
+  "who": "registro",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 70.5,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 73.08,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "D"
+ },
+ {
+  "t": 73.3,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 4001,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4000,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3999,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3998,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3997,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3996,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3995,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3994,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3993,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3992,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3991,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3990,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ }
+]

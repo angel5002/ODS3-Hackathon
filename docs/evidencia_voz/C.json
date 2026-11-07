@@ -1,0 +1,255 @@
+[
+ {
+  "t": 6.63,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "C"
+ },
+ {
+  "t": 8.22,
+  "who": "chat",
+  "kind": "sesión_lista",
+  "ms": 1520
+ },
+ {
+  "t": 9.35,
+  "who": "voz",
+  "kind": "sesión_lista",
+  "ms": 995
+ },
+ {
+  "t": 9.4,
+  "who": "voz",
+  "kind": "ui",
+  "action": "empezar"
+ },
+ {
+  "t": 9.44,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] ui.start {clicks: 1, mode: registro}"
+ },
+ {
+  "t": 9.5,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] mic.unlock {ok: true}"
+ },
+ {
+  "t": 10.41,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] session.response {callId: 3997, ok: true, reason: null}"
+ },
+ {
+  "t": 10.42,
+  "who": "voz",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 3997, \"session\": true}"
+ },
+ {
+  "t": 10.72,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] effect.run {callId: 3997, alreadyStarted: false}"
+ },
+ {
+  "t": 10.72,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.start_session {callId: 3997, agent: asistia-registro}"
+ },
+ {
+  "t": 10.72,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.status {callId: 3997, status: connecting}"
+ },
+ {
+  "t": 10.85,
+  "who": "voz",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 11.2,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.status {callId: 3997, status: connected}"
+ },
+ {
+  "t": 11.21,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.connect {callId: 3997}"
+ },
+ {
+  "t": 11.4,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.first_agent_turn {callId: 3997, ms: 191}"
+ },
+ {
+  "t": 11.79,
+  "who": "voz",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 15.51,
+  "who": "chat",
+  "kind": "ui",
+  "action": "escribe ACEPTO"
+ },
+ {
+  "t": 18.55,
+  "who": "chat",
+  "kind": "ui",
+  "action": "escribe 1"
+ },
+ {
+  "t": 31.6,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] ui.hangup_end_session {callId: 3997}"
+ },
+ {
+  "t": 31.6,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.status {callId: 3997, status: disconnecting}"
+ },
+ {
+  "t": 31.61,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.status {callId: 3997, status: disconnected}"
+ },
+ {
+  "t": 31.61,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] sdk.disconnect {callId: 3997, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 31.61,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] finish {callId: 3997, result: La persona colgó}"
+ },
+ {
+  "t": 31.62,
+  "who": "voz",
+  "kind": "console.info",
+  "text": "[voz fd56e8c7] effect.cleanup_end_session {callId: 3997}"
+ },
+ {
+  "t": 31.62,
+  "who": "voz",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 31.81,
+  "who": "voz",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 31.9,
+  "who": "voz",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 34.65,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "C"
+ },
+ {
+  "t": 34.8,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 3997,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3996,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3995,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3994,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3993,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3992,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3991,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3990,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3989,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3988,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3987,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3986,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ }
+]

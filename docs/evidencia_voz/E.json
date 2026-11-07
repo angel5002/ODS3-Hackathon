@@ -1,0 +1,447 @@
+[
+ {
+  "t": 73.84,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "E"
+ },
+ {
+  "t": 75.12,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P1126",
+  "status": 200,
+  "callId": 4002
+ },
+ {
+  "t": 75.62,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] screen.mount {callId: 4002, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 75.96,
+  "who": "carmen",
+  "kind": "ui",
+  "action": "contestar (doble)"
+ },
+ {
+  "t": 76.02,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] ui.answer {callId: 4002, clicks: 1}"
+ },
+ {
+  "t": 76.03,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 76.43,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] session.request {callId: 4002}"
+ },
+ {
+  "t": 76.43,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 77.03,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] session.response {callId: 4002, ok: true, reason: null}"
+ },
+ {
+  "t": 77.04,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4002, \"session\": true}"
+ },
+ {
+  "t": 77.12,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] effect.run {callId: 4002, alreadyStarted: false}"
+ },
+ {
+  "t": 77.12,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.start_session {callId: 4002, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 77.13,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.status {callId: 4002, status: connecting}"
+ },
+ {
+  "t": 77.25,
+  "who": "carmen",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 77.6,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 77.6,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.status {callId: 4002, status: connected}"
+ },
+ {
+  "t": 77.6,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.connect {callId: 4002}"
+ },
+ {
+  "t": 77.79,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.first_agent_turn {callId: 4002, ms: 187}"
+ },
+ {
+  "t": 78.36,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 79.04,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:01 · habla el asistente"
+ },
+ {
+  "t": 82.05,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:05 · habla el asistente"
+ },
+ {
+  "t": 85.05,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "0:08 · le escucha"
+ },
+ {
+  "t": 88.08,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] ui.hangup {callId: 4002, live: true}"
+ },
+ {
+  "t": 88.08,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] ui.hangup_end_session {callId: 4002}"
+ },
+ {
+  "t": 88.08,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.status {callId: 4002, status: disconnecting}"
+ },
+ {
+  "t": 88.08,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] finish {callId: 4002, result: La persona colgó, alreadyEnded: false}"
+ },
+ {
+  "t": 88.09,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.status {callId: 4002, status: disconnected}"
+ },
+ {
+  "t": 88.09,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] sdk.disconnect {callId: 4002, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 88.09,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] finish {callId: 4002, result: La persona colgó, alreadyEnded: true}"
+ },
+ {
+  "t": 88.11,
+  "who": "carmen",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 88.3,
+  "who": "carmen",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 88.59,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 89.03,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] screen.unmount {callId: 4002, ended: true}"
+ },
+ {
+  "t": 89.03,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 3fcf2ec1] effect.cleanup_end_session {callId: 4002}"
+ },
+ {
+  "t": 90.18,
+  "who": "registro",
+  "kind": "sesión_lista",
+  "ms": 2002
+ },
+ {
+  "t": 90.23,
+  "who": "registro",
+  "kind": "ui",
+  "action": "empezar (doble)"
+ },
+ {
+  "t": 90.26,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] ui.start {clicks: 1, mode: registro}"
+ },
+ {
+  "t": 90.31,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] mic.unlock {ok: true}"
+ },
+ {
+  "t": 91.2,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] session.response {callId: 4003, ok: true, reason: null}"
+ },
+ {
+  "t": 91.21,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4003, \"session\": true}"
+ },
+ {
+  "t": 91.51,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] effect.run {callId: 4003, alreadyStarted: false}"
+ },
+ {
+  "t": 91.51,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.start_session {callId: 4003, agent: asistia-registro}"
+ },
+ {
+  "t": 91.52,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.status {callId: 4003, status: connecting}"
+ },
+ {
+  "t": 91.64,
+  "who": "registro",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 92.09,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.status {callId: 4003, status: connected}"
+ },
+ {
+  "t": 92.1,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.connect {callId: 4003}"
+ },
+ {
+  "t": 92.31,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.first_agent_turn {callId: 4003, ms: 222}"
+ },
+ {
+  "t": 92.69,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 102.31,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] ui.hangup_end_session {callId: 4003}"
+ },
+ {
+  "t": 102.31,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.status {callId: 4003, status: disconnecting}"
+ },
+ {
+  "t": 102.32,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.status {callId: 4003, status: disconnected}"
+ },
+ {
+  "t": 102.32,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] sdk.disconnect {callId: 4003, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 102.32,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] finish {callId: 4003, result: La persona colgó}"
+ },
+ {
+  "t": 102.33,
+  "who": "registro",
+  "kind": "console.info",
+  "text": "[voz 877fe7f3] effect.cleanup_end_session {callId: 4003}"
+ },
+ {
+  "t": 102.34,
+  "who": "registro",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 102.55,
+  "who": "registro",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 102.6,
+  "who": "registro",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 105.36,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "E"
+ },
+ {
+  "t": 105.51,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 4003,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4002,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4001,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4000,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3999,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3998,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3997,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3996,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3995,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3994,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3993,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3992,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ }
+]

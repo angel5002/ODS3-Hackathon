@@ -1,0 +1,284 @@
+[
+ {
+  "t": 2.58,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "S"
+ },
+ {
+  "t": 5.46,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P0015",
+  "status": 200,
+  "callId": 4004
+ },
+ {
+  "t": 5.93,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] screen.mount {callId: 4004, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 5.93,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] screen.unmount {callId: 4004, ended: false}"
+ },
+ {
+  "t": 5.93,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] screen.mount {callId: 4004, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 6.3,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 6.36,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] ui.answer {callId: 4004, clicks: 1}"
+ },
+ {
+  "t": 6.39,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": "Conectando…"
+ },
+ {
+  "t": 6.94,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] session.request {callId: 4004}"
+ },
+ {
+  "t": 6.95,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 7.74,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] session.response {callId: 4004, ok: true, reason: null}"
+ },
+ {
+  "t": 7.76,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4004, \"session\": true}"
+ },
+ {
+  "t": 7.9,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] effect.run {callId: 4004, alreadyStarted: false}"
+ },
+ {
+  "t": 7.91,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] sdk.start_session {callId: 4004, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 7.91,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] sdk.status {callId: 4004, status: connecting}"
+ },
+ {
+  "t": 7.91,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] effect.cleanup_end_session {callId: 4004}"
+ },
+ {
+  "t": 7.92,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] effect.run {callId: 4004, alreadyStarted: true}"
+ },
+ {
+  "t": 8.05,
+  "who": "rosa",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 8.36,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 8.47,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] sdk.status {callId: 4004, status: connected}"
+ },
+ {
+  "t": 8.47,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] sdk.status {callId: 4004, status: disconnecting}"
+ },
+ {
+  "t": 8.47,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] sdk.status {callId: 4004, status: disconnected}"
+ },
+ {
+  "t": 8.47,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] sdk.disconnect {callId: 4004, reason: user, code: null, closeReason: null, alreadyFailed: false}"
+ },
+ {
+  "t": 8.48,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] finish {callId: 4004, result: La persona colgó, alreadyEnded: false}"
+ },
+ {
+  "t": 8.7,
+  "who": "rosa",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 9.03,
+  "who": "rosa",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true}"
+ },
+ {
+  "t": 9.22,
+  "who": "rosa",
+  "kind": "console.info",
+  "text": "[voz 8582946a] screen.unmount {callId: 4004, ended: true}"
+ },
+ {
+  "t": 9.39,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 12.41,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 15.42,
+  "who": "rosa",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 21.45,
+  "who": "rosa",
+  "kind": "ui",
+  "action": "colgar (no disponible)",
+  "text": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"b"
+ },
+ {
+  "t": 24.47,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "S"
+ },
+ {
+  "t": 24.94,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 4004,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4003,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4002,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4001,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4000,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3999,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3998,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3997,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3996,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3995,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3994,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 3993,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ }
+]
