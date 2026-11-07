@@ -216,7 +216,59 @@ Al terminar, la base quedó sin solicitudes ni tareas nuevas y sin llamadas abie
    - carrera de dos aceptaciones del mismo cupo;
    - pruebas unitarias de la máquina de estados.
 
-## 9. Archivos de este diagnóstico
+## 9. Paridad con producción (7/11, antes del hito 2)
+
+**Variables:** `scripts/dev/vercel-env-names.mjs` compara solo nombres.
+- Production tiene todas las que la app usa en tiempo de ejecución: `ELEVENLABS_API_KEY`, `ELEVENLABS_TOOL_SECRET`, `ELEVENLABS_VOICE_NAME`, `ANTHROPIC_*`, `CHAT_SESSION_SECRET`, `DEMO_PIN`, `PUBLIC_BASE_URL`, `NEXT_PUBLIC_*`, `SUPABASE_SERVICE_ROLE_KEY` y `SUPABASE_PROJECT_REF`.
+- Faltan en Production:
+  - `ELEVENLABS_WEBHOOK_SECRET`, que también está vacía en `.env.local`;
+  - las herramientas locales (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `VERCEL_TOKEN`, `VERCEL_OIDC_TOKEN`, `GEMINI_API_KEY`, que no usa el código);
+  - las de Twilio y de teléfonos, vacías y fuera de la v5.1.
+- Las variables de ElevenLabs se cargaron el 6/11 a las 17:49 UTC, y el despliegue de producción vigente (`dpl_7tq6…ErCxdyZF`) es de las **17:51 UTC**, así que las incluye.
+
+**Voz del teléfono simulado contra el despliegue real:**
+- `scripts/dev/prod-voice-check.mjs`, por API: una llamada de prueba a Rosa → `POST https://ods3-hackathon.vercel.app/api/voice/session` → **200 en 550 ms, con URL firmada** (`wss://`) del agente `asistia-confirmacion`. **No cae al guion fijo.**
+  - Confirma E6 en producción: `patient_name`, `specialty`, `slot_text` y `deadline_text` llegan **vacías**.
+- `tests/e2e/prod_phone_voice.py`, en el navegador: Chromium con micrófono simulado abre `/t/rosa` en producción, activa el sonido, contesta, **abre el WebSocket de ElevenLabs** y el agente habla («0:01 · habla el asistente»). Captura en `capturas/e5/produccion-telefono-llamada.png`.
+- Ambas llamadas se cerraron como `finalizada`.
+
+**¿Por qué ninguna llamada del teléfono llegó a ElevenLabs el 6/11?** No se puede determinar con evidencia.
+- Hoy el camino funciona en producción desde un navegador de escritorio.
+- Las filas de `calls` del equipo, que decían si cada llamada usó ElevenLabs o el guion y por qué, se borraron con el reinicio del 7/11 a las 04:35 UTC.
+- La API de registros de Vercel solo transmite en vivo y no devolvió el historial.
+- Hipótesis que siguen abiertas, sin reproducir:
+  1. las llamadas del teléfono se contestaron en un celular (Safari de iOS o Chrome de Android) donde `startSession` falló antes de abrir el WebSocket, por ejemplo por el `AudioContext` o el micrófono, y la pantalla pasó sola al guion fijo, sin dejar rastro en ElevenLabs;
+  2. no se contestaron con voz: se probaron las llamadas automáticas de 48 h, que a los pacientes sin teléfono abierto se simulan a los 15 s, o se usó `?voz=guion`.
+- **Desde el hito 2, cada intento queda en `voice_events`**, con su estado, motivo y código, y se ve en `/demo` → «Voz en vivo». La prueba manual con dos celulares lo dirá.
+
+## 10. Hito 2: lo implementado y lo que falta
+
+**Implementado en `e5`** (commit `3844114`):
+- **Migración solo aditiva** `supabase/migrations/20261107010000_e5_voice_sessions.sql`:
+  - tablas `voice_sessions` y `voice_events`, más funciones nuevas;
+  - no modifica nada que use `main`: `update_call` y `reset_demo` solo se llaman;
+  - la FK de `voice_sessions.call_id` es `on delete cascade`, así que el reinicio de la demo las limpia.
+- **Una sesión por llamada:** índice único parcial más `voice_claim` con candado. El segundo dispositivo recibe «Esta llamada ya se está atendiendo en otro dispositivo» (E1).
+- **Latido cada 10 s y vencimiento a los 30 s** (`voice_expire`). `pagehide` cierra la sesión **y la llamada** con `sendBeacon` (E2). La pantalla reabierta ofrece «Volver a conectar».
+- **Máquina de estados en el cliente:** `src/lib/voice/machine.ts`, con 9 pruebas unitarias que pasan. `LiveVoice` resiste el doble montaje del modo estricto (E4). Contestar y Empezar son idempotentes.
+- **`/pedir-cita` no deja empezar la voz hasta que exista la sesión de chat** («Preparando…»), y reintenta una vez si no estaba lista (E3).
+- **Capacidad:** `VOICE_MAX_CONCURRENT`, por defecto 10. Si se supera, o si ElevenLabs responde 429, aparece «Todas las líneas están ocupadas» con la posición en la fila, reintento cada 10 s y la opción de seguir sin voz o por chat.
+- **Variables dinámicas:** el servidor verifica las obligatorias de cada tarea y usa una frase neutra si falta alguna, registrándolo en `voice_events`. La llamada de prueba usa el nombre del personaje (E6).
+- **`conversation_id` del SDK** (`getId()`): se guarda en `voice_sessions`. El webhook posterior a la llamada cierra la sesión por ese id.
+- **Instrumentación:** pasó a `voice_events` mediante `/api/voice/event`, con límite de 60 eventos por sesión y minuto en Postgres. **`/api/voice/diag` se eliminó.**
+- **Transiciones condicionales de la llamada** (`voice_call_status`): `en_curso` solo desde `sonando`, y una llamada terminada no se reabre.
+- **Realtime:** no se agregó un canal por sesión. El estado de cada sesión viaja en la respuesta del latido, solo a su dueño, y no hay difusión con datos de personas.
+
+**Pendiente:**
+- **Aplicar la migración** a la base compartida: el clasificador de seguridad bloqueó `supabase db push` como despliegue a producción y requiere la autorización del equipo.
+- Luego, correr:
+  - `npm run test:race` (con `ALLOW_DB_WRITE=1`);
+  - Playwright B, G y A;
+  - la prueba de 4 contextos sin sesiones colgadas.
+- **Webhook de fin de llamada:** el código está listo, pero falta crearlo en ElevenLabs (Agents → Settings → Post-call webhook, URL `https://ods3-hackathon.vercel.app/api/voice/post-call`, eventos de transcripción) y guardar su secreto como `ELEVENLABS_WEBHOOK_SECRET` en `.env.local` y en Vercel. No lo hice porque no puedo escribir en `.env.local`.
+- **`.env.example`:** falta agregar `VOICE_MAX_CONCURRENT` (opcional, por defecto 10). No lo toqué por la regla de no modificarlo.
+
+## 11. Archivos de este diagnóstico
 
 - **Instrumentación:**
   - `src/lib/voice/diag.ts` y `src/app/api/voice/diag/route.ts`;
