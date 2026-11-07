@@ -45,3 +45,6 @@ AsistIA_respaldo/
 AsistIA_respaldo.zip
 .env.local
 insumos/DATOS HOSPITAL MARIA AUXILIADORA.csv
+
+# Archivos comprimidos (respaldos y kits locales)
+*.zip
