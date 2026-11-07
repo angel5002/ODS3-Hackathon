@@ -1,0 +1,50 @@
+{
+  "_comment": "Herramientas de servidor de los agentes. call_id y token llegan como variables dinámicas; el resto lo completa el modelo.",
+  "get_appointment": { "description": "Devuelve la especialidad, la fecha y la hora de la cita de esta llamada.", "params": {} },
+  "confirm_appointment": { "description": "Confirma que el paciente asistirá a su cita.", "params": {} },
+  "release_slot": { "description": "Registra que el paciente no podrá asistir; su cupo se ofrecerá a otro paciente.", "params": {} },
+  "get_available_slots": { "description": "Devuelve 3 fechas libres para reprogramar la cita.", "params": {} },
+  "propose_reschedule": {
+    "description": "Registra la fecha elegida para reprogramar. Queda pendiente de validación por el equipo de citas.",
+    "params": { "option": { "type": "integer", "description": "Número de la fecha elegida, de 1 a 3" } },
+    "required": ["option"]
+  },
+  "get_offer": { "description": "Devuelve el cupo ofrecido, la especialidad y el plazo para responder.", "params": {} },
+  "respond_offer": {
+    "description": "Registra si la persona acepta o no el cupo ofrecido.",
+    "params": { "answer": { "type": "string", "enum": ["accept", "decline"], "description": "accept si lo quiere, decline si no" } },
+    "required": ["answer"]
+  },
+  "get_assignment": { "description": "Devuelve el cupo asignado que hay que validar.", "params": {} },
+  "confirm_assignment": {
+    "description": "Valida la asignación: la persona confirma que podrá asistir.",
+    "params": { "role": { "type": "string", "enum": ["paciente", "cuidador"], "description": "Si habla el paciente o su cuidador" } },
+    "required": ["role"]
+  },
+  "decline_assignment": { "description": "Registra que la persona ya no puede tomar el cupo asignado; conserva su lugar.", "params": {} },
+  "list_specialties": { "description": "Devuelve las especialidades que se pueden registrar.", "params": {} },
+  "register_request": {
+    "description": "Registra la solicitud de cita con los datos recogidos y devuelve el código.",
+    "params": {
+      "patient_name": { "type": "string", "description": "Nombre del paciente (ficticio)" },
+      "document_type": { "type": "string", "enum": ["dni", "ce", "otro", "sin_documento"], "description": "Tipo de documento, sin número" },
+      "age": { "type": "integer", "description": "Edad en años" },
+      "specialty": { "type": "string", "description": "Especialidad elegida, o «Por definir»" },
+      "referral": { "type": "boolean", "description": "Tiene hoja de referencia" },
+      "reason": { "type": "string", "description": "Motivo en una o dos frases, sin nombres ni números" },
+      "pregnant": { "type": "boolean", "description": "Está embarazada" },
+      "disability": { "type": "boolean", "description": "Tiene alguna discapacidad" },
+      "channel": { "type": "string", "enum": ["chat", "llamada"], "description": "Cómo prefiere que le avisen" },
+      "short_notice_ok": { "type": "boolean", "description": "Puede asistir con 2 días de aviso" }
+    },
+    "required": ["patient_name", "document_type", "age", "specialty", "referral", "reason", "channel", "short_notice_ok"]
+  },
+  "transfer_to_human": {
+    "description": "Pide que una persona del equipo de citas contacte al paciente.",
+    "params": { "reason": { "type": "string", "description": "Motivo breve" } }
+  },
+  "flag_alarm": {
+    "description": "Signos de alarma: avisa al equipo y registra la derivación a emergencia.",
+    "params": { "symptom": { "type": "string", "description": "Signo mencionado" } }
+  }
+}

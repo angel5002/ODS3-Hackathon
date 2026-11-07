@@ -39,3 +39,9 @@ test-results/
 
 # Local preview config (uses a local-only test PIN)
 .claude/launch.json
+
+# Kit de respaldo local (contiene el CSV original y la propuesta editable)
+AsistIA_respaldo/
+AsistIA_respaldo.zip
+.env.local
+insumos/DATOS HOSPITAL MARIA AUXILIADORA.csv

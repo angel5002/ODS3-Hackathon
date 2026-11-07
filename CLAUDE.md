@@ -1,75 +1,106 @@
-# CLAUDE.md — Contexto permanente del proyecto
+# CLAUDE.md — Contexto permanente de AsistIA (versión 4)
 
-## Qué es este proyecto
+> Reemplaza al `CLAUDE.md` anterior. La fuente de verdad del producto es `insumos/AsistIA_Propuesta_Final_Algorritmia_v4.pdf`. Los requisitos están en `docs/requisitos_v4.md` y los guiones de conversación en `docs/conversaciones.md`. Si algo del código actual contradice estos documentos, mandan los documentos.
 
-Prototipo para CientíficaHack 2026 (Universidad Científica del Sur, Lima), Desafío 4 "IA para la experiencia del paciente" (ODS 3), pregunta 3: equilibrar la demanda de pacientes con los recursos disponibles.
+## Qué es
 
-**Nuestra respuesta:** recuperar las citas de consulta externa que se pierden en hospitales públicos del MINSA. En 2023, en el Hospital María Auxiliadora (MINSA, III-1, Lima), 1 de cada 4 citas programadas no se atendió (106,100 citas, unas 347 por día de atención), mientras había pacientes haciendo cola desde las 5 a. m. sin conseguir cupo.
+AsistIA, del grupo Algorritmia, es el prototipo para CientíficaHack 2026 (Universidad Científica del Sur), Desafío 4 (ODS 3), pregunta 3: equilibrar la demanda de pacientes con los recursos.
 
-**El producto: AsistIA** (grupo Algorritmia; el nombre se toma de `NEXT_PUBLIC_APP_NAME`, logo en `video/insumos/logo-asistia.svg`):
-1. Estima el riesgo de que cada cita de mañana no se atienda.
-2. Envía un recordatorio por mensaje a todas las citas (simulado, sin API de WhatsApp).
-3. Llama con un agente de voz con IA a quienes no responden (llamada dentro del navegador del celular, sin telefonía).
-4. Cuando un cupo se libera, propone pacientes de la lista de espera; una persona decide la reasignación.
-5. Muestra todo en vivo: cada cambio de estado aparece al instante en el panel, en el tablero y en los celulares.
+En el Hospital María Auxiliadora (HMA), 1 de cada 4 citas se pierde (106,100 en 2023). Además, quien no consigue cupo no queda registrado en ningún sistema. AsistIA cubre todo el recorrido:
 
-## Cómo evalúa el jurado (manda sobre cualquier otra prioridad)
+1. Registra toda la demanda, en ventanilla, por un chat web o por voz con un asistente con IA.
+2. Un profesional regulador asigna la categoría P1–P4 sin ver la identidad del paciente.
+3. Ordena la lista de espera con un índice de prioridad.
+4. Confirma las citas de forma escalonada.
+5. Reasigna los cupos liberados por zonas, con oferta simultánea, validación con el paciente y efecto dominó.
+6. Audita la equidad.
 
-- Integridad (30 pts): el prototipo hace todo lo que promete. **Completo y simple vale más que ambicioso e incompleto.**
-- Intuitivo (30 pts): se usa sin manual.
-- Demostración (10 pts): convincente en 5 minutos.
-- El jurado incluye a un profesional de una clínica, uno de HP, uno de tecnología y uno de responsabilidad social.
+**La final es el sábado.** El jurado evalúa:
+- integridad (30 puntos): el prototipo hace lo que promete el documento;
+- facilidad de uso (30 puntos);
+- demostración (10 puntos).
 
-## Arquitectura (decidida; no cambiar sin avisar en INFORME.md)
+Lo completo y estable vale más que lo ambicioso y frágil.
 
-- **Web:** Next.js (App Router) + TypeScript + Tailwind. Despliegue en Vercel desde GitHub. Nada de Streamlit.
-- **Datos y tiempo real:** Supabase (Postgres + Realtime). Toda escritura pasa por el servidor (route handlers o server actions con la service role key). El navegador solo lee y se suscribe a cambios.
-- **Modelo de riesgo:** Python, fuera de la app (`ml/`). Se entrena una vez y sus resultados (predicciones del día de demo, explicaciones, métricas, estadísticas agregadas) se cargan en Supabase. La app no ejecuta Python.
-- **Voz (ejecución 2):** Gemini Live API (`gemini-3.8-live`; respaldo `gemini-3.1-flash-live-preview`) conectado desde el navegador con tokens efímeros emitidos por un route handler. El agente actúa solo mediante funciones que llaman a nuestra API.
-- **Canales detrás de una interfaz común** (`MessagingChannel`, `VoiceChannel`): hoy simulados; en un piloto se reemplazan por WhatsApp Business o telefonía real sin rehacer el sistema.
+## Arquitectura (decidida)
 
-## Reglas de datos (críticas)
+- **Web:** Next.js (App Router), TypeScript y Tailwind, desplegada en Vercel desde GitHub.
+- **Datos:** Supabase (Postgres y Realtime). Toda escritura pasa por el servidor (route handlers o server actions con la service role). El navegador solo lee lo que su rol puede ver y se suscribe a los cambios.
+- **Modelo de riesgo:** Python, fuera de la app (`ml/`). Se carga en la base el archivo `insumos/predicciones_test_sin_sexo.csv`, del modelo sin la variable sexo, con AUC de 0.655.
+- **Mensajería:** detrás de la interfaz `MessagingChannel`.
+  - `SimulatedChannel`: los teléfonos de `/t/[token]` y las 1,473 citas del día.
+  - `WebChatChannel`: un chat web en `/pedir-cita` que el jurado abre con un QR, sin instalar nada y sin dar su número. Funciona con una sesión anónima firmada y Supabase Realtime.
+  - **No se integra WhatsApp en esta ejecución.** En un piloto se agregaría un `WhatsAppChannel` con la misma interfaz; basta con dejar la interfaz preparada.
+- **Voz:** detrás de la interfaz `VoiceChannel`, con una cadena de respaldo:
+  1. **ElevenLabs Agents en el navegador**, con el SDK oficial de React y una URL firmada que emite el servidor. **No hay telefonía en esta ejecución: ni Twilio ni números reales.** La "llamada" entra en la página del celular (teléfono simulado `/t/[token]` o chat de `/pedir-cita`) como una pantalla de llamada entrante, y al contestar habla el agente. En un piloto, el mismo agente se conectaría a la línea del hospital.
+  2. ElevenLabs en el navegador.
+  3. Gemini Live, lo que ya existe.
+  4. Un guion fijo.
+- **Lenguaje natural en el chat:** la API de Anthropic (`ANTHROPIC_MODEL`), solo para interpretar respuestas libres y redactar respuestas breves. **El flujo lo controla una máquina de estados en el servidor, no el modelo.**
 
-- Dataset: `insumos/DATOS HOSPITAL MARIA AUXILIADORA.csv` (separador `;`, UTF-8 con BOM). La referencia validada es `insumos/analisis_hma.py`: reutiliza su lógica.
-- Excluir especialidades con 95 % o más de citas no atendidas. Base limpia: 412,747 citas, 93,657 pacientes, 25.7 % no atendidas.
-- **El historial del paciente usa solo citas de fechas anteriores.** Cualquier fuga de información futura invalida el modelo. Hay una prueba automática para esto y debe pasar siempre.
-- Modelo de referencia: AUC ≈ 0.655 en prueba (octubre–diciembre 2023); la lista del 10 % de mayor riesgo tiene ≈ 52 % de citas no atendidas frente a ≈ 27 % de promedio.
-- Diccionario oficial (`insumos/DiccionarioDatos_23.xlsx`): `ATENDIDO` = "Asistencia del paciente a su cita médica: VINO, NO VINO" (en el CSV viene como SI/NO). **`ATENDIDO = NO` es una inasistencia**; la interfaz puede usar "inasistencia" y "no asistió". `ID` = "ID de paciente anonimizado".
-- `MONTO`: el diccionario lo define como "monto de pago total de la cita", pero solo tiene 4 valores fijos (7, 26, 30 y 33 soles; el de 33 coincide con todas las citas remotas), así que funciona como tarifa por tipo de cita. **No mostrar pérdidas en soles.**
-- Inconsistencias conocidas del dataset: el diccionario llama `DIASOLICITA_CITA` a la columna que en el CSV es `DIA_SOLICITACITA`, y dice VINO/NO VINO donde el CSV dice SI/NO. Usar los nombres del CSV.
-- No subir el CSV original al repositorio (está en `.gitignore`; además el repositorio es público). Sí se suben los resultados agregados que la app necesita.
+## Reglas de producto (no negociables)
 
-## Repositorio
+- **El sistema propone y una persona decide:**
+  - el hospital aprueba las reglas;
+  - el personal aprueba a los candidatos antes de cada oferta;
+  - un regulador asigna la categoría clínica;
+  - las reprogramaciones se validan en el panel;
+  - toda asignación se puede revertir, con un motivo.
+- La IA nunca asigna una categoría clínica, nunca sugiere un diagnóstico y nunca cancela ni cambia una cita por su cuenta.
+- El riesgo de inasistencia solo genera más apoyo. Nunca libera un cupo ni baja la prioridad de nadie.
+- **No responder nunca saca a nadie de la lista.** Solo una persona puede retirar una solicitud, y solo con uno de estos motivos: atendido en otro lugar, ya no lo necesita, duplicado u otro (con texto).
+- El reloj de espera empieza en el primer intento y nunca se reinicia: ni al pedir información, ni al reprogramar, ni al trasladar.
+- **Índice de prioridad:** `0.75·R + 0.15·N + 0.10·E`, con `R = min(días/plazo, 1)` y plazos de 30, 90, 180 y 360 días.
+  - Nunca se usan el seguro, el sexo, el historial de faltas ni el hecho de tener o no una cita.
+  - Se ordena primero por categoría y luego por índice.
+- **Vista ciega:** el regulador no recibe, por ninguna vía, el nombre, los documentos, el teléfono, el seguro, el distrito ni el establecimiento de origen. Se impone en el servidor, no en la pantalla.
+- **Asistente de voz y bot:**
+  - se identifican como asistentes automáticos del hospital, en una demostración;
+  - no piden el número completo del documento, pagos ni datos clínicos detallados;
+  - transfieren a una persona cuando se lo piden;
+  - ante signos de alarma, indican acudir a emergencia o llamar al 106 (SAMU).
+- Ninguna cifra en pantalla se inventa: sale de los datos o se rotula como supuesto editable. No se muestran pérdidas en soles.
 
-`https://github.com/angel5002/ODS3-Hackathon` (rama `main`; estaba vacío al iniciar). Es **público**: nunca subir `.env.local`, claves ni el CSV.
+## Privacidad y seguridad en las pruebas en vivo
 
-## Reglas de producto
+- **No se pide ni se guarda ningún número de teléfono.** Cada participante es una sesión anónima con un alias ficticio, en una cookie firmada. Una sesión no puede leer los mensajes ni las llamadas de otra.
+- Las sesiones en vivo y sus conversaciones se borran al reiniciar la demo y, en todo caso, a las 24 horas.
+- La URL firmada de ElevenLabs se emite solo para una sesión válida y para la tarea de esa sesión. La clave de API nunca llega al navegador.
+- Todos los participantes usan nombres ficticios. El bot lo pide expresamente y advierte que no se compartan datos reales de salud.
+- **Autenticación de los webhooks:**
+  - las herramientas de ElevenLabs, con un secreto en el encabezado;
+  - el webhook posterior a la llamada de ElevenLabs, con su firma HMAC.
+  - Todo lo demás se rechaza.
+- No se graban llamadas.
+- **Secretos:** solo en `.env.local` y en Vercel. Nunca se suben `.env.local`, claves ni el CSV original. Mantener `.env.example` al día.
+- **Marcas:** nuestra interfaz no usa logos ni marcas de terceros. En pantalla se dice "Chat", "Mensaje" y "Llamada".
+- **Aviso visible en todas las pantallas:** "Demostración. Pacientes ficticios. Citas y modelo basados en datos abiertos reales del Hospital María Auxiliadora (2023)."
 
-- Una persona decide todo cambio que afecte el acceso a una cita. El sistema propone; nunca cancela ni reasigna solo.
-- Un riesgo alto significa más apoyo para llegar a la cita, nunca perderla.
-- El agente de voz dice que es un asistente automático, no pide DNI, pagos ni datos clínicos, deriva a una persona cuando se lo piden o ante dudas clínicas, y solo ve los datos de la cita en curso.
-- Pacientes, nombres y teléfonos son ficticios. Ningún mensaje ni llamada sale a números reales.
-- Aviso visible en todas las pantallas: "Pacientes ficticios. Citas y modelo basados en datos abiertos reales del Hospital María Auxiliadora (2023)."
-- Sin logos ni marcas de terceros: el chat simulado no usa la marca ni el logo de WhatsApp (las bases descalifican por infringir marcas).
-- Toda cifra en pantalla sale de los datos o está rotulada como supuesto editable.
-- Atribución del dataset (licencia ODC-BY, Plataforma Nacional de Datos Abiertos, Hospital María Auxiliadora) en el pie del sitio y en el README.
+## Reglas de datos
+
+- Dataset: `DATOS HOSPITAL MARIA AUXILIADORA.csv` (separador `;`, UTF-8 con BOM). Se excluyen las especialidades con 95 % o más de inasistencia. `ATENDIDO = NO` es una inasistencia.
+- El historial del paciente usa solo fechas anteriores. Hay una prueba que lo verifica y debe pasar siempre.
+- **Día de demo:** las 1,473 citas del jueves 19 de octubre de 2023, presentadas como "en 3 días". El "hoy" de la demo es el lunes 16 de octubre de 2023.
+- **Cifras que deben coincidir con la propuesta v4:**
+  - lista de llamadas del 10 %: 147 citas, de las cuales 79 terminaron en inasistencia; ese día hubo 414 inasistencias;
+  - modelo: AUC 0.655, 52 % frente a 27 % de inasistencia;
+  - escenario: `r ≈ s + c·f` con s = 0, c = 1/3 y f = 0.30, que da 10 %, unas 10,600 citas al año (106,100 × r);
+  - el hospital obtiene beneficio desde 5.3 %.
 
 ## Convenciones
 
-- Interfaz 100 % en español, sin jerga técnica. Código, nombres de variables y commits en inglés.
+- Interfaz 100 % en español y sin jerga. Código, variables y commits en inglés.
 - El riesgo nunca se comunica solo con color: siempre con texto (Alto, Medio, Bajo).
-- Commit de git al terminar cada hito, con mensaje claro.
-- Secretos solo en `.env.local` (nunca en el repositorio). Mantener `.env.example` actualizado.
-- Si algo de este archivo choca con la realidad (datos, APIs, límites), no lo ocultes: decide lo más prudente, sigue y anótalo en `INFORME.md`.
+- Un commit por hito, con un mensaje claro. **No borrar implementaciones que funcionan**: se dejan como respaldo.
+- No asumir APIs de terceros. Verificar en la documentación actual de ElevenLabs y Anthropic, y anotar las URL consultadas en `INFORME_E4.md`.
+- Si algo choca con la realidad (límites, cuentas, costos), decidir lo más prudente, seguir y anotarlo en `INFORME_E4.md`.
 
-## Skills disponibles y cuándo usarlas
+## Skills
 
-- `emil-design-eng`, `frontend-design`: al diseñar o pulir cualquier pantalla.
-- `mobile-native`: en el simulador de teléfono.
-- `ask-sonner`: avisos emergentes de cambios de estado.
-- `pick-ui-library`: antes de agregar cualquier librería de UI.
-- `web-design-guidelines`, `vercel-react-best-practices`: revisión antes de cerrar cada hito.
-- `break-ui`: al final, probar con datos extremos.
-- `supabase`: esquema, migraciones, Realtime y políticas.
-- `webapp-testing`: pruebas de punta a punta y capturas de pantalla.
+- `supabase`: esquema, RLS, migraciones y Realtime.
+- `frontend-design` y `emil-design-eng`: pantallas y transiciones de estado.
+- `mobile-native`: simulador de teléfono y `/pedir-cita`.
+- `ask-sonner`: avisos.
+- `webapp-testing`: pruebas de punta a punta y capturas.
 - `deploy-to-vercel`: despliegue.
+- `break-ui`: datos extremos, al final.

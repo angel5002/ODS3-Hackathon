@@ -6,10 +6,12 @@ export type Status =
   | "sin_respuesta"
   | "en_llamada"
   | "derivada_a_persona"
-  | "reasignada";
+  | "reasignada"
+  | "reprogramacion_pendiente"
+  | "validacion_pendiente";
 
-export type Channel = "panel" | "mensaje" | "voz" | "sistema";
-export type Reply = "confirma" | "libera" | "persona" | "otra_fecha";
+export type Channel = "panel" | "mensaje" | "voz" | "sistema" | "chat";
+export type Reply = "confirma" | "libera" | "persona" | "otra_fecha" | "reprograma";
 
 export type Factor = { key: string; effect: "sube" | "baja"; text: string };
 
@@ -52,6 +54,8 @@ export type Appointment = {
   reassigned_to_id: number | null;
   is_base: boolean;
   updated_at: string;
+  uses_messaging: boolean;
+  request_id: number | null;
 };
 
 export type AppointmentWithPatient = Appointment & { patient: Patient };
@@ -83,7 +87,10 @@ export type Message = {
   appointment_id: number | null;
   offer_id: number | null;
   direction: "saliente" | "entrante";
-  kind: "recordatorio" | "oferta" | "info" | "respuesta";
+  kind: "recordatorio" | "oferta" | "info" | "respuesta" | "validacion" | "reprogramacion";
+  request_id?: number | null;
+  slot_offer_id?: number | null;
+  assignment_id?: number | null;
   body: string;
   buttons: string[] | null;
   answered_with: string | null;
@@ -93,9 +100,17 @@ export type Message = {
 
 export type Call = {
   id: number;
-  appointment_id: number;
-  patient_id: string;
-  status: "sonando" | "en_curso" | "finalizada" | "no_contesta" | "rechazada";
+  appointment_id: number | null;
+  patient_id: string | null;
+  status: "sonando" | "en_curso" | "finalizada" | "no_contesta" | "rechazada" | "fallo";
+  purpose?: "confirmacion" | "oferta" | "validacion" | "registro" | "prueba";
+  request_id?: number | null;
+  offer_id?: number | null;
+  assignment_id?: number | null;
+  chat_session_id?: string | null;
+  provider?: string | null;
+  summary?: string | null;
+  actions?: { at: string; tool: string; result: string }[];
   agent: string;
   result: string | null;
   transcript: { who: "agente" | "paciente"; text: string }[];
@@ -137,6 +152,10 @@ export type DemoState = {
 };
 
 /** appt/offer: specific rows changed · bulk: many rows changed (refetch what changed) · full: reload everything (reset, reconnect) */
-export type Hint = { kind: "appt" | "offer" | "bulk" | "full"; appts: number[]; patients: string[] };
+export type Hint = {
+  kind: "appt" | "offer" | "bulk" | "full" | "req" | "slot" | "task" | "call" | "chat" | "live";
+  appts: number[];
+  patients: string[];
+};
 
 export const isBroad = (h: Hint) => h.kind === "bulk" || h.kind === "full";

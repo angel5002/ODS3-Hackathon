@@ -23,14 +23,16 @@ import {
 import { Button, RiskTag, StatusBadge } from "@/components/ui";
 import { post } from "@/lib/post";
 import { useDemoState, useNow, useStaffTick } from "@/lib/realtime";
-import { STATUS, STATUS_ORDER, demoNowMin, fmtMin, num, pct, riskLevel, years, type RiskLevel } from "@/lib/labels";
+import { STATUS, STATUS_ORDER, demoDayLabel, demoNowMin, fmtMin, num, pct, riskLevel, years, type RiskLevel } from "@/lib/labels";
+import { useRouter } from "next/navigation";
 import type { DemoState, Status } from "@/lib/types";
 import { usePanelData, type Row } from "./usePanelData";
 import { AppointmentDetail } from "./AppointmentDetail";
 
 type Tab = "todas" | "llamadas" | "liberadas" | "sin_respuesta";
 
-export function PanelApp() {
+export function PanelApp({ onReassign }: { onReassign?: () => void }) {
+  void onReassign;
   const state = useDemoState();
   const { rows, loading, error, flash } = usePanelData();
   const [tab, setTab] = useState<Tab>("todas");
@@ -91,7 +93,26 @@ export function PanelApp() {
     setSending(true);
     try {
       const { sent } = await post<{ sent: number }>("/api/staff", { action: "reminders" });
-      toast.success(`Recordatorios enviados a ${num(sent)} citas`, { description: "Las respuestas aparecerán aquí al instante." });
+      toast.success(`Recordatorio 72 h enviado a ${num(sent)} citas con mensajería`, {
+        description: "Quienes no usan mensajería reciben la llamada del asistente al cerrar el plazo.",
+      });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function stage(action: "agent_calls" | "last_reminders") {
+    setSending(true);
+    try {
+      const r = await post<{ sent?: number; calls?: number }>("/api/staff", { action });
+      toast.success(
+        action === "agent_calls"
+          ? `Llamadas del asistente (48 h): ${num(r.calls ?? 0)} nuevas`
+          : `Último recordatorio (24 h) a ${num(r.sent ?? 0)} citas sin respuesta`,
+        { description: "Ninguna cita cambia de estado por no responder." },
+      );
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -118,7 +139,7 @@ export function PanelApp() {
         <div className="min-w-0 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl font-bold tracking-tight">Citas de mañana</h1>
+              <h1 className="font-display text-3xl font-bold tracking-tight">Citas en 3 días</h1>
               <div className="mt-2.5 flex flex-wrap gap-2 text-sm">
                 <Chip icon={CalendarDays}>{state?.day_label ? `${capitalize(state.day_label)} de 2023` : "…"}</Chip>
                 <Chip icon={UsersRound}>{num(base.length)} citas</Chip>
@@ -133,8 +154,16 @@ export function PanelApp() {
                 className="min-h-11 rounded-full px-5 shadow-[0_10px_24px_-12px_rgba(14,90,87,0.9)]"
               >
                 <Send className="size-4" aria-hidden />
-                {pending === 0 && base.length ? "Recordatorios enviados" : sending ? "Enviando…" : `Enviar recordatorios (${num(pending)})`}
+                {pending === 0 && base.length ? "Recordatorios 72 h enviados" : sending ? "Enviando…" : "Enviar recordatorios (72 h)"}
               </Button>
+              <div className="flex flex-wrap gap-1.5">
+                <Button className="min-h-8 rounded-full px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("agent_calls")} title="Llama a quienes no usan mensajería y a quienes no respondieron del 10 % de mayor riesgo">
+                  <PhoneCall className="size-3.5" aria-hidden /> Llamadas 48 h
+                </Button>
+                <Button className="min-h-8 rounded-full px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("last_reminders")} title="Último recordatorio a quienes no respondieron">
+                  <Send className="size-3.5" aria-hidden /> Último recordatorio 24 h
+                </Button>
+              </div>
               {state?.reminders_sent_min != null && (
                 <span className="text-xs text-muted">
                   A las {fmtMin(state.reminders_sent_min)} · plazo {state.reply_deadline_min / 60} h
@@ -162,10 +191,10 @@ export function PanelApp() {
                   setTab={setTab}
                   label="Lista de llamadas"
                   count={listSize}
-                  title={`El ${state ? pct(state.call_list_pct) : "10 %"} de mayor riesgo: si no responden, se les llama`}
+                  title={`El ${state ? pct(state.call_list_pct) : "10 %"} de mayor riesgo: si no responden al recordatorio de 72 h, el asistente les llama (48 h)`}
                 />
                 <TabButton id="sin_respuesta" tab={tab} setTab={setTab} label="Sin respuesta" count={counts.sin_respuesta + counts.en_llamada} attention={counts.sin_respuesta > 0 ? "warn" : undefined} />
-                <TabButton id="liberadas" tab={tab} setTab={setTab} label="Por reasignar" count={counts.liberada} attention={counts.liberada > 0 ? "free" : undefined} />
+                <TabButton id="liberadas" tab={tab} setTab={setTab} label="Cupos liberados" count={counts.liberada} attention={counts.liberada > 0 ? "free" : undefined} />
               </div>
               <label className="relative ml-auto min-w-48 flex-1 sm:max-w-72">
                 <span className="sr-only">Buscar paciente</span>
@@ -245,6 +274,7 @@ export function PanelApp() {
   );
 }
 
+const OBSTETRICS_NOTE = "Especialidad con 55.5 % de citas no atendidas en 2023; en verificación con el hospital.";
 const FIRST_PAGE = 80;
 const NEXT_PAGE = 80;
 
@@ -285,7 +315,7 @@ function DemoClock({ state }: { state: DemoState | null }) {
     <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 ring-1 ring-line" title="Hora simulada de la demo: el día anterior a las citas">
       <span className={`size-2 rounded-full ${running ? "animate-pulse bg-st-ok" : "bg-line-strong"}`} aria-hidden />
       <span className="text-muted">Hoy</span>
-      <span className="font-semibold tabular-nums">{state ? fmtMin(demoNowMin(state, now)) : "--:--"}</span>
+      <span className="font-semibold tabular-nums">{state ? `${demoDayLabel(demoNowMin(state, now))} ${fmtMin(demoNowMin(state, now))}` : "--:--"}</span>
     </span>
   );
 }
@@ -470,7 +500,14 @@ const AppointmentRow = memo(function AppointmentRow({
         </span>
       </span>
       <span role="cell" className="col-start-2 min-w-0 text-sm md:col-start-auto">
-        <span className="block truncate">{row.specialty}</span>
+        <span className="flex items-center gap-1 truncate">
+          {row.specialty}
+          {row.specialty === "Obstetricia" && (
+            <span title={OBSTETRICS_NOTE} aria-label={OBSTETRICS_NOTE} className="inline-grid size-4 shrink-0 place-items-center rounded-full bg-risk-medio-soft text-[10px] font-bold text-risk-medio">
+              i
+            </span>
+          )}
+        </span>
         <span className="text-xs text-muted">
           {row.time}
           {row.remote ? " · teleconsulta" : ""}
@@ -488,6 +525,8 @@ const AppointmentRow = memo(function AppointmentRow({
 
 function QuickAction({ row, onSelect }: { row: Row; onSelect: (id: number) => void }) {
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  void onSelect;
   if (row.status === "sin_respuesta") {
     return (
       <Button
@@ -516,10 +555,10 @@ function QuickAction({ row, onSelect }: { row: Row; onSelect: (id: number) => vo
         className="min-h-8 rounded-full border-st-free/40 px-3 text-xs text-st-free"
         onClick={(e) => {
           e.stopPropagation();
-          onSelect(row.id);
+          router.replace("/panel?vista=reasignar", { scroll: false });
         }}
       >
-        <ArrowRightLeft className="size-3.5" aria-hidden /> Reasignar
+        <ArrowRightLeft className="size-3.5" aria-hidden /> Por reasignar
       </Button>
     );
   }

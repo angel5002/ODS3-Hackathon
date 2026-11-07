@@ -1,63 +1,67 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Building2, CheckCheck, Info } from "lucide-react";
+import { Building2, CheckCheck, Info, Volume2 } from "lucide-react";
 import { toast } from "sonner";
-import { browserDb } from "@/lib/supabase/browser";
 import { useDemoState, useHints, useNow, useSingleFlight } from "@/lib/realtime";
-import { post } from "@/lib/post";
+import { getJson, post } from "@/lib/post";
 import { DISCLAIMER, demoNowMin, fmtMin } from "@/lib/labels";
-import { isBroad, type Appointment, type Call, type Message, type Offer, type Patient } from "@/lib/types";
+import { isBroad, type Call, type Message, type Offer, type Patient } from "@/lib/types";
+import { unlockAudio } from "@/lib/voice/audio";
 import { CallScreen } from "./CallScreen";
 
 const REPLY_ID: Record<string, string> = {
   Confirmo: "confirma",
   "No podré asistir": "libera",
+  Reprogramar: "reprograma",
   "Hablar con una persona": "persona",
 };
 
-type Data = { patient: Patient; appts: Appointment[]; messages: Message[]; offers: Offer[]; call: Call | null };
+type Appt = { id: number; specialty: string; date: string; time: string; remote: boolean; status: string };
+type Data = {
+  patient: Patient;
+  appts: Appt[];
+  messages: Message[];
+  offers: Offer[];
+  slotOffers: { id: number; state: string; closes_min: number }[];
+  assignments: { id: number; validation_state: string; reverted: boolean }[];
+  call: Call | null;
+};
 
 export function PhoneApp({ token }: { token: string }) {
   const [data, setData] = useState<Data | null>(null);
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState<number | null>(null);
+  const [soundReady, setSoundReady] = useState(false);
   const state = useDemoState();
   const now = useNow(1000);
   const listRef = useRef<HTMLOListElement>(null);
 
   const fetchData = useCallback(async () => {
-    const db = browserDb();
-    const { data: patient } = await db.from("patients").select("*").eq("token", token).maybeSingle<Patient>();
-    if (!patient) {
+    try {
+      setData(await getJson<Data>(`/api/patient?token=${encodeURIComponent(token)}`));
+    } catch {
       setMissing(true);
-      return;
     }
-    const [a, m, o, c] = await Promise.all([
-      db.from("appointments").select("*").eq("patient_id", patient.id).order("id"),
-      db.from("messages").select("*").eq("patient_id", patient.id).order("id"),
-      db.from("offers").select("*").eq("patient_id", patient.id).order("id"),
-      db.from("calls").select("*").eq("patient_id", patient.id).order("id", { ascending: false }).limit(1),
-    ]);
-    setData({
-      patient,
-      appts: (a.data ?? []) as Appointment[],
-      messages: (m.data ?? []) as Message[],
-      offers: (o.data ?? []) as Offer[],
-      call: ((c.data ?? []) as Call[])[0] ?? null,
-    });
   }, [token]);
   const load = useSingleFlight(fetchData);
 
   useEffect(() => {
-     
     load();
   }, [load]);
 
   const patientId = data?.patient.id;
   useHints((h) => {
-    if (isBroad(h) || (patientId && h.patients.includes(patientId))) load();
+    if (isBroad(h) || (patientId && h.patients.includes(patientId)) || h.kind === "slot" || h.kind === "call") load();
   });
+
+  // presence for the operator ("En vivo" in /demo), every 20 s while open
+  useEffect(() => {
+    const ping = () => post("/api/patient", { token, action: "presence", soundReady }).catch(() => {});
+    ping();
+    const id = setInterval(ping, 20000);
+    return () => clearInterval(id);
+  }, [token, soundReady]);
 
   const count = data?.messages.length ?? 0;
   useEffect(() => {
@@ -65,7 +69,6 @@ export function PhoneApp({ token }: { token: string }) {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: count > 1 ? "smooth" : "auto" });
   }, [count]);
 
-  // a new incoming call vibrates the phone (Android)
   const ringing = data?.call?.status === "sonando";
   useEffect(() => {
     if (ringing && "vibrate" in navigator) navigator.vibrate?.([400, 200, 400, 200, 400]);
@@ -81,6 +84,12 @@ export function PhoneApp({ token }: { token: string }) {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function enableSound() {
+    const okMic = await unlockAudio({ microphone: true });
+    setSoundReady(true);
+    toast.success(okMic ? "Sonido y micrófono listos para las llamadas" : "Sonido listo. El micrófono se pedirá al contestar.");
   }
 
   if (missing) {
@@ -105,6 +114,41 @@ export function PhoneApp({ token }: { token: string }) {
   const latestReminder = [...data.messages].reverse().find((m) => m.kind === "recordatorio");
   const callActive = data.call && (data.call.status === "sonando" || data.call.status === "en_curso");
 
+  function buttonsFor(m: Message): { label: string; body: Record<string, unknown> }[] | null {
+    if (m.direction !== "saliente" || !m.buttons || m.answered_with) return null;
+    const appt = data!.appts.find((x) => x.id === m.appointment_id);
+    if (m.kind === "recordatorio") {
+      const open = m.id === latestReminder?.id && (appt?.status === "recordatorio_enviado" || appt?.status === "sin_respuesta");
+      return open ? m.buttons.map((b) => ({ label: b, body: { action: "reply", appointmentId: m.appointment_id, reply: REPLY_ID[b] } })) : null;
+    }
+    if (m.kind === "reprogramacion") {
+      const open = appt && !["liberada", "reasignada", "reprogramacion_pendiente"].includes(appt.status);
+      return open ? m.buttons.map((b) => ({ label: b, body: { action: "reschedule", appointmentId: m.appointment_id, label: b } })) : null;
+    }
+    if (m.kind === "oferta" && m.slot_offer_id) {
+      const so = data!.slotOffers.find((o) => o.id === m.slot_offer_id);
+      if (so?.state !== "enviada") return null;
+      return m.buttons.map((b) => ({
+        label: b,
+        body: { action: "offer", slotOfferId: m.slot_offer_id, requestId: m.request_id, accept: b === "Acepto" },
+      }));
+    }
+    if (m.kind === "oferta") {
+      const offer = data!.offers.find((o) => o.id === m.offer_id);
+      if (!(offer?.status === "enviada" && nowMin <= offer.expires_min)) return null;
+      return m.buttons.map((b) => ({ label: b, body: { action: "offer", offerId: m.offer_id, accept: b === "Acepto" } }));
+    }
+    if (m.kind === "validacion") {
+      const a = data!.assignments.find((x) => x.id === m.assignment_id);
+      if (a?.validation_state !== "pendiente" || a.reverted) return null;
+      return m.buttons.map((b) => ({
+        label: b,
+        body: { action: "validate", assignmentId: m.assignment_id, ok: b !== "No puedo", role: b.includes("cuidador") ? "cuidador" : "paciente" },
+      }));
+    }
+    return null;
+  }
+
   return (
     <Shell>
       <header className="flex items-center gap-3 border-b border-black/5 bg-brand px-3 pb-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))] text-white">
@@ -121,10 +165,17 @@ export function PhoneApp({ token }: { token: string }) {
         <Info className="mt-px size-3.5 shrink-0" aria-hidden />
         <p>
           Teléfono simulado de <strong>{p.full_name}</strong>
-          {p.caregiver_name ? ` (lo usa ${p.caregiver_name}, ${p.caregiver_relation})` : ""}, número ficticio {p.phone}.{" "}
-          {DISCLAIMER}
+          {p.caregiver_name ? ` (lo usa ${p.caregiver_name}, ${p.caregiver_relation})` : ""}. {DISCLAIMER}
         </p>
       </div>
+      {!soundReady && (
+        <button
+          onClick={enableSound}
+          className="press flex items-center justify-center gap-2 bg-[#10302f] px-3 py-2.5 text-sm font-semibold text-white"
+        >
+          <Volume2 className="size-4" aria-hidden /> Activar sonido y llamadas
+        </button>
+      )}
 
       <ol ref={listRef} className="flex-1 space-y-2 overflow-y-auto overscroll-contain bg-[#e9efed] px-3 py-3" aria-live="polite">
         {!data.messages.length && (
@@ -133,13 +184,8 @@ export function PhoneApp({ token }: { token: string }) {
           </li>
         )}
         {data.messages.map((m) => {
-          const offer = m.offer_id ? data.offers.find((o) => o.id === m.offer_id) : undefined;
-          const apptStatus = data.appts.find((x) => x.id === m.appointment_id)?.status;
-          const isReminderOpen =
-            m.kind === "recordatorio" && m.id === latestReminder?.id && !m.answered_with &&
-            (apptStatus === "recordatorio_enviado" || apptStatus === "sin_respuesta");
-          const isOfferOpen = m.kind === "oferta" && offer?.status === "enviada" && nowMin <= offer.expires_min;
-          const buttons = m.direction === "saliente" && m.buttons && (isReminderOpen || isOfferOpen) ? m.buttons : null;
+          const so = m.slot_offer_id ? data.slotOffers.find((o) => o.id === m.slot_offer_id) : undefined;
+          const buttons = buttonsFor(m);
           return (
             <li key={m.id} className={`bubble-in flex ${m.direction === "entrante" ? "justify-end" : "justify-start"}`}>
               <div className="max-w-[86%]">
@@ -149,30 +195,29 @@ export function PhoneApp({ token }: { token: string }) {
                   }`}
                 >
                   <p className="whitespace-pre-line">{m.body}</p>
+                  {m.answered_with && m.direction === "saliente" && (
+                    <p className="mt-1 text-xs font-semibold text-brand">Respondió: {m.answered_with}</p>
+                  )}
                   <p className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${m.direction === "entrante" ? "text-white/75" : "text-faint"}`}>
                     {fmtMin(m.demo_min)}
                     {m.direction === "entrante" && <CheckCheck className="size-3.5" aria-label="Enviado" />}
                   </p>
                 </div>
-                {isOfferOpen && offer && (
+                {m.kind === "oferta" && so?.state === "enviada" && (
                   <p className="mt-1 px-1 text-xs font-medium text-st-free">
-                    Quedan {Math.max(0, offer.expires_min - nowMin)} min para responder
+                    Se cierra a las {fmtMin(so.closes_min)} ({Math.max(0, so.closes_min - nowMin)} min)
                   </p>
                 )}
                 {buttons && (
                   <div className="mt-1.5 grid gap-1.5">
                     {buttons.map((b) => (
                       <button
-                        key={b}
+                        key={b.label}
                         disabled={busy === m.id}
-                        onClick={() =>
-                          m.kind === "oferta"
-                            ? send({ action: "offer", offerId: m.offer_id, accept: b === "Acepto" }, m.id)
-                            : send({ action: "reply", appointmentId: m.appointment_id, reply: REPLY_ID[b] }, m.id)
-                        }
+                        onClick={() => send(b.body, m.id)}
                         className="press min-h-11 select-none rounded-xl border border-brand/20 bg-white px-3 text-[15px] font-semibold text-brand active:bg-brand-soft disabled:opacity-60"
                       >
-                        {b}
+                        {b.label}
                       </button>
                     ))}
                   </div>
@@ -187,7 +232,7 @@ export function PhoneApp({ token }: { token: string }) {
       </footer>
 
       {callActive && data.call && (
-        <CallScreen key={data.call.id} call={data.call} token={token} patient={p} onDone={load} />
+        <CallScreen key={data.call.id} call={data.call} auth={{ token }} name={p.first_name} onDone={load} />
       )}
     </Shell>
   );

@@ -1,0 +1,26 @@
+{
+  "asistia-confirmacion": {
+    "agent_id": "agent_6901m6ry7fpdee9vjr154hqkq9sw",
+    "purpose": "confirmacion",
+    "llm": "gemini-2.5-flash",
+    "voice_id": "hsPqKgfWI5YayyFu0nuN"
+  },
+  "asistia-oferta": {
+    "agent_id": "agent_8801m6ry7hpgeajr3783ssmm54sm",
+    "purpose": "oferta",
+    "llm": "gemini-2.5-flash",
+    "voice_id": "hsPqKgfWI5YayyFu0nuN"
+  },
+  "asistia-registro": {
+    "agent_id": "agent_4001m6ry7k4de2srz1v01810dez5",
+    "purpose": "registro",
+    "llm": "gemini-2.5-flash",
+    "voice_id": "hsPqKgfWI5YayyFu0nuN"
+  },
+  "asistia-validacion": {
+    "agent_id": "agent_6101m6ry7mypfawr3gyb59bemnk4",
+    "purpose": "validacion",
+    "llm": "gemini-2.5-flash",
+    "voice_id": "hsPqKgfWI5YayyFu0nuN"
+  }
+}

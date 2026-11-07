@@ -8,6 +8,8 @@ import { post } from "@/lib/post";
 import { demoNowMin, fmtMin, num, pct, years } from "@/lib/labels";
 import { useDemoState, useNow, useStaffTick } from "@/lib/realtime";
 import type { DemoState } from "@/lib/types";
+import { LiveSection } from "./LiveSection";
+import { ParamsCard } from "./ParamsCard";
 
 type QrCard = {
   id: string;
@@ -23,7 +25,7 @@ type QrCard = {
 };
 type Assumptions = Record<string, number> | null;
 
-export function DemoControls({ cards, assumptions }: { cards: QrCard[]; assumptions: Assumptions }) {
+export function DemoControls({ cards, assumptions, publicQr }: { cards: QrCard[]; assumptions: Assumptions; publicQr?: { url: string; svg: string } }) {
   const state = useDemoState();
   const now = useNow(1000);
   const [busy, setBusy] = useState("");
@@ -50,7 +52,21 @@ export function DemoControls({ cards, assumptions }: { cards: QrCard[]; assumpti
         </p>
       </div>
 
-      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {publicQr && (
+        <Card className="flex flex-wrap items-center gap-4 p-4">
+          <div className="w-32 shrink-0 [&_svg]:h-auto [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: publicQr.svg }} role="img" aria-label="Código QR de /pedir-cita" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-brand">Para el jurado</p>
+            <p className="font-bold">Pedir una cita desde su celular</p>
+            <p className="text-sm text-muted">Chat, llamada en el navegador o formulario. Sin instalar nada y sin dar su número.</p>
+            <a href={publicQr.url} target="_blank" rel="noreferrer" className="mt-1 inline-block break-all text-sm font-semibold text-brand">
+              {publicQr.url}
+            </a>
+          </div>
+        </Card>
+      )}
+
+      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {cards.map((c) => (
           <li key={c.id}>
             <Card className="flex h-full flex-col p-3">
@@ -93,14 +109,15 @@ export function DemoControls({ cards, assumptions }: { cards: QrCard[]; assumpti
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted">
-            Al cerrar el plazo, las citas que no respondieron pasan a «Sin respuesta» y el panel propone llamarlas.
+            Al cerrar el plazo (3 h), las citas que no respondieron pasan a «Sin respuesta» (la cita se mantiene) y el asistente
+            llama a las del 10 % de mayor riesgo y a quienes no usan mensajería (paso de 48 h).
           </p>
           <div className="mt-5 border-t border-line pt-4">
             <Button
               variant="danger"
               disabled={!!busy}
               onClick={() => {
-                if (window.confirm("¿Reiniciar la demo? Se borran mensajes, llamadas, ofertas y reasignaciones, y todas las citas vuelven a «Pendiente».")) {
+                if (window.confirm("¿Reiniciar la demo? Se borran mensajes, llamadas, ofertas, asignaciones, solicitudes nuevas y las sesiones de chat en vivo. Todo vuelve a los datos fijos de la sección 1.")) {
                   run("reset", {}, "Demo reiniciada");
                 }
               }}
@@ -112,6 +129,9 @@ export function DemoControls({ cards, assumptions }: { cards: QrCard[]; assumpti
 
         {state && <Settings key={state.version} state={state} busy={!!busy} onSave={(s) => run("settings", { settings: s }, "Ajustes guardados")} />}
       </div>
+
+      <LiveSection />
+      <ParamsCard />
 
       {assumptions && (
         <Card className="p-4">

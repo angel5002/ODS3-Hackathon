@@ -11,7 +11,8 @@ import pandas as pd
 
 EXCLUDE_THRESHOLD = 0.95
 TEST_START = pd.Timestamp("2023-10-01")
-FEATURES = ["esp_cod", "edad", "femenino", "seguro", "remoto", "espera", "dia_semana", "prev_n", "prev_tasa"]
+# v4: the model no longer uses sex (same performance; see insumos/reentrenar_sin_sexo.py)
+FEATURES = ["esp_cod", "edad", "seguro", "remoto", "espera", "dia_semana", "prev_n", "prev_tasa"]
 
 
 def load_raw(path: str) -> pd.DataFrame:

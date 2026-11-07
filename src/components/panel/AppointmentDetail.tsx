@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, ExternalLink, PhoneCall, Smartphone, X } from "luci
 import { Button, RiskTag, StatusBadge } from "@/components/ui";
 import { post } from "@/lib/post";
 import { useHints, useNow, useSingleFlight } from "@/lib/realtime";
-import { browserDb } from "@/lib/supabase/browser";
+import { getJson } from "@/lib/post";
 import { CHANNEL, STATUS, days, demoNowMin, fmtMin, riskLevel, years } from "@/lib/labels";
 import { isBroad, type Appointment, type Call, type DemoState, type EventRow, type Message, type Offer, type Patient, type Status, type WaitlistEntry } from "@/lib/types";
 import type { Row } from "./usePanelData";
@@ -22,6 +22,7 @@ type Detail = {
   offers: Offer[];
   candidates: Candidate[];
   newAppt: { id: number; patient: { full_name: string } } | null;
+  slot?: { id: number; state: string } | null;
 };
 
 const MANUAL: Status[] = ["confirmada", "liberada", "sin_respuesta", "derivada_a_persona", "pendiente"];
@@ -49,45 +50,18 @@ export function AppointmentDetail({
   const nowMin = demoNowMin(state, now);
 
   const fetchDetail = useCallback(async () => {
-    const db = browserDb();
-    const related = [row.id, row.replaces_id, row.reassigned_to_id].filter((x): x is number => x != null);
-    const needsWaitlist = row.is_base && (row.status === "liberada" || row.status === "reasignada");
-    const [a, p, ev, msg, call, offers, wl] = await Promise.all([
-      db.from("appointments").select("*").eq("id", row.id).single<Appointment>(),
-      db.from("patients").select("*").eq("id", row.patient_id).single<Patient>(),
-      db.from("events").select("*").in("appointment_id", related).order("id", { ascending: false }).limit(60),
-      db.from("messages").select("*").eq("patient_id", row.patient_id).order("id").limit(80),
-      db.from("calls").select("*").eq("appointment_id", row.id).order("id", { ascending: false }).limit(1),
-      needsWaitlist ? db.from("offers").select("*").eq("slot_id", row.id).order("id") : Promise.resolve({ data: [] }),
-      needsWaitlist
-        ? db
-            .from("waitlist")
-            .select("*,patient:patients(full_name,short_name,age,token,demo_role)")
-            .eq("specialty", row.specialty)
-            .order("wait_days", { ascending: false })
-            .order("id")
-            .limit(30)
-        : Promise.resolve({ data: [] }),
-    ]);
-    let newAppt: Detail["newAppt"] = null;
-    if (row.reassigned_to_id) {
-      const { data } = await db.from("appointments").select("id,patient:patients(full_name)").eq("id", row.reassigned_to_id).single();
-      newAppt = data as unknown as Detail["newAppt"];
-    }
-    if (!a.data || !p.data) throw new Error(a.error?.message ?? p.error?.message ?? "detail not loaded");
-    {
-      setD({
-        appt: a.data,
-        patient: p.data,
-        events: (ev.data ?? []) as EventRow[],
-        messages: (msg.data ?? []) as Message[],
-        call: ((call.data ?? []) as Call[])[0] ?? null,
-        offers: (offers.data ?? []) as Offer[],
-        candidates: (wl.data ?? []) as Candidate[],
-        newAppt,
-      });
-    }
-  }, [row.id, row.patient_id, row.replaces_id, row.reassigned_to_id, row.is_base, row.status, row.specialty]);
+    const data = await getJson<{
+      appt: Appointment;
+      patient: Patient;
+      events: EventRow[];
+      messages: Message[];
+      call: Call | null;
+      slot: { id: number; state: string } | null;
+      newAppt: Detail["newAppt"];
+    }>(`/api/staff/data?view=detail&id=${row.id}`);
+    setD({ ...data, offers: [], candidates: [] });
+    // row.status in the deps: a status change reloads the detail
+  }, [row.id, row.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // one request at a time; a failed load retries once after a moment
   const load = useSingleFlight(async () => {
@@ -153,7 +127,7 @@ export function AppointmentDetail({
         <div className="relative mt-3 flex flex-wrap items-center gap-2">
           <StatusBadge status={row.status} />
           {row.status_at && row.status_channel && <span className="text-xs text-muted">por {CHANNEL[row.status_channel].toLowerCase()}</span>}
-          {p && <span className="ml-auto text-xs text-faint">{p.phone} (ficticio)</span>}
+          {row.uses_messaging === false && <span className="ml-auto text-xs text-muted">No usa mensajería: recibe llamada</span>}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <Info k="Especialidad" v={row.specialty} />
@@ -214,60 +188,21 @@ export function AppointmentDetail({
         </section>
       )}
 
-      {row.is_base && (row.status === "liberada" || row.status === "reasignada") && (
+      {(row.status === "liberada" || row.status === "reasignada") && (
         <section className="rounded-2xl bg-surface p-5 ring-2 ring-st-free/40">
-          <h3 className="font-semibold">Reasignar el cupo</h3>
-          {row.status === "reasignada" && d?.newAppt && (
+          <h3 className="font-semibold">{row.status === "liberada" ? "Cupo libre: se reasigna por zonas" : "Cupo reasignado"}</h3>
+          {row.status === "reasignada" && d?.newAppt ? (
             <p className="mt-1 text-sm">
               Cupo tomado por <strong>{d.newAppt.patient.full_name}</strong>.{" "}
               <button className="font-semibold text-brand underline" onClick={() => onOpen(d.newAppt!.id)}>
                 Ver la nueva cita
               </button>
             </p>
-          )}
-          {row.status === "liberada" && (
-            <>
-              <p className="mt-1 text-sm text-muted">
-                Lista de espera de {row.specialty}, de mayor a menor tiempo de espera. Usted decide a quién se le ofrece; la
-                persona tiene {state.offer_deadline_min} minutos para responder.
-              </p>
-              {openOffer && (
-                <p className="mt-2 rounded-lg bg-st-sent-soft px-3 py-2 text-sm text-st-sent" role="status">
-                  Esperando respuesta de {d?.candidates.find((c) => c.id === openOffer.waitlist_id)?.patient.full_name}. Vence a las{" "}
-                  {fmtMin(openOffer.expires_min)} ({Math.max(0, openOffer.expires_min - nowMin)} min).
-                </p>
-              )}
-            </>
-          )}
-          <ol className="mt-3 divide-y divide-line rounded-lg border border-line">
-            {(d?.candidates ?? []).slice(0, 8).map((c) => {
-              const offer = [...(d?.offers ?? [])].reverse().find((o) => o.waitlist_id === c.id);
-              const isNext = row.status === "liberada" && !openOffer && c.id === nextCandidate?.id;
-              return (
-                <li key={c.id} className={`flex items-center gap-3 px-3 py-2 ${isNext ? "bg-st-free-soft/60" : ""}`}>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{c.patient.full_name}</p>
-                    <p className="text-xs text-muted">
-                      Espera {days(c.wait_days)} · {years(c.patient.age)}
-                      {offer ? ` · ${OFFER_LABEL[offer.status]}` : c.status === "asignado" ? " · ya tiene cita" : ""}
-                    </p>
-                  </div>
-                  {isNext && (
-                    <Button
-                      variant="primary"
-                      disabled={busy}
-                      onClick={() => act({ action: "offer", slotId: row.id, waitlistId: c.id }, `Cupo ofrecido a ${c.patient.short_name}`)}
-                      className="min-h-9 px-3 text-xs"
-                    >
-                      {d?.offers.length ? "Ofrecer a esta persona" : "Ofrecer cupo"}
-                    </Button>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-          {row.status === "liberada" && !openOffer && !nextCandidate && d && (
-            <p className="mt-2 text-sm text-muted">No quedan personas disponibles en esta lista de espera.</p>
+          ) : (
+            <p className="mt-1 text-sm text-muted">
+              Está en la pestaña <strong>Por reasignar</strong>: el sistema propone candidatos de la lista de espera según la zona
+              y una persona aprueba la oferta antes de enviarla.
+            </p>
           )}
         </section>
       )}
@@ -383,6 +318,7 @@ const CALL_LABEL: Record<Call["status"], string> = {
   finalizada: "Terminada",
   no_contesta: "No contestó",
   rechazada: "Rechazada",
+  fallo: "Falló la conexión",
 };
 
 function Info({ k, v }: { k: string; v: string }) {
