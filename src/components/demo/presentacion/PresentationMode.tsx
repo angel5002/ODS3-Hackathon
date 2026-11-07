@@ -1,7 +1,7 @@
 "use client";
 
 // /demo PRESENTATION mode: the projected screen. One view per moment of the pitch script v7, in order
-// (PRESENTATION_ORDER). Keys: ← → (and PageUp/PageDown from a clicker) move, 1–5 jump (the current number restarts
+// (PRESENTATION_ORDER). Keys: ← → (and PageUp/PageDown from a clicker) move, 1–3 jump (the current number restarts
 // the moment), F fullscreen, Space advances the scene on the two scene moments. E toggles the REHEARSAL mode (operator
 // only, a tiny indicator in the footer): the scenes play back without logging steps nor reading live slot data, and R
 // restarts the current scene from the beginning. Rehearsal never writes to the database. It covers the staff header and footer

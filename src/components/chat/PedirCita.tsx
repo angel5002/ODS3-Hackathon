@@ -2,6 +2,7 @@
 
 // /pedir-cita (v4 §3): public and mobile. Three ways in: chat with the assistant, a voice call in the
 // browser, or the front-desk form as a fallback. No third-party logos, no phone number, no e-mail.
+import { EvidenceLink } from "@/components/Evidence";
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { ArrowLeft, ClipboardList, MessageCircle, Mic, SendHorizontal, Trash2, TriangleAlert, UserRound } from "lucide-react";
@@ -329,6 +330,7 @@ export function Home({ onPick, sound, channels }: { onPick: (v: View) => void; s
           <TriangleAlert className="mt-px size-4 shrink-0 text-vc-danger-press" aria-hidden />
           <span>¿Es una emergencia? Acuda a emergencia o llame al 106 (SAMU).</span>
         </p>
+        <EvidenceLink className="mt-2" />
       </div>
     </main>
   );

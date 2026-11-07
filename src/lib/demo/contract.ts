@@ -6,7 +6,9 @@
 
 /** The moments of the script that /demo can project, in order (keyboard ← →). */
 export type PresentationMoment = "qr" | "escena1" | "jurado" | "escena2" | "etapas";
-export const PRESENTATION_ORDER: PresentationMoment[] = ["qr", "escena1", "jurado", "escena2", "etapas"];
+// final (7/11): only the two scenes and the stages are projected (keys 1–3); "qr" and "jurado" stay in the code as a
+// fallback but are out of the navigation — the jury cards keep working.
+export const PRESENTATION_ORDER: PresentationMoment[] = ["escena1", "escena2", "etapas"];
 
 // ---------------------------------------------------------------- jury cards (track E)
 

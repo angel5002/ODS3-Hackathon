@@ -6,8 +6,8 @@
 
 **Final (pitch v7):** `/demo` tiene dos modos:
 - **Presentar** (`/demo?modo=presentar`) es lo que se proyecta:
-  - un momento por vista: 1 QR y cartillas, 2 Escena 1, 3 Jurado en vivo, 4 Escena 2 y 5 Etapas;
-  - teclas: ← →, 1–5, F para pantalla completa y Espacio para adelantar una escena.
+  - un momento por vista: 1 Escena 1, 2 Escena 2 y 3 Etapas (las cartillas del jurado siguen funcionando, pero ya no se proyectan);
+  - teclas: ← →, 1–3, F para pantalla completa, Espacio para adelantar una escena, E para el modo ensayo y R para reiniciar la escena en ensayo.
 - **Operar** es el tablero de control.
 
 Detalle y ranuras en `docs/demo_presentacion.md`.
@@ -76,11 +76,11 @@ Las dos escenas se proyectan desde `/demo?modo=presentar` (laptop del proyector,
 pantalla no las muestra. Las líneas de la IA suenan con la voz de los agentes (audio pregenerado, sin editar).
 Detalle técnico en `docs/escenas.md`.
 
-### Escena 1 · Tito en el hospital (tecla **2**, unos 35 a 45 s)
+### Escena 1 · Tito en el hospital (tecla **1**, unos 35 a 45 s)
 
 | # | Quién | Qué dice o hace | Tecla del operador | Qué muestra el proyector |
 |---|---|---|---|---|
-| 0 | — | (Al entrar al momento) | **2** | Celular con el ticket de Tito: «Oncología · Lunes 20 de noviembre, 9:00 · Dentro de 5 semanas». Carmen «Avisó que no podrá ir» y el cupo en su lugar |
+| 0 | — | (Al entrar al momento) | **1** | Celular con el ticket de Tito: «Oncología · Lunes 20 de noviembre, 9:00 · Dentro de 5 semanas». Carmen «Avisó que no podrá ir» y el cupo en su lugar |
 | 1 | Narrador | «Él es Tito. Tiene 62 años y su médico le pidió una consulta de oncología cuanto antes.» | — (ya está en pantalla) | Igual |
 | 2 | Tito | Entra con el ticket: «¿Cinco semanas? ¡Me dieron cita para dentro de cinco semanas!» | **Espacio** al terminar el narrador | Igual |
 | 3 | Narrador | «Sin AsistIA, Tito espera. Y en cáncer, cada semana cuenta. Pero hoy, una paciente avisó que no podrá ir a su cita.» | **Espacio** al terminar Tito | Aparece la franja roja «Sin AsistIA» |
@@ -89,7 +89,7 @@ Detalle técnico en `docs/escenas.md`.
 | 6 | Tito | «¡Sí, sí lo quiero!» | **Espacio** cuando la voz termina | La llamada pasa a «Te escucho» |
 | 7 | Voz de IA | «Listo. Su cita quedó reservada para mañana a las 9:00.» (4.0 s) | **Espacio** al terminar Tito | Franja verde «Con AsistIA»; el cupo pasa a Tito, «Reservado» |
 | 8 | Narrador | «Tito no usa WhatsApp, por eso AsistIA lo llamó. Y el cupo le llegó porque el personal lo priorizó por su condición clínica.» | **Espacio** cuando la voz termina | La llamada termina |
-| — | Operador | Pasar al momento siguiente | **→** | Jurado en vivo |
+| — | Operador | Pasar al momento siguiente | **→** | Escena 2 |
 
 Si el cupo real de la tarjeta de Carmen ya está en juego, el bloque del cupo sigue al cupo real
 (libre → ofrecido → asignado) y no al guion. El paso real «el personal aprueba» se hace en **Operar** → Cupos liberados:
@@ -97,11 +97,11 @@ Si el cupo real de la tarjeta de Carmen ya está en juego, el bloque del cupo si
 **Reiniciar demo**, tocar antes **Escena 1: preparar a Tito**: vuelve a crear a Tito, con P1 asignada por un profesional
 y cita en 5 semanas.
 
-### Escena 2 · Preconsulta en la clínica (tecla **4**, unos 35 s)
+### Escena 2 · Preconsulta en la clínica (tecla **2**, unos 35 s)
 
 | # | Quién | Qué dice o hace | Tecla del operador | Qué muestra el proyector |
 |---|---|---|---|---|
-| 0 | — | (Al entrar al momento) | **4** | Chat vacío y «Resumen para el médico» con todo en «No informado» |
+| 0 | — | (Al entrar al momento) | **2** | Chat vacío y «Resumen para el médico» con todo en «No informado» |
 | 1 | Narrador | «Tito ya está en tratamiento. Hoy le duele la rodilla y reservó en una clínica.» | — | Igual |
 | 2 | Pantalla: IA | «Hola, Tito. Antes de su cita, ¿qué molestia quiere consultar?» | **Espacio** al terminar el narrador. Desde aquí el chat avanza solo cada 2.4 s | Primera burbuja de la IA |
 | 3 | Tito | «Me duele la rodilla derecha desde hace una semana.» | — (automático) | Su burbuja; se llena **Motivo**: «Me duele la rodilla derecha» · desde hace una semana |
@@ -123,8 +123,8 @@ con voz en `/panel/escenas`.
 
 - En la laptop del proyector van la presentación (PPT o PDF) y el navegador con `/demo?modo=presentar` en pantalla
   completa (tecla **F**).
-- Diapositiva 6 → **Alt+Tab** al navegador → **2** → escena 1 → **Alt+Tab** de vuelta a la diapositiva 7.
-- Diapositiva 8 → **Alt+Tab** → **4** → escena 2 → **Alt+Tab** a la diapositiva 9.
+- Diapositiva 6 → **Alt+Tab** al navegador → **1** → escena 1 → **Alt+Tab** de vuelta a la diapositiva 7.
+- Diapositiva 8 → **Alt+Tab** → **2** → escena 2 → **Alt+Tab** a la diapositiva 9.
 - El presentador inalámbrico envía AvPág y RePág: en el navegador mueven de momento, no de línea. Para avanzar las
   líneas, usar **Espacio** en el teclado de la laptop. Probarlo antes.
 

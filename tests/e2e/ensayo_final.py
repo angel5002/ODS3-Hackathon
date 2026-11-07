@@ -38,9 +38,15 @@ def check(ok, msg):
         FAIL.append(msg)
 
 
+VIDEO: str | None = None
+
+
 def scenes(base: str, pin: str):
     """Runs escenas.py once and returns (scene1_s, scene2_s, ok)."""
-    r = subprocess.run([_sys.executable, str(HERE / "escenas.py"), "--base", base, "--pin", pin, "--skip-presentation"],
+    cmd = [_sys.executable, str(HERE / "escenas.py"), "--base", base, "--pin", pin, "--skip-presentation"]
+    if VIDEO:
+        cmd += ["--video", str(Path(VIDEO) / "escenas")]
+    r = subprocess.run(cmd,
                        capture_output=True, text=True, encoding="utf-8", errors="replace", env={**_os.environ, "PYTHONIOENCODING": "utf-8"})
     out = r.stdout + r.stderr
     m1 = re.search(r"escena 1: ([\d.]+) s", out)
@@ -79,7 +85,15 @@ async def jury_moment(pw, base: str, pin: str):
     await staff({"action": "jury_rearm", "token": CARMEN})
     await staff({"action": "escena1_preparar"})
 
-    ctx = await b.new_context(viewport={"width": 390, "height": 760}, is_mobile=True, has_touch=True)
+    rec = lambda name, w, h: {"record_video_dir": str(Path(VIDEO) / name), "record_video_size": {"width": w, "height": h}} if VIDEO else {}
+    projector = None
+    if VIDEO:  # the projected view of the jury moment, recorded next to Carmen's phone
+        pctx = await b.new_context(viewport={"width": 1920, "height": 1080}, **rec("proyector", 1920, 1080))
+        await pctx.add_cookies(await staff_ctx.cookies())
+        projector = await pctx.new_page()
+        await projector.goto(f"{base}/demo?modo=presentar")
+        await projector.locator("[data-moment=escena1]").wait_for(timeout=60000)
+    ctx = await b.new_context(viewport={"width": 390, "height": 760}, is_mobile=True, has_touch=True, **rec("carmen", 390, 760))
     page = await ctx.new_page()
     t0 = time.monotonic()
     await page.goto(f"{base}/j/{CARMEN}", wait_until="domcontentloaded", timeout=90000)
@@ -114,6 +128,11 @@ async def jury_moment(pw, base: str, pin: str):
     slot = v.get("carmenSlot") or {}
     check(slot.get("state") == "asignado" and (slot.get("assignedTo") or "").startswith("Tito"), f"el proyector muestra el cupo de Carmen asignado a {slot.get('assignedTo')}")
     ROWS.append(("Jurado", "Circuito completo de Carmen a Tito", time.monotonic() - t1, "1–2 min"))
+    if projector:
+        await projector.keyboard.press("1")  # the scene-1 view follows carmenSlot: the slot moves to Tito
+        await asyncio.sleep(6)
+        await projector.context.close()
+    await ctx.close()
     await b.close()
 
 
@@ -121,7 +140,10 @@ async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:3000")
     ap.add_argument("--pin", required=True)
+    ap.add_argument("--video", default=None, help="folder for .webm videos (scenes, Carmen's phone, projector)")
     a = ap.parse_args()
+    global VIDEO
+    VIDEO = a.video
     s1, s2 = scenes(a.base, a.pin)
     async with async_playwright() as pw:
         await jury_moment(pw, a.base, a.pin)

@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { num } from "@/lib/labels";
+import { HMA, simulatedEmergency } from "@/lib/demo/evidence";
 import type { DemoOverview } from "@/lib/demo-overview";
 import type { JuryActivity, JuryActivityKind, JuryOverview } from "@/lib/demo/contract";
 import { SCENE1 } from "./fixtures";
@@ -348,54 +349,78 @@ export function Scene2Moment({ controllerRef, rehearsal = false }: { controllerR
 
 // ------------------------------------------------------------------------------------------------ 5 · Tablero de etapas
 
-type Stage = { icon: LucideIcon; name: string; value: number | null; unit: string };
+// Stages (proposal v5.1 §12): 1–2 indicators per stage with big figures. Real HMA data is labelled as real; the
+// emergency figures come from a fixed simulation and say "Simulado"; what only a pilot can measure says so.
+type Indicator = { value: string | null; unit: string; tag: "Real · HMA 2023" | "Simulado" | "Escenario" | "Piloto" };
+type Stage = { icon: LucideIcon; name: string; indicators: Indicator[] };
 
 export function StagesMoment({ overview }: { overview: DemoOverview | null }) {
-  const s = overview?.stages;
-  const c = overview?.slot_counts;
+  void overview;
+  const em = useMemo(() => simulatedEmergency(), []);
   const stages: Stage[] = [
-    s && s.confirmacion.confirmed > 0
-      ? { icon: CalendarCheck, name: "Antes de la cita", value: s.confirmacion.confirmed, unit: `confirmadas de ${num(s.confirmacion.day)}` }
-      : { icon: CalendarCheck, name: "Antes de la cita", value: s?.confirmacion.day ?? null, unit: "citas por confirmar" },
-    { icon: ClipboardList, name: "Llegada y triaje", value: null, unit: "" },
-    { icon: Hourglass, name: "Espera", value: s?.espera.waiting ?? null, unit: "en lista de espera" },
-    { icon: Stethoscope, name: "Atención y alta", value: null, unit: "" },
-    { icon: Repeat, name: "Cupos liberados", value: c ? c.filled : null, unit: c ? `reasignados de ${num(c.filled + c.open)}` : "reasignados" },
+    {
+      icon: CalendarCheck,
+      name: "Antes de la cita",
+      indicators: [
+        { value: HMA.noShowPct, unit: "de las citas se pierden", tag: "Real · HMA 2023" },
+        { value: HMA.lostPerDay, unit: "citas perdidas al día", tag: "Real · HMA 2023" },
+      ],
+    },
+    {
+      icon: ClipboardList,
+      name: "Llegada y triaje",
+      indicators: [{ value: `${em.arrivalToTriageMin} min`, unit: "mediana de llegada a triaje", tag: "Simulado" }],
+    },
+    {
+      icon: Hourglass,
+      name: "Espera",
+      indicators: [
+        { value: `${em.triageToDoctorMin} min`, unit: "mediana de triaje a médico", tag: "Simulado" },
+        { value: `${em.alertsOnTimePct} %`, unit: "alertas de reevaluación a tiempo", tag: "Simulado" },
+      ],
+    },
+    {
+      icon: Stethoscope,
+      name: "Atención y alta",
+      indicators: [{ value: null, unit: "altas con el control reservado y control realizado a tiempo", tag: "Piloto" }],
+    },
+    {
+      icon: Repeat,
+      name: "Cupos liberados",
+      indicators: [
+        { value: `${HMA.medianWaitDays} días`, unit: "mediana de espera de quien consigue cita", tag: "Real · HMA 2023" },
+        { value: "+10,600", unit: "consultas al año si se recupera el 10 % de las perdidas", tag: "Escenario" },
+      ],
+    },
   ];
   return (
     <Moment id="etapas" label="Tablero de etapas">
-      <h1 className="pr-title text-[2.2em]">Cada etapa, medida como un envío</h1>
-      <ol className="relative mt-[1em] grid min-h-0 flex-1 grid-cols-5 content-center gap-x-[0.8em] gap-y-[1.2em] max-[900px]:grid-cols-1">
-        {stages.map((st, n) => {
-          const measured = st.value != null || st.unit !== "";
-          return (
-            <li key={st.name} className="pr-in relative flex flex-col items-center text-center" style={i(n)}>
-              {/* the track to the next stop, drawn on entry like a parcel route */}
-              {n < stages.length - 1 && (
-                <span className="pr-draw pointer-events-none absolute left-1/2 top-[1.91em] h-[0.18em] w-[calc(100%+0.8em)] bg-(--pr-line) max-[900px]:hidden" style={i(n + 1)} aria-hidden />
-              )}
-              <span
-                className={`relative grid size-[4em] place-items-center rounded-full bg-(--pr-bg) ${
-                  measured ? "border-[0.15em] border-(--pr-ink)" : "border-[0.15em] border-dashed border-(--pr-line) text-(--pr-muted)"
-                }`}
-                aria-hidden
-              >
-                <st.icon className="size-[1.8em]" />
+      <h1 className="pr-title text-[2.2em]">Cada etapa, medida</h1>
+      <ol className="relative mt-[0.8em] grid min-h-0 flex-1 grid-cols-5 content-center gap-x-[0.8em] gap-y-[1.2em] max-[900px]:grid-cols-1">
+        {stages.map((st, n) => (
+          <li key={st.name} className="pr-in relative flex flex-col items-center text-center" style={i(n)}>
+            {n < stages.length - 1 && (
+              <span className="pr-draw pointer-events-none absolute left-1/2 top-[1.91em] h-[0.18em] w-[calc(100%+0.8em)] bg-(--pr-line) max-[900px]:hidden" style={i(n + 1)} aria-hidden />
+            )}
+            <span className="relative grid size-[4em] place-items-center rounded-full border-[0.15em] border-(--pr-ink) bg-(--pr-bg)" aria-hidden>
+              <st.icon className="size-[1.8em]" />
+            </span>
+            <span className="mt-[0.6em] text-[1.1em] font-bold leading-tight">{st.name}</span>
+            {st.indicators.map((ind) => (
+              <span key={ind.unit} className="mt-[0.6em] flex flex-col items-center">
+                <span className="pr-title text-[2.4em] leading-none tabular-nums">{ind.value ?? "—"}</span>
+                <span className="mt-[0.2em] text-[0.85em] leading-snug text-(--pr-muted)">{ind.unit}</span>
+                <span
+                  className={`mt-[0.25em] rounded-[0.3em] px-[0.4em] text-[0.8em] font-semibold ${
+                    ind.tag === "Real · HMA 2023" ? "bg-(--pr-ink) text-(--pr-bg)" : "border border-(--pr-line) text-(--pr-muted)"
+                  }`}
+                >
+                  {ind.tag === "Piloto" ? "Se mide en el piloto" : ind.tag}
+                </span>
               </span>
-              <span className="mt-[0.7em] text-[1.1em] font-bold leading-tight">{st.name}</span>
-              {measured ? (
-                <>
-                  <span key={st.value ?? "x"} className="pr-title pr-fade mt-[0.2em] text-[3.2em] tabular-nums">
-                    {st.value == null ? "—" : num(st.value)}
-                  </span>
-                  <span className="text-[0.95em] leading-snug text-(--pr-muted)">{st.unit}</span>
-                </>
-              ) : (
-                <span className="mt-[0.6em] text-[1em] font-semibold text-(--pr-muted)">Se mide en el piloto</span>
-              )}
-            </li>
-          );
-        })}
+            ))}
+          </li>
+        ))}
       </ol>
     </Moment>
   );

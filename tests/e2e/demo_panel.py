@@ -27,7 +27,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 DISCLAIMER = "Demostración. Pacientes ficticios. Citas y modelo basados en datos abiertos reales del Hospital María Auxiliadora (2023)."
-MOMENTS = ["qr", "escena1", "jurado", "escena2", "etapas"]
+MOMENTS = ["escena1", "escena2", "etapas"]  # 7/11: only the scenes and the stages are projected
 PRESENT_SIZES = [(1920, 1080), (1280, 720)]
 OPERATE_SIZES = [(1920, 1080), (360, 800)]
 MIN_FONT = {720: 16, 1080: 23}
@@ -153,7 +153,7 @@ async def check_presentation(browser, base, pin, w, h, shots):
     await page.keyboard.press("ArrowLeft")
     if not await page.locator("[data-moment=escena2]").count():
         fails.append(f"{tag}: ← did not go back to «escena2»")
-    for n, m in [(1, "qr"), (3, "jurado"), (5, "etapas"), (2, "escena1"), (4, "escena2")]:
+    for n, m in [(3, "etapas"), (1, "escena1"), (2, "escena2")]:
         await page.keyboard.press(str(n))
         try:
             await page.locator(f"[data-moment={m}]").wait_for(timeout=3000)

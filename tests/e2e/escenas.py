@@ -41,8 +41,12 @@ def say_s(text):
     return len(text.split()) / WPS
 
 
+VIDEO = None  # folder for a video of the playback (--video)
+
+
 async def login(browser, base, pin, w=1600, h=900):
-    ctx = await browser.new_context(base_url=base, viewport={"width": w, "height": h})
+    extra = {"record_video_dir": VIDEO, "record_video_size": {"width": w, "height": h}} if VIDEO else {}
+    ctx = await browser.new_context(base_url=base, viewport={"width": w, "height": h}, **extra)
     r = await ctx.request.post("/api/access", data={"pin": pin, "role": "admision"})
     return ctx if r.ok else None
 
@@ -137,8 +141,8 @@ async def presentation(browser, base, pin, fails, shots):
     ctx = await login(browser, base, pin, 1920, 1080)
     page = await ctx.new_page()
     await page.goto("/demo?modo=presentar")
-    await page.locator("[data-moment=qr]").wait_for(timeout=60000)
-    await page.keyboard.press("2")
+    await page.locator("[data-moment=escena1]").wait_for(timeout=60000)
+    await page.keyboard.press("1")
     await page.locator("[data-moment=escena1]").wait_for(timeout=5000)
     for _ in range(4):
         await page.keyboard.press(" ")
@@ -148,7 +152,7 @@ async def presentation(browser, base, pin, fails, shots):
     if shots:
         await asyncio.sleep(1.5)
         await page.screenshot(path=str(Path(shots) / "presentar-escena1.png"))
-    await page.keyboard.press("4")
+    await page.keyboard.press("2")
     await page.locator("[data-moment=escena2]").wait_for(timeout=5000)
     await page.keyboard.press(" ")
     await asyncio.sleep(24)
@@ -167,7 +171,10 @@ async def main():
     ap.add_argument("--pin", required=True)
     ap.add_argument("--shots", default=None)
     ap.add_argument("--skip-presentation", action="store_true")
+    ap.add_argument("--video", default=None, help="folder for a .webm of the scenes (Playwright record_video)")
     a = ap.parse_args()
+    global VIDEO
+    VIDEO = a.video
     if os.environ.get("ALLOW_DB_WRITE") != "1":
         print("escenas.py: registra cada paso en voice_events (base compartida). No se ejecuta sin ALLOW_DB_WRITE=1.")
         sys.exit(3)
