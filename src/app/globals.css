@@ -640,3 +640,105 @@ button:disabled {
     display: none;
   }
 }
+
+/* ---------- App surfaces on the voice palette (E5 app): /pedir-cita, chat, simulated phone, /demo ----------
+   A few extra tokens for the screens around the call. Same rule as above: opaque hex values, measured by
+   `node scripts/dev/contrast-check.mjs` (it merges every [data-voice-theme="claro"] block). */
+@theme inline {
+  --color-vc-line: var(--vc-line);
+  --color-vc-on-primary-2: var(--vc-on-primary-2);
+  --color-vc-warn-soft: var(--vc-warn-soft);
+  --color-vc-danger-soft: var(--vc-danger-soft);
+}
+:root,
+[data-voice-theme="claro"] {
+  /* hairlines and card edges: decorative only (a control edge uses --vc-edge) */
+  --vc-line: #d3e3df;
+  /* secondary text on the ink surfaces (own chat bubbles, the main option card) */
+  --vc-on-primary-2: #c5dcd8;
+  /* "Se cierra a las…" chip */
+  --vc-warn-soft: #fdf1e4;
+  /* emergency note */
+  --vc-danger-soft: #fdecea;
+}
+
+/* "escribiendo…": three dots that rise one after another */
+@keyframes app-typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: none;
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+.app-typing {
+  display: inline-flex;
+  gap: 3px;
+}
+.app-typing > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: app-typing 1100ms ease-in-out infinite;
+}
+.app-typing > i:nth-child(2) {
+  animation-delay: 140ms;
+}
+.app-typing > i:nth-child(3) {
+  animation-delay: 280ms;
+}
+
+/* a view that just opened (chat thread, phone inbox): a short fade, the list itself does not move */
+@keyframes app-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.app-fade {
+  animation: app-fade 240ms ease both;
+}
+
+/* cards that lift a little under a mouse only (touch keeps the :active feedback) */
+.app-lift {
+  transition:
+    transform 160ms var(--ease-out),
+    box-shadow 160ms ease,
+    background-color 140ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .app-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px -16px rgb(16 48 47 / 0.4);
+  }
+}
+.app-lift:active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-typing > i,
+  .app-fade {
+    animation: none;
+  }
+  .app-typing > i {
+    opacity: 0.6;
+  }
+  .app-lift {
+    transition: none;
+  }
+  .app-lift:hover,
+  .app-lift:active {
+    transform: none;
+  }
+  [data-voice-theme] .bubble-in {
+    transition: none;
+  }
+}

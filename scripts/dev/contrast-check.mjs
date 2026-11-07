@@ -14,10 +14,11 @@ const css = readFileSync(join(root, "src", "app", "globals.css"), "utf8");
 const md = process.argv.includes("--md");
 
 function tokens(theme) {
-  const m = css.match(new RegExp(`\\[data-voice-theme="${theme}"\\]\\s*\\{([^}]*)\\}`));
-  if (!m) throw new Error(`No [data-voice-theme="${theme}"] block in globals.css`);
+  // every block of the theme is merged (the call tokens, then the app surface tokens of E5 app)
+  const blocks = [...css.matchAll(new RegExp(`\\[data-voice-theme="${theme}"\\]\\s*\\{([^}]*)\\}`, "g"))];
+  if (!blocks.length) throw new Error(`No [data-voice-theme="${theme}"] block in globals.css`);
   const out = {};
-  for (const [, name, value] of m[1].matchAll(/--(vc-[a-z0-9-]+)\s*:\s*([^;]+);/g)) out[name] = value.trim();
+  for (const m of blocks) for (const [, name, value] of m[1].matchAll(/--(vc-[a-z0-9-]+)\s*:\s*([^;]+);/g)) out[name] = value.trim();
   return out;
 }
 
@@ -69,6 +70,41 @@ const PAIRS = [
   ["vc-on-accept", "vc-accept-press", "icono", "icono en Contestar pulsado"],
   ["vc-on-toggle", "vc-toggle", "icono", "icono en Silenciar activado"],
 ];
+
+// E5 app: /pedir-cita (inicio, chat, formulario), burbujas y campo del chat, teléfono simulado /t/[token] y /demo.
+// Every new foreground/background combination those screens use, including the ones whose tokens already existed.
+const APP_PAIRS = [
+  ["vc-text-2", "vc-surface", "texto", "franja de aviso «Demostración…» (app)"],
+  ["vc-icon", "vc-surface", "icono", "icono Info de la franja de aviso; mosaico de icono de opción (app)"],
+  ["vc-text-3", "vc-surface", "texto", "pista «Responda con los botones del mensaje»; botón Enviar desactivado (app)"],
+  ["vc-text", "vc-surface", "texto", "«Respondió: …» en la burbuja (app)"],
+  ["vc-icon", "vc-bg", "texto", "rótulo «Oferta de cupo», «Teléfono N», enlaces (app)"],
+  ["vc-icon", "vc-bg-2", "texto", "enlaces sobre el fondo menta (app)"],
+  ["vc-text", "vc-bg", "texto", "burbuja del asistente, títulos de tarjetas (app)"],
+  ["vc-text-2", "vc-bg", "texto", "subtítulo de la cabecera, descripciones (app)"],
+  ["vc-text-3", "vc-bg", "texto", "hora de la burbuja del asistente, «escribiendo…» (app)"],
+  ["vc-text-3", "vc-bg", "icono", "puntos de «escribiendo…» (app)"],
+  ["vc-on-primary", "vc-primary", "texto", "burbuja propia, tarjeta principal, botón Enviar (app)"],
+  ["vc-on-primary-2", "vc-primary", "texto", "hora en la burbuja propia, descripción en la tarjeta principal (app)"],
+  ["vc-on-primary", "vc-primary-press", "icono", "icono en el mosaico de la tarjeta principal (app)"],
+  ["vc-on-primary-2", "vc-primary-press", "texto", "descripción de la tarjeta principal pulsada (app)"],
+  ["vc-agent", "vc-bg", "control", "borde de la burbuja de oferta o confirmación de cupo (app)"],
+  ["vc-agent", "vc-bg-2", "control", "borde de la burbuja de oferta sobre el fondo menta (app)"],
+  ["vc-edge", "vc-bg", "control", "borde del campo de texto, de los botones de respuesta y de los botones secundarios (app)"],
+  ["vc-edge", "vc-bg-2", "control", "borde de las opciones rápidas sobre el fondo menta (app)"],
+  ["vc-text", "vc-surface-press", "texto", "botón de respuesta pulsado (app)"],
+  ["vc-warn", "vc-warn-soft", "texto", "«Se cierra a las …» (app)"],
+  ["vc-warn", "vc-warn-soft", "icono", "reloj de «Se cierra a las …» (app)"],
+  ["vc-text", "vc-danger-soft", "texto", "aviso de emergencia (app)"],
+  ["vc-danger-press", "vc-danger-soft", "icono", "icono del aviso de emergencia (app)"],
+  ["vc-danger-press", "vc-bg", "texto", "botón «Reiniciar demo» (app)"],
+  ["vc-danger", "vc-bg", "control", "borde del botón «Reiniciar demo», icono «En vivo» (app)"],
+  ["vc-danger-press", "vc-danger-soft", "texto", "botón «Reiniciar demo» pulsado (app)"],
+  ["vc-text", "vc-bg-2", "texto", "títulos de /demo sobre el fondo menta (app)"],
+  ["vc-text-2", "vc-bg-2", "texto", "texto secundario de /demo sobre el fondo menta (app)"],
+  ["vc-text-3", "vc-bg-2", "texto", "URL bajo cada QR (app)"],
+];
+PAIRS.push(...APP_PAIRS);
 
 const MIN = { texto: 4.5, icono: 3, control: 3 };
 let failures = 0;
