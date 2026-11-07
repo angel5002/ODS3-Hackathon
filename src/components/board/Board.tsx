@@ -212,7 +212,7 @@ function Scenario({ params }: { params?: Record<string, number> }) {
   const exactC = v ? cur.c / 100 : params?.c ?? 1 / 3;
   const r = cur.s / 100 + exactC * (cur.f / 100);
   const annual = Math.round((params?.annual_no_shows ?? 106100) * r);
-  const breakeven = params?.breakeven_r ?? 0.053;
+  const breakeven = params?.breakeven_r ?? 0.052; // proposal v5.1, section 9
   const field = (k: "s" | "c" | "f", label: string) => (
     <label className="flex items-center justify-between gap-2 text-sm">
       <span>{label}</span>

@@ -132,7 +132,7 @@ def main(base: str, pin: str):
         expect(ana.get_by_text("Registramos que acepta")).to_be_visible(timeout=8000)
         close = card.get_by_role("button", name="Cerrar oferta y asignar")
         timed("asignación visible en el panel", close.click,
-              lambda: expect(staff.get_by_text("aunque Julio respondió primero (0.48)")).to_be_visible(timeout=8000))
+              lambda: expect(staff.get_by_text("aunque Julio respondió primero (P2, 44 % de su plazo)")).to_be_visible(timeout=8000))
         shot(staff, "escritorio-panel-asignada")
         expect(julio.get_by_text("Usted queda primero")).to_be_visible(timeout=8000)
         timed("validación de Ana visible en el panel", lambda: ana.get_by_role("button", name="Sí, soy el paciente").click(),

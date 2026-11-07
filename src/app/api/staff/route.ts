@@ -39,12 +39,13 @@ export async function POST(req: Request) {
       case "call":
         return ok({ callId: await voice.startCall(Number(body.appointmentId), actor) });
       case "tick": {
-        const changes = await rpc<number>("demo_tick");
+        // v5.1 (proposal 3.5): offers close and pass on with the assignment rule of /demo; then the rest of the tick
+        const changes = (await rpc<number>("demo_tick_offers_v51")) + (await rpc<number>("demo_tick"));
         if (changes > 0) await broadcast("bulk");
         return ok({ changes });
       }
       case "advance":
-        await rpc("advance_clock", { p_minutes: Math.max(1, Math.min(1440, Number(body.minutes) || 60)) });
+        await rpc("advance_clock_v51", { p_minutes: Math.max(1, Math.min(1440, Number(body.minutes) || 60)) });
         await broadcast("bulk");
         return ok();
       case "reset": {
@@ -81,18 +82,18 @@ export async function POST(req: Request) {
 
       // ---------------------------------------------------------------- RF-05 to RF-09: offers
       case "approve_offer":
-        return ok({ offerId: await rpc<number>("approve_offer", { p_slot: Number(body.slotId), p_actor: actor }) });
+        return ok({ offerId: await rpc<number>("approve_offer_v51", { p_slot: Number(body.slotId), p_actor: actor }) });
       case "approve_all": {
         const { data } = await serverDb().from("slots").select("id").eq("state", "libre");
         let sent = 0;
         for (const s of data ?? []) {
-          const { error } = await serverDb().rpc("approve_offer", { p_slot: s.id, p_actor: actor });
+          const { error } = await serverDb().rpc("approve_offer_v51", { p_slot: s.id, p_actor: actor });
           if (!error) sent++;
         }
         return ok({ sent });
       }
       case "close_offer":
-        return ok({ assignmentId: await rpc<number | null>("close_offer", { p_offer: Number(body.offerId), p_actor: actor }) });
+        return ok({ assignmentId: await rpc<number | null>("close_offer_v51", { p_offer: Number(body.offerId), p_actor: actor }) });
       case "simulate_response":
         // "Usar simulado": the same flow without the live channel
         return ok({

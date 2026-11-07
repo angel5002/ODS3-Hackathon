@@ -27,7 +27,8 @@ const count = async (table, filter = (q) => q) => {
   if (error) throw new Error(`${table}: ${error.message}`);
   return n;
 };
-const requestByName = async (prefix) => (await rpc("staff_requests")).find((r) => r.name.startsWith(prefix));
+// v5.1: the e5 app reads and assigns with the _v51 functions (supabase/migrations/20261107020000_e5_v51_priority.sql)
+const requestByName = async (prefix) => (await rpc("staff_requests_v51")).find((r) => r.name.startsWith(prefix));
 
 let initial = null;
 before(async () => {
@@ -64,16 +65,17 @@ test("a released slot goes to the highest priority, not the first to answer (RF-
   const { data: slot } = await srv.from("slots").select("id").eq("source_appointment_id", appt.id).single();
   const ana = await requestByName("Ana Gutiérrez");
   const julio = await requestByName("Julio Gonzales");
-  const offer = await rpc("approve_offer", { p_slot: slot.id, p_actor: "Prueba" });
+  const offer = await rpc("approve_offer_v51", { p_slot: slot.id, p_actor: "Prueba" });
   await rpc("respond_offer", { p_offer: offer, p_request: julio.id, p_response: "acepta", p_channel: "prueba" });
   await rpc("respond_offer", { p_offer: offer, p_request: ana.id, p_response: "acepta", p_channel: "prueba" });
-  const assignment = await rpc("close_offer", { p_offer: offer, p_actor: "Prueba" });
+  const assignment = await rpc("close_offer_v51", { p_offer: offer, p_actor: "Prueba" });
   const { data: a } = await srv.from("assignments").select("request_id").eq("id", assignment).single();
-  assert.equal(a.request_id, ana.id, "Ana (0.77) wins although Julio (0.48) answered first");
+  assert.equal(a.request_id, ana.id, "Ana (P2, 0.69) wins although Julio (P2, 0.44) answered first");
 });
 
 test("not answering never changes or releases an appointment", { skip }, async () => {
-  await rpc("advance_clock", { p_minutes: 600 });
+  await rpc("advance_clock_v51", { p_minutes: 600 });
+  await rpc("demo_tick_offers_v51");
   await rpc("demo_tick");
   const bad = await count("events", (q) => q.eq("to_status", "liberada").eq("actor", "Sistema").ilike("detail", "%respuesta%"));
   assert.equal(bad, 0);

@@ -6,7 +6,7 @@ import { Check, Clock, Lock, MessageCircle, Send, ShieldCheck, Smartphone, X } f
 import { Button } from "@/components/ui";
 import { post } from "@/lib/post";
 import { useDemoState, useNow } from "@/lib/realtime";
-import { ZONE_TEXT, dateEs, dateShort, demoNowMin, fmtMin, index2, num } from "@/lib/labels";
+import { ZONE_TEXT, dateEs, dateShort, demoNowMin, fmtMin, num } from "@/lib/labels";
 import { useServerView } from "./useStaffView";
 import { CAT_TONE } from "./WaitlistTab";
 import { Pill } from "./badges";
@@ -42,7 +42,7 @@ type Slot = {
   days: number;
   source_name: string | null;
   proposal: { zone: string; k: number; fill_probability: number; available: number; candidates: Candidate[]; target: number } | null;
-  offer: { id: number; state: string; k: number; fill_probability: number; closes_min: number; zone: string; approved_by: string; candidates: Candidate[] } | null;
+  offer: { id: number; state: string; k: number; fill_probability: number; closes_min: number; zone: string; approved_by: string; candidates: Candidate[]; rule?: "ventana_prioridad" | "primero_acepta" } | null;
   assignments: { id: number; state: string; reverted: boolean; short_name: string; code: string; had_appointment: boolean }[];
 };
 type Feed = { id: number; kind: string; detail: string; actor: string; demo_min: number | null };
@@ -89,8 +89,8 @@ export function ReassignTab() {
           <h1 className="font-display text-3xl font-bold tracking-tight">Por reasignar</h1>
           <p className="mt-1 max-w-[85ch] text-sm text-muted">
             Cada cupo libre se ofrece a la vez a varios pacientes de la zona que le corresponde. <strong>Sin su aprobación no sale
-            ninguna oferta.</strong> Al cerrar la oferta, el cupo va al de mayor prioridad entre quienes aceptaron, no al primero en
-            responder.
+            ninguna oferta.</strong> Al cerrar la oferta, el cupo se asigna con la regla elegida en Demo: al de mayor prioridad entre
+            quienes aceptaron (primero la categoría y luego la parte del plazo consumida) o al primero que aceptó.
           </p>
         </div>
         <Button
@@ -240,14 +240,14 @@ function SlotCard({ slot: s, busy, act }: { slot: Slot; busy: string; act: (k: s
         <>
           <p className="mt-3 flex items-center gap-1.5 text-sm text-st-free">
             <Clock className="size-4" aria-hidden /> Oferta abierta hasta las {fmtMin(offer.closes_min)} ({Math.max(0, offer.closes_min - nowMin)} min) · aprobó{" "}
-            {offer.approved_by}
+            {offer.approved_by} · regla: {offer.rule === "primero_acepta" ? "primero que acepta" : "mayor prioridad al cierre"}
           </p>
           <CandidateList list={offer.candidates} offerId={offer.id} busy={busy} act={act} />
           <Button
             variant="primary"
             className="mt-3 w-full rounded-full"
             disabled={!!busy}
-            onClick={() => act(`c${offer.id}`, { action: "close_offer", offerId: offer.id }, "Oferta cerrada: asignada al de mayor prioridad entre quienes aceptaron")}
+            onClick={() => act(`c${offer.id}`, { action: "close_offer", offerId: offer.id }, offer.rule === "primero_acepta" ? "Oferta cerrada: asignada al primero que aceptó" : "Oferta cerrada: asignada al de mayor prioridad entre quienes aceptaron")}
           >
             Cerrar oferta y asignar
           </Button>
@@ -303,7 +303,7 @@ function CandidateList({
               )}
             </p>
             <p className="text-xs text-muted">
-              Prioridad <strong className="tabular-nums text-ink">{index2(c.index)}</strong> · {c.reason}
+              Prioridad <strong className="text-ink">{c.reason}</strong>
               {c.a != null ? ` · acepta con prob. ${Math.round(c.a * 100)} %` : ""}
               {c.current_date ? ` · cita actual ${dateShort(c.current_date)}` : ""}
             </p>

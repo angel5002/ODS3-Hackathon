@@ -41,9 +41,10 @@ let { requests } = await view("requests");
 const ana = requests.find((r) => r.name.startsWith("Ana Gutiérrez"));
 const julio = requests.find((r) => r.name.startsWith("Julio Gonzales"));
 const luis = requests.find((r) => r.name.startsWith("Luis Ramos"));
-assert(Number(ana.idx).toFixed(2) === "0.77" && ana.reason === "P2 · 69 % de su plazo · primera consulta · adulta mayor", `Ana 0.77: ${ana.reason}`);
-assert(Number(julio.idx).toFixed(2) === "0.48" && julio.reason === "P2 · 44 % de su plazo · primera consulta", `Julio 0.48: ${julio.reason}`);
-assert(Number(luis.idx).toFixed(2) === "0.28" && luis.reason === "P3 · 17 % de su plazo · primera consulta", `Luis 0.28: ${luis.reason}`);
+// v5.1 (section 3.5): category first, then the fraction of the deadline consumed; no bonuses
+assert(Number(ana.idx).toFixed(2) === "0.69" && ana.reason === "P2 · 69 % de su plazo", `Ana 0.69: ${ana.reason}`);
+assert(Number(julio.idx).toFixed(2) === "0.44" && julio.reason === "P2 · 44 % de su plazo", `Julio 0.44: ${julio.reason}`);
+assert(Number(luis.idx).toFixed(2) === "0.17" && luis.reason === "P3 · 17 % de su plazo", `Luis 0.17: ${luis.reason}`);
 
 // regulator: new request by the front desk (as the jury would by chat), blind view
 const reg = await staff("register", { request: { display_name: "Prueba Jurado Ficticio", age: 35, specialty: "Dermatología", reason_text: "Manchas en la piel desde hace dos meses. Me llamo Prueba Jurado, cel 987654321", doc_type: "dni", insurance: false, district: "Surco" } });
@@ -89,7 +90,8 @@ await staff("close_offer", { offerId: offer.id });
 ({ slots } = await view("slots"));
 const { feed } = await view("slots");
 const msg = feed.find((e) => e.kind === "asignacion")?.detail ?? "";
-assert(/Asignado a Ana G\. \(prioridad 0\.77: P2, 69 % de su plazo\) aunque Julio respondió primero \(0\.48\)/.test(msg), msg);
+// default rule 'ventana_prioridad' (params.regla_asignacion = 1)
+assert(/Asignado a Ana G\. \(mayor prioridad: P2, 69 % de su plazo\) aunque Julio respondió primero \(P2, 44 % de su plazo\)/.test(msg), msg);
 ({ requests } = await view("requests"));
 assert(requests.find((r) => r.id === julio.id).state === "en_espera_prioritaria", "Julio queda en espera prioritaria");
 

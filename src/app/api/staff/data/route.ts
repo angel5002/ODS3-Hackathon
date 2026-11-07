@@ -76,12 +76,12 @@ export async function GET(req: Request) {
         });
       }
       case "requests":
-        return NextResponse.json({ requests: await rpc("staff_requests") });
+        return NextResponse.json({ requests: await rpc("staff_requests_v51") });
       case "request":
-        return NextResponse.json(await rpc("staff_request_detail", { p_request: Number(url.searchParams.get("id")) }));
+        return NextResponse.json(await rpc("staff_request_detail_v51", { p_request: Number(url.searchParams.get("id")) }));
       case "slots": {
         const [slots, feed] = await Promise.all([
-          rpc("staff_slots"),
+          rpc("staff_slots_v51"),
           db
             .from("events")
             .select("id,kind,detail,actor,demo_min,appointment_id")

@@ -18,7 +18,7 @@ function assert(c, m) {
   console.log("ok", m);
 }
 const reqByName = async (prefix) => {
-  const rows = await rpc("staff_requests");
+  const rows = await rpc("staff_requests_v51"); // v5.1: the e5 app uses the _v51 functions
   return rows.find((r) => r.name.startsWith(prefix));
 };
 
@@ -33,16 +33,15 @@ await rpc("patient_reply", { p_appt: carmen.id, p_reply: "libera", p_channel: "m
 const { data: slot } = await db.from("slots").select("id").eq("source_appointment_id", carmen.id).single();
 const ana = await reqByName("Ana Gutiérrez");
 const julio = await reqByName("Julio Gonzales");
-const offer = await rpc("approve_offer", { p_slot: slot.id, p_actor: "Prueba" });
+const offer = await rpc("approve_offer_v51", { p_slot: slot.id, p_actor: "Prueba" });
 await rpc("respond_offer", { p_offer: offer, p_request: julio.id, p_response: "acepta", p_channel: "prueba" });
 await rpc("respond_offer", { p_offer: offer, p_request: ana.id, p_response: "acepta", p_channel: "prueba" });
-const a1 = await rpc("close_offer", { p_offer: offer, p_actor: "Prueba" });
+const a1 = await rpc("close_offer_v51", { p_offer: offer, p_actor: "Prueba" });
 const { data: as1 } = await db.from("assignments").select("request_id").eq("id", a1).single();
-assert(as1.request_id === ana.id, "gana el de mayor índice (Ana) aunque Julio respondió primero");
+assert(as1.request_id === ana.id, "gana el de mayor prioridad (Ana, P2 69 %) aunque Julio respondió primero");
 
 // validation timeout: advance past validation_timeout_min and tick
-await rpc("advance_clock", { p_minutes: 61 });
-await rpc("demo_tick");
+await rpc("advance_clock_v51", { p_minutes: 61 });
 const { data: as } = await db.from("assignments").select("id,request_id,validation_state,rule").eq("slot_id", slot.id).order("id");
 assert(as[0].validation_state === "vencida" && as[1]?.request_id === julio.id && as[1].rule === "siguiente_aceptante", "validación vencida: el cupo pasa al siguiente aceptante (Julio)");
 const { data: anaAfter } = await db.from("requests").select("state").eq("id", ana.id).single();
@@ -52,20 +51,19 @@ assert(anaAfter.state === "con_cita", "Ana no pierde su lugar ni su cita (vuelve
 await rpc("validate_assignment", { p_assignment: as[1].id, p_ok: true, p_by: "mensaje", p_role: "paciente", p_actor: "Prueba" });
 const { data: dom } = await db.from("slots").select("id,date,origin").eq("origin", "domino").single();
 assert(dom.date === "2023-11-23", "dominó: se libera la cita lejana de Julio (23/11)");
-const prop = await rpc("propose_candidates", { p_slot: dom.id });
+const prop = await rpc("propose_candidates_v51", { p_slot: dom.id });
 assert(!prop.candidates.some((c) => c.request_id === ana.id), "solo hacia adelante: Ana (cita 09/11) no es candidata a un cupo del 23/11");
 // another Cardiology slot: release one more appointment of the day; Julio was just moved -> excluded
 const { data: other } = await db.from("appointments").select("id").eq("specialty", "Cardiología").eq("is_base", true).neq("id", carmen.id).neq("status", "reasignada").limit(1).single();
 await rpc("patient_reply", { p_appt: other.id, p_reply: "libera", p_channel: "mensaje" });
 const { data: slot2 } = await db.from("slots").select("id").eq("source_appointment_id", other.id).single();
-const prop2 = await rpc("propose_candidates", { p_slot: slot2.id });
+const prop2 = await rpc("propose_candidates_v51", { p_slot: slot2.id });
 const { data: julioAfter } = await db.from("requests").select("state,last_moved_at").eq("id", julio.id).single();
 assert(julioAfter.state === "con_cita" && !prop2.candidates.some((c) => c.request_id === julio.id), "una vez por semana: Julio ya se movió y no recibe otra oferta");
 assert(prop2.candidates.some((c) => c.request_id === ana.id), "Ana sigue siendo candidata a cupos anteriores a su cita");
 
 // not answering never changes an appointment
-await rpc("advance_clock", { p_minutes: 600 });
-await rpc("demo_tick");
+await rpc("advance_clock_v51", { p_minutes: 600 });
 const { count: bad } = await db.from("events").select("id", { count: "exact", head: true }).eq("to_status", "liberada").eq("actor", "Sistema").ilike("detail", "%respuesta%");
 assert(bad === 0, "ninguna cita se libera por no responder (sin respuesta = la cita se mantiene)");
 await rpc("reset_demo");
