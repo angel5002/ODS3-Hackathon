@@ -11,7 +11,7 @@ export function BrandMark({ className = "size-8", tone = "dark" }: { className?:
       <path
         d="M11 20l3.4 3.4 6.8-6.8"
         fill="none"
-        stroke={tone === "light" ? "var(--color-mint)" : "var(--color-brand)"}
+        stroke={tone === "light" ? "var(--color-mint)" : "var(--color-accent)"}
         strokeWidth="2.6"
         strokeLinecap="square"
       />
@@ -26,7 +26,7 @@ export function Wordmark({ tone = "dark", className = "" }: { tone?: "dark" | "l
   return (
     <span className={`font-bold tracking-[-0.01em] ${tone === "light" ? "text-white" : "text-ink"} ${className}`}>
       {head}
-      {accent && <span className={tone === "light" ? "text-mint" : "text-brand"}>IA</span>}
+      {accent && <span className={tone === "light" ? "text-mint" : "text-accent"}>IA</span>}
     </span>
   );
 }

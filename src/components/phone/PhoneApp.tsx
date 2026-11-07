@@ -220,7 +220,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="flex h-dvh items-stretch justify-center bg-vc-bg-2 sm:py-6">
       <div
         data-voice-theme="claro"
-        className="relative flex h-full w-full max-w-[420px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-2xl sm:border sm:border-vc-edge"
+        className="relative flex h-full w-full max-w-[420px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-3xl sm:border sm:border-vc-line"
       >
         {children}
       </div>
@@ -228,16 +228,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** `owner`: whose simulated phone this is ("Rosa Mendoza Ríos (lo usa …)"); without it, "Mensajes automáticos". */
+/** `owner`: whose simulated phone this is ("Rosa Mendoza Ríos (lo usa …)"); without it, "Mensajes automáticos".
+ *  Nothing is cut: the owner line wraps. */
 export function PhoneHeader({ clock, owner }: { clock: string; owner?: string }) {
   return (
-    <header className="flex shrink-0 items-center gap-3 border-b border-vc-line bg-vc-bg px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
-      <div className="grid size-10 shrink-0 place-items-center rounded-full bg-vc-surface text-vc-icon">
-        <Building2 className="size-5" aria-hidden />
+    <header className="flex shrink-0 items-center gap-3 bg-vc-bg px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
+      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-vc-surface text-vc-icon">
+        <Building2 className="size-5" aria-hidden strokeWidth={1.75} />
       </div>
       <div className="min-w-0 flex-1 leading-tight">
-        <p className="truncate text-[16px] font-bold text-vc-text">Citas · Hospital Mirasur</p>
-        <p className="truncate text-[13px] text-vc-text-2">{owner ? `Teléfono simulado de ${owner}` : "Mensajes automáticos"}</p>
+        <p className="text-[16px] font-semibold text-vc-text">Hospital Mirasur</p>
+        <p className="text-pretty text-[13px] text-vc-text-3">{owner ? `Teléfono simulado de ${owner}` : "Mensajes automáticos"}</p>
       </div>
       {clock && (
         <span className="shrink-0 text-[15px] font-semibold tabular-nums text-vc-text" aria-label={`Hora de la demo ${clock}`}>
@@ -250,17 +251,17 @@ export function PhoneHeader({ clock, owner }: { clock: string; owner?: string })
 
 export function PhoneEmpty() {
   return (
-    <li className="mx-auto mt-8 flex max-w-[280px] flex-col items-center rounded-md border border-vc-line bg-vc-bg p-5 text-center text-[15px] leading-snug text-vc-text-2">
-      <BellRing className="mb-2 size-6 text-vc-icon" aria-hidden />
-      Todavía no hay mensajes. Cuando el hospital envíe el recordatorio o le ofrezca un cupo, llegará aquí.
+    <li className="mx-auto mt-12 flex max-w-[260px] flex-col items-center text-center text-[16px] leading-snug text-vc-text-2">
+      <BellRing className="mb-3 size-7 text-vc-icon" aria-hidden strokeWidth={1.5} />
+      Aún no hay mensajes.
     </li>
   );
 }
 
 export function PhoneFooter() {
   return (
-    <footer className="flex shrink-0 items-center gap-2 border-t border-vc-line bg-vc-bg px-3 py-2">
-      <div className="flex-1 rounded-md bg-vc-surface px-3 py-2.5 text-[15px] text-vc-text-3">Responda con los botones del mensaje</div>
+    <footer className="flex shrink-0 items-center gap-2 bg-vc-bg px-3 py-2">
+      <div className="flex-1 rounded-full bg-vc-surface px-4 py-3 text-[15px] text-vc-text-3">Responda con los botones del mensaje</div>
     </footer>
   );
 }
@@ -286,9 +287,8 @@ export function PhoneMissing() {
     <>
       <div className="vc-enter m-auto flex max-w-xs flex-col items-center p-6 text-center">
         <QrCode className="size-8 text-vc-icon" aria-hidden />
-        <p className="mt-3 text-pretty text-[16px] leading-snug text-vc-text-2">
-          Este enlace no corresponde a ningún paciente de la demo. Vuelva a escanear el código QR.
-        </p>
+        <p className="mt-3 font-display text-[26px] leading-tight text-vc-text">Enlace no válido</p>
+        <p className="mt-1.5 text-pretty text-[16px] leading-snug text-vc-text-2">Vuelva a escanear el código QR.</p>
       </div>
       <DemoNotice>{DISCLAIMER}</DemoNotice>
     </>
