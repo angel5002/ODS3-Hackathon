@@ -69,12 +69,18 @@ export function CallPlayground({
   panel,
   captions: initialCaptions,
   muted: initialMuted,
+  ptt: initialPtt = false,
+  scene: initialScene = false,
 }: {
   initial: PlaygroundState;
   frame: "pantalla" | "telefono" | "pedir";
   panel: boolean;
   captions: boolean;
   muted: boolean;
+  /** "Mantener para hablar" instead of Silenciar (optional prop pushToTalk) */
+  ptt?: boolean;
+  /** projector scene playback: no controls (optional prop scene) */
+  scene?: boolean;
 }) {
   const [state, setState] = useState<PlaygroundState>(initial);
   const [frame, setFrame] = useState<"pantalla" | "telefono" | "pedir">(initialFrame);
@@ -84,6 +90,8 @@ export function CallPlayground({
   const [turn, setTurn] = useState(0);
   const [scriptCaptions, setScriptCaptions] = useState<Caption[]>(() => (initial === "guion" ? GUION_FIRST : []));
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [ptt, setPtt] = useState(initialPtt);
+  const [scene, setScene] = useState(initialScene);
   const voice = useRef<Voice>("silencio");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -104,6 +112,11 @@ export function CallPlayground({
   useEffect(() => {
     voice.current = phase === "activa" ? (agentSpeaking ? "agente" : thinking ? "silencio" : "persona") : "silencio";
   }, [phase, agentSpeaking, thinking]);
+
+  // simulated push-to-talk: while held, the microphone carries the person's voice
+  function hold(down: boolean) {
+    voice.current = down ? "persona" : phase === "activa" && agentSpeaking ? "agente" : "silencio";
+  }
 
   // simulated conversation: advance turns on a timer (React state changes per turn, never per frame)
   useEffect(() => {
@@ -178,6 +191,8 @@ export function CallPlayground({
     errorMessage: state === "sin_conexion" ? "La conexión a internet es inestable o el micrófono no está disponible." : null,
     levels,
     scriptOptions: SCRIPT_OPTIONS,
+    pushToTalk: ptt,
+    scene,
     onScriptOption: (id) => {
       const o = SCRIPT_OPTIONS.find((x) => x.id === id);
       if (!o) return;
@@ -205,6 +220,7 @@ export function CallPlayground({
       continueByChat: () => toast("Seguir por chat", { description: "Aquí se abriría el chat con la misma conversación." }),
       talkToPerson: () => toast("Hablar con una persona", { description: "Aquí se avisaría al personal del hospital." }),
       leave: () => toast("Cerrar", { description: "Aquí se cerraría esta pantalla sin tocar la llamada." }),
+      holdToTalk: hold,
     },
   };
 
@@ -275,6 +291,14 @@ export function CallPlayground({
       <label className="flex min-h-11 items-center gap-2">
         <input type="checkbox" checked={muted} onChange={(e) => setMuted(e.target.checked)} className="size-5" />
         Micrófono silenciado
+      </label>
+      <label className="flex min-h-11 items-center gap-2">
+        <input type="checkbox" checked={ptt} onChange={(e) => setPtt(e.target.checked)} className="size-5" />
+        Mantener para hablar
+      </label>
+      <label className="flex min-h-11 items-center gap-2">
+        <input type="checkbox" checked={scene} onChange={(e) => setScene(e.target.checked)} className="size-5" />
+        Modo escena (proyector, sin controles)
       </label>
       <label className="flex min-h-11 items-center gap-2">
         <input type="checkbox" checked={frame === "telefono"} onChange={(e) => setFrame(e.target.checked ? "telefono" : "pantalla")} className="size-5" />

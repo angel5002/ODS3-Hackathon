@@ -41,6 +41,12 @@ export type CallActions = {
   talkToPerson?: () => void;
   /** close this screen without touching the call (another device has it) */
   leave?: () => void;
+  /**
+   * OPTIONAL (E5 stoic). Push-to-talk: called with `true` when the person presses "Mantener para hablar" and with
+   * `false` when they release it (pointer up, pointer leaving the button, or the screen losing focus). Only used
+   * when `pushToTalk` is true; the controller owns the logic (open/close the microphone).
+   */
+  holdToTalk?: (pressed: boolean) => void;
 };
 
 export type CallViewProps = {
@@ -65,6 +71,16 @@ export type CallViewProps = {
   scriptOptions: ScriptOption[];
   onScriptOption?: (id: string) => void;
   actions: CallActions;
+  /**
+   * OPTIONAL (E5 stoic). Push-to-talk mode: the "Silenciar" control is replaced by a "Mantener para hablar"
+   * button that calls `actions.holdToTalk(true/false)`. Default false.
+   */
+  pushToTalk?: boolean;
+  /**
+   * OPTIONAL (E5 stoic). Scene playback on the projector: the call controls (and the options menu) are hidden;
+   * the identification, the time, the circles and the last caption stay. Default false.
+   */
+  scene?: boolean;
 };
 
 export type VoiceWaveProps = {
