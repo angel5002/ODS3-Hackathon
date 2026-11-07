@@ -9,7 +9,7 @@ import { Brand } from "./Brand";
 const NAV = [
   { href: "/panel", label: "Panel", icon: CalendarCheck2, roles: ["admision"] },
   { href: "/regulador", label: "Regulador", icon: ShieldCheck, roles: ["admision", "regulador"] },
-  { href: "/callcenter", label: "Call center", icon: Headset, roles: ["admision", "callcenter"] },
+  { href: "/callcenter", label: "Llamadas", icon: Headset, roles: ["admision", "callcenter"] },
   { href: "/tablero", label: "Tablero", icon: LayoutDashboard, roles: ["admision"] },
   { href: "/demo", label: "Demo", icon: QrCode, roles: ["admision"] },
 ];
