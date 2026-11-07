@@ -109,12 +109,13 @@ const PREFIXES = [
   ["sk-" + "ant-", "Anthropic"],
   ["eyJ" + "hbGci", "JWT"],
   ["-".repeat(5) + "BEGIN", "clave privada"],
-  ["vercel" + "_", "Vercel"],
 ];
 for (const [needle, label] of PREFIXES) found += report(label, scan(needle));
 // a Supabase secret key is the prefix followed by its value: a bare mention of the format does not count
 found += report("Supabase secret (prefijo + 20 caracteres)", scanRe(new RegExp("sb_" + "secret_[A-Za-z0-9_-]{20,}", "g")));
 found += report("sk_ + 20 caracteres", scanRe(new RegExp("sk" + "_[A-Za-z0-9]{20}", "g")));
+// a Vercel token is the prefix followed by its value; a bare word like a variable name does not count
+found += report("Vercel (prefijo + 20 caracteres)", scanRe(new RegExp("vercel" + "_[A-Za-z0-9]{20,}", "g")));
 
 console.log(found ? "\nRESULTADO: hay coincidencias. No hagas push." : "\nRESULTADO: 0 coincidencias.");
 process.exit(found ? 1 : 0);
