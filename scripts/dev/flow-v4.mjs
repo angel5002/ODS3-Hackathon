@@ -90,7 +90,7 @@ await staff("close_offer", { offerId: offer.id });
 ({ slots } = await view("slots"));
 const { feed } = await view("slots");
 const msg = feed.find((e) => e.kind === "asignacion")?.detail ?? "";
-// default rule 'ventana_prioridad' (params.regla_asignacion = 1)
+// default rule 'ventana_prioridad' (settings_v51.regla_asignacion)
 assert(/Asignado a Ana G\. \(mayor prioridad: P2, 69 % de su plazo\) aunque Julio respondió primero \(P2, 44 % de su plazo\)/.test(msg), msg);
 ({ requests } = await view("requests"));
 assert(requests.find((r) => r.id === julio.id).state === "en_espera_prioritaria", "Julio queda en espera prioritaria");

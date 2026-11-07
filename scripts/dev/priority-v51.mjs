@@ -40,7 +40,7 @@ async function allRows(view, columns) {
   }
 }
 async function setRule(value) {
-  const { error } = await db.from("params").update({ value }).eq("key", RULE);
+  const { error } = await db.from("settings_v51").update({ value, updated_at: new Date().toISOString() }).eq("key", RULE);
   if (error) throw new Error(error.message);
 }
 const shiftDays = (iso, days) => new Date(Date.parse(`${iso}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
@@ -67,7 +67,7 @@ async function contestedCase(ruleValue) {
   const { data: so } = await db.from("slot_offers").select("candidate_ids").eq("id", offer).single();
   assert([ana.id, julio.id, marta.id].every((id) => so.candidate_ids.includes(id)), `oferta ${offer} a Ana, Julio y Marta (k = ${so.candidate_ids.length})`);
   const rule = await rpc("offer_rule_v51", { p_offer: offer });
-  assert(rule === (ruleValue === 0 ? "primero_acepta" : "ventana_prioridad"), `la oferta guarda la regla vigente al aprobarla: ${rule}`);
+  assert(rule === ruleValue, `la oferta guarda la regla vigente al aprobarla: ${rule}`);
 
   // demo "today" (16/10/2023): Ana P3 at 162/180 = 90 %, Julio P2 at 45/90 = 50 %
   const { data: ds } = await db.from("demo_state").select("demo_date").eq("id", 1).single();
@@ -99,8 +99,10 @@ async function contestedCase(ruleValue) {
   return { ana, julio, marta, assignment: as, detail: feed?.[0]?.detail ?? "", all };
 }
 
-const { data: ruleRow } = await db.from("params").select("value").eq("key", RULE).maybeSingle();
-assert(ruleRow != null, `existe params.${RULE} (valor ${ruleRow?.value}; por defecto 1 = mayor prioridad al cierre)`);
+const { data: ruleRow } = await db.from("settings_v51").select("value").eq("key", RULE).maybeSingle();
+assert(ruleRow?.value === "ventana_prioridad", `settings_v51.${RULE} = '${ruleRow?.value}' (texto; por defecto 'ventana_prioridad')`);
+const { data: oldRow } = await db.from("params").select("key").eq("key", RULE).maybeSingle();
+assert(oldRow == null, "ya no existe la fila numérica params.regla_asignacion");
 await rpc("reset_demo");
 try {
   // ---- v4 still in place (what main / production reads)
@@ -135,6 +137,11 @@ try {
     rpc("priority_sort_key_v51", { p_category: "P2", p_days_waited: 45, p_deadline_days: 90 }),
   ]);
   assert(Number(sk[1]) > Number(sk[0]), `priority_sort_key_v51: P2 al 50 % (${sk[1]}) por encima de P3 al 90 % (${sk[0]})`);
+  const sk12 = await Promise.all([
+    rpc("priority_sort_key_v51", { p_category: "P3", p_days_waited: 2160, p_deadline_days: 180 }), // fracción 12
+    rpc("priority_sort_key_v51", { p_category: "P2", p_days_waited: 9, p_deadline_days: 90 }), // fracción 0.1
+  ]);
+  assert(Number(sk12[1]) > Number(sk12[0]), `P3 muy vencido (fracción 12 → clave ${sk12[0]}) queda debajo de P2 a 0.1 (clave ${sk12[1]})`);
 
   // ---- v5.1: idx depends only on days and deadline (no bonuses, no insurance / sex / no-shows)
   const rows = await allRows("v_requests_v51", "id,code,category,eff_category,days_waited,eff_deadline,idx,sort_key,first_visit,preferential");
@@ -165,14 +172,14 @@ try {
   assert(ai >= 0 && ji > ai, `candidatos v5.1: ${c51.map((c) => `${c.short_name} ${c.category} ${two(c.index)}`).join(", ")}`);
 
   // ---- the two assignment variants on the same contested case
-  const win = await contestedCase(1);
+  const win = await contestedCase("ventana_prioridad");
   assert(win.assignment.request_id === win.julio.id && win.assignment.rule === "mayor_prioridad",
     `ventana_prioridad: gana Julio (P2 50 %) aunque Ana (P3 90 %) aceptó primero — ${win.detail}`);
   const nextW = win.all.find((x) => x.rule === "siguiente_aceptante");
   assert(win.all[0].validation_state === "vencida" && nextW?.request_id === win.marta.id,
     "ventana_prioridad: al vencer la validación pasa a Marta (P2), no a Ana (P3), aunque Ana aceptó antes");
 
-  const first = await contestedCase(0);
+  const first = await contestedCase("primero_acepta");
   assert(first.assignment.request_id === first.ana.id && first.assignment.rule === "primero_acepta",
     `primero_acepta: gana Ana, la primera que aceptó — ${first.detail}`);
   assert(/habría sido Julio G\./.test(first.detail), "el registro dice a quién habría ido con la otra regla");

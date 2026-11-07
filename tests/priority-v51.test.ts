@@ -10,7 +10,7 @@ import {
   pickAcceptor,
   priorityV4,
   priorityV51,
-  ruleFromParam,
+  ruleFromSetting,
   sortKeyV51,
   type Acceptor,
   type RankedRequest,
@@ -115,8 +115,17 @@ test("the two variants agree when the first to accept also has the highest prior
 });
 
 test("params value → rule: 0 = primero_acepta; 1, missing or other = ventana_prioridad (default)", () => {
-  assert.equal(ruleFromParam(0), "primero_acepta");
-  assert.equal(ruleFromParam(1), "ventana_prioridad");
-  assert.equal(ruleFromParam(undefined), "ventana_prioridad");
-  assert.equal(ruleFromParam(null), "ventana_prioridad");
+  assert.equal(ruleFromSetting("primero_acepta"), "primero_acepta");
+  assert.equal(ruleFromSetting("ventana_prioridad"), "ventana_prioridad");
+  assert.equal(ruleFromSetting(undefined), "ventana_prioridad");
+  assert.equal(ruleFromSetting(null), "ventana_prioridad");
+  assert.equal(ruleFromSetting("otra cosa"), "ventana_prioridad");
+});
+
+test("a very overdue P3 (fraction 12) never outranks a P2 at fraction 0.1", () => {
+  const p3 = req(1, "P3", 2160); // 2160 / 180 days = fraction 12 (capped at 1)
+  const p2 = req(2, "P2", 9); // 9 / 90 = 0.1
+  assert.ok(sortKeyV51("P2", 9) > sortKeyV51("P3", 2160), "P2 key above the P3 key");
+  assert.ok(compareV51(p2, p3) < 0, "P2 goes first");
+  assert.deepEqual([p3, p2].sort(compareV51).map((r) => r.id), [2, 1]);
 });

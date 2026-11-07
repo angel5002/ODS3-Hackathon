@@ -75,7 +75,7 @@ export function pickAcceptor(rule: AssignmentRule, acceptors: Acceptor[]): Accep
   return sorted[0];
 }
 
-/** params.value is numeric: 0 = 'primero_acepta', anything else (or missing) = 'ventana_prioridad'. */
-export function ruleFromParam(value: number | null | undefined): AssignmentRule {
-  return value === 0 ? "primero_acepta" : "ventana_prioridad";
+/** settings_v51.regla_asignacion (text): 'primero_acepta' or, by default and for anything else, 'ventana_prioridad'. */
+export function ruleFromSetting(value: string | null | undefined): AssignmentRule {
+  return value === "primero_acepta" ? "primero_acepta" : "ventana_prioridad";
 }

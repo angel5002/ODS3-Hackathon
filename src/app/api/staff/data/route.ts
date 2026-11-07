@@ -107,8 +107,11 @@ export async function GET(req: Request) {
       case "live":
         return NextResponse.json(await rpc("live_overview"));
       case "params": {
-        const { data } = await db.from("params").select("*").order("sort");
-        return NextResponse.json({ params: data ?? [] });
+        const [{ data }, { data: rule }] = await Promise.all([
+          db.from("params").select("*").order("sort"),
+          db.from("settings_v51").select("value").eq("key", "regla_asignacion").maybeSingle(),
+        ]);
+        return NextResponse.json({ params: data ?? [], rule: rule?.value ?? "ventana_prioridad" });
       }
       default:
         return fail("unknown view");

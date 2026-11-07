@@ -60,6 +60,15 @@ export async function POST(req: Request) {
       case "params":
         await saveParams(body.params ?? {});
         return ok();
+      case "assignment_rule": {
+        // v5.1: the two assignment variants, stored as text (settings_v51)
+        const rule = String(body.rule ?? "");
+        if (rule !== "ventana_prioridad" && rule !== "primero_acepta") return fail("invalid rule");
+        const { error } = await serverDb().from("settings_v51").update({ value: rule, updated_at: new Date().toISOString() }).eq("key", "regla_asignacion");
+        if (error) throw new Error(error.message);
+        await broadcast("bulk");
+        return ok({ rule });
+      }
       case "reveal":
         return ok(await reveal());
 

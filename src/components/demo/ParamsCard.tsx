@@ -13,14 +13,13 @@ export type Param = {
   unit: string;
   sort: number;
 };
-/** params row of the v5.1 assignment rule: 1 = highest priority when the window closes, 0 = first to accept */
-const RULE_KEY = "regla_asignacion";
+export type AssignmentRule = "ventana_prioridad" | "primero_acepta";
 // v5.1 (section 3.5): the list has no bonuses, so the v4 weights are not shown; the assignment rule is a choice
 const HIDDEN = new Set(["annual_no_shows", "w_r", "w_n", "w_e"]);
 
 /** Parameters the hospital approves (proposal 4.6), editable as assumptions in the demo. */
 export function ParamsCard() {
-  const { data, reload } = useServerView<{ params: Param[] }>(
+  const { data, reload } = useServerView<{ params: Param[]; rule: AssignmentRule }>(
     "/api/staff/data?view=params",
     ["full"],
   );
@@ -43,6 +42,16 @@ export function ParamsCard() {
   return (
     <ParamsView
       params={data?.params ?? null}
+      rule={data?.rule ?? null}
+      onRule={async (rule) => {
+        try {
+          await post("/api/staff", { action: "assignment_rule", rule });
+          toast.success(rule === "primero_acepta" ? "Regla: primero que acepta" : "Regla: mayor prioridad al cierre de la ventana");
+          reload();
+        } catch (err) {
+          toast.error((err as Error).message);
+        }
+      }}
       edit={edit}
       setEdit={setEdit}
       busy={busy}
@@ -73,6 +82,8 @@ export function ParamsCard() {
 
 type ParamsViewProps = {
   params: Param[] | null;
+  rule: AssignmentRule | null;
+  onRule: (rule: AssignmentRule) => void;
   edit: Record<string, string>;
   setEdit: (edit: Record<string, string>) => void;
   busy: boolean;
@@ -104,27 +115,7 @@ export function ParamsView({
       >
         {params
           ?.filter((p) => !HIDDEN.has(p.key))
-          .map((p) =>
-            p.key === RULE_KEY ? (
-              <label
-                key={p.key}
-                className="flex items-center justify-between gap-3 text-[14px] sm:col-span-2"
-              >
-                <span>Regla de asignación de cupos liberados</span>
-                <select
-                  value={edit[p.key] ?? show(p)}
-                  onChange={(e) =>
-                    setEdit({ ...edit, [p.key]: e.target.value })
-                  }
-                  className={demoField}
-                >
-                  <option value="1">
-                    Mayor prioridad al cierre de la ventana
-                  </option>
-                  <option value="0">Primero que acepta</option>
-                </select>
-              </label>
-            ) : (
+          .map((p) => (
               <label
                 key={p.key}
                 className="flex items-center justify-between gap-3 text-[14px]"
@@ -146,8 +137,7 @@ export function ParamsView({
                   </span>
                 </span>
               </label>
-            ),
-          )}
+          ))}
         <div className="pt-1 sm:col-span-2">
           <DemoButton
             type="submit"
