@@ -20,6 +20,7 @@ import { bindDiag, newDiagId, voiceDiag } from "@/lib/voice/diag";
 import { initialVoiceState, isBusy, voiceReducer } from "@/lib/voice/machine";
 import type { AudioLevels, CallPhase } from "@/lib/voice/contract";
 import { CallView } from "@/components/voice/CallView";
+import { VoiceStartView } from "@/components/voice/VoiceStartView";
 
 const LiveVoice = dynamic(() => import("@/components/voice/LiveVoice").then((m) => m.LiveVoice), { ssr: false });
 
@@ -444,20 +445,8 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
   }
 
   return (
-    <main className="relative flex flex-1 flex-col bg-[#10302f] p-4 text-white">
-      {viewPhase === null && (
-        <div className="m-auto max-w-xs text-center">
-          <p className="text-lg font-semibold">Hablar con el asistente</p>
-          <p className="mt-2 text-sm text-white/75">Le hará las mismas preguntas que el chat, una a la vez. Use un nombre ficticio. No se graba la llamada.</p>
-          <button
-            onClick={start}
-            disabled={!ready}
-            className="press mt-5 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#17b26a] px-6 font-semibold disabled:opacity-60"
-          >
-            <Mic className="size-5" aria-hidden /> {ready ? "Empezar la llamada" : "Preparando…"}
-          </button>
-        </div>
-      )}
+    <main className="relative flex min-h-0 flex-1 flex-col">
+      {viewPhase === null && <VoiceStartView ready={ready} onStart={start} establishment={ESTABLISHMENT} />}
       {viewPhase && (
         <CallView
           phase={viewPhase}
