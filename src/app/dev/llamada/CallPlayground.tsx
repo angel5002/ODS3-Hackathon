@@ -254,8 +254,7 @@ export function CallPlayground({
               ←
             </span>
             <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-[17px] font-bold">Llamada con el asistente</p>
-              <p className="truncate text-[13px] text-muted">Usted aparece como «Cóndor 267»</p>
+              <p className="text-[17px] font-semibold">Llamada</p>
             </div>
           </header>
           <main className="relative flex flex-1 flex-col">{screen}</main>

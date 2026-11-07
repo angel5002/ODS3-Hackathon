@@ -20,8 +20,11 @@ Este documento reemplaza al estilo sobrio de E5 estilo (Public Sans y radios de 
 | 10 | Los recuadros oscuros (`night`) pasan a casi negro #161b1a, con el acento claro `mint` #9fd8cc. | La tarjeta oscura de Stoic («sleep better»). |
 | 11 | Las pulsaciones encogen a 0.98 durante 120 ms (`.press`). | Confirman el toque sin mover el diseño (Emil Kowalski: los botones deben sentirse escuchados). |
 | 12 | Los iconos son de línea y monocromos. Excepción: los iconos de estado del panel conservan el tono de su estado, y siempre van con la palabra. | Los iconos de estado ayudan al personal a recorrer siete contadores de un vistazo. |
-| 13 | En la llamada, el disco central es casi negro con la palabra en blanco (DM Serif Display). Pasa a grafito al terminar o al fallar la conexión. | Es el punto focal de «Breathe»: un solo elemento fuerte y todo lo demás en silencio. |
+| 13 | **v2, tras la prueba en Android:** la llamada pierde los círculos concéntricos y el disco negro. Queda una sola onda horizontal, al estilo de Siri, centrada, con el estado en texto pequeño debajo. | El usuario pidió una onda que se mueva con el audio real y que no compita con el texto. La versión con círculos queda como respaldo en `RespiraCirculos.tsx`. |
 | 14 | La voz de la persona se dibuja en grafito, no en naranja. | Así el único color de la pantalla es el de la IA. El estado siempre se dice además con una palabra. |
+| 16 | **/pedir-cita v2:** el alias («Usted aparece como «Cóndor 246»») ya no se ve. Queda solo como texto para lectores de pantalla y para las pruebas de punta a punta que lo esperan. | Pedido del usuario. El alias sigue existiendo en el sistema. |
+| 17 | «Para hablar con una persona, escriba PERSONA» pasa a ser un botón, «Hablar con una persona», que envía el comando PERSONA ya existente. | Un toque en vez de una instrucción. |
+| 18 | Los botones que devuelve el bot se dibujan como respuestas rápidas: `buttons: string[]` del último mensaje sin responder. Al tocar uno se envía su texto. | Así funcionan «Hablar ahora con una persona» en la derivación por emergencia y cualquier otro cierre del bot, sin tocar la UI. Lo acordé con la pista de voz. |
 | 15 | En `/demo` no se tocó nada (lo rediseña el frente D con estos tokens). | Reparto de frentes. |
 
 ## Reglas de texto (en todas las pantallas)
@@ -52,16 +55,23 @@ Este documento reemplaza al estilo sobrio de E5 estilo (Public Sans y radios de 
 
 ## Pantalla de llamada «Respira»
 
-Basada en la pantalla «Breathe» de Stoic. `src/components/voice/CallView.tsx` (la vista) y `src/components/voice/Respira.tsx` (el lienzo).
+La vista está en `src/components/voice/CallView.tsx` y el lienzo en `src/components/voice/Respira.tsx`. La versión 2 reemplaza los círculos y el disco de la versión 1 (respaldo en `RespiraCirculos.tsx`) por una sola onda.
 
 - En pantalla solo hay:
   - una línea con «Hospital Mirasur · asistente automatizado» y la hora;
-  - los círculos concéntricos alrededor de un disco oscuro, con el estado en una o dos palabras («Conectando», «Hablando», «Escuchando», «Pensando», «Silenciado»);
+  - **una onda horizontal centrada**: varias líneas finas que oscilan en vertical con el audio real;
+  - el estado en **texto pequeño** bajo la onda: «Conectando», «Escuchando», «Hablando», «Pensando», «Su turno», «Silenciado»;
   - la **última frase** dicha, entera;
   - tres controles: Silenciar, Colgar y Chat.
-- **Cuando habla la IA**, salen ondas horizontales a ambos lados del disco que siguen `levels.output()`, en el acento. **Cuando habla la persona**, los anillos laten con `levels.input()`, en grafito.
-- **Las demás fases** (entrante, reconectar, ocupado, sin conexión, guion y finalizada) usan el mismo esqueleto: una o dos palabras en el disco, un título y una línea bajo los círculos, y sus acciones. Así, al conectar, al colgar y al pasar de una fase a otra solo cambian la palabra y el movimiento.
-- **«Hablar con una persona» y «Ocultar subtítulos»** aparecen al tocar el disco y se cierran solos a los 8 s. La persona también puede pedirlo de viva voz: el asistente transfiere.
+- **Cómo se mueve la onda:**
+  - escucha: casi plana y respirando, en grafito; sube con la voz de la persona (`levels.input()`);
+  - habla la IA: amplia, en el acento, siguiendo `levels.output()`;
+  - piensa: una ondulación baja y lenta;
+  - conecta: un pulso suave;
+  - suena: dos latidos cada 1.5 s;
+  - silencio y fin: una línea quieta.
+- **Las demás fases** (entrante, reconectar, ocupado, sin conexión, guion y finalizada) usan el mismo esqueleto: la onda, el estado, un título y una línea, y sus acciones.
+- **«Hablar con una persona» y «Ocultar subtítulos»** aparecen al tocar la onda y se cierran solos a los 8 s. La persona también puede pedirlo de viva voz: el asistente transfiere.
 - **La línea de seguridad** («Nunca pedimos pagos…») sale de la llamada: la dice el asistente y aparece en la pantalla de inicio de voz.
 - **Subtítulos:** `src/lib/voice/captions.ts`, un solo archivo compartido con la pista de voz.
   - `useRevealedCaption` (de la pista de voz) muestra las palabras del asistente al ritmo de su voz.
@@ -72,8 +82,8 @@ Basada en la pantalla «Breathe» de Stoic. `src/components/voice/CallView.tsx` 
   - `pushToTalk?: { talking, start, end }` (modo sala ruidosa, de la pista de voz): Respira reemplaza Silenciar por «Mantener para hablar».
     - Al presionar (puntero, Espacio o Enter) llama a `start()`.
     - Al soltar, al cancelarse el puntero, al perder la captura o al perder el foco la ventana, llama a `end()`.
-    - Mientras no se presiona, el disco dice «Su turno».
-    - Como el botón ya existe, `PUSH_TO_TALK_BUTTON_READY = true`: `CallScreen` lo conecta con el push-to-talk de `LiveVoice`.
+    - Mientras no se presiona, bajo la onda se lee «Su turno».
+    - Como el botón ya existe, `PUSH_TO_TALK_BUTTON_READY = true`: `CallScreen` y la llamada de registro de `/pedir-cita` (`VoiceRegister`) lo conectan con el push-to-talk de `LiveVoice`, según el `pushToTalk` que devuelve `/api/voice/session`.
   - `scene?: boolean`: oculta los controles y el menú, para reproducir una escena en el proyector.
 - **Rendimiento:**
   - se dibuja en `<canvas>` con `requestAnimationFrame`;
@@ -96,15 +106,20 @@ Basada en la pantalla «Breathe» de Stoic. `src/components/voice/CallView.tsx` 
 
 | Corrida | fps | p50 | p95 | máx. | Tareas largas | CPU total (ms/s) | Script (ms/s) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Animado, DPR 2 (primera versión) | 55.7 | 16.7 ms | 33.3 ms | 66.6 ms | 0 | 834 | 133 |
-| **Animado, DPR 1.5 (final)** | **57.8** | **16.7 ms** | **16.8 ms** | 50.1 ms | **0** | 655 | 124 |
-| Estático (`prefers-reduced-motion`) | 59.5 | 16.7 ms | 16.8 ms | 33.4 ms | 0 | 166 | 91 |
+| v1 círculos, animado, DPR 2 | 55.7 | 16.7 ms | 33.3 ms | 66.6 ms | 0 | 834 | 133 |
+| v1 círculos, animado, DPR 1.5 | 57.8 | 16.7 ms | 16.8 ms | 50.1 ms | 0 | 655 | 124 |
+| **v2 onda, animado, DPR 1.5 (final)** | **58.2** | **16.7 ms** | **16.8 ms** | 50.0 ms | **0** | 659 | 148 |
+| v2 onda, estático (`prefers-reduced-motion`) | 59.2 | 16.7 ms | 16.8 ms | 33.4 ms | 0 | 185 | 101 |
+
+La primera corrida de la v2, justo después de editar, registró 2 tareas largas (276 ms) mientras el servidor de desarrollo compilaba; la repetición, ya compilado, no tuvo ninguna.
 
 **Lectura:**
-- El script de Respira cuesta unos 33 ms por segundo, contando el generador de audio simulado de la página de desarrollo; con la CPU cuatro veces más lenta, eso es menos de 0.6 ms por cuadro.
+- El script de la onda cuesta unos 47 ms por segundo, contando el generador de audio simulado de la página de desarrollo; con la CPU cuatro veces más lenta, eso es menos de 0.8 ms por cuadro.
 - El resto de la diferencia es rasterizar el lienzo. Chromium sin pantalla lo hace por software; en un teléfono real lo hace la GPU.
 - No hubo ninguna tarea larga con animación, así que el hilo principal queda libre para el audio.
-- **Respaldo:** la pantalla anterior, con la onda, queda en `CallViewClassic.tsx` y `VoiceWave.tsx`, según la regla de no borrar implementaciones que funcionan.
+- **Respaldos**, según la regla de no borrar implementaciones que funcionan:
+  - la pantalla anterior, con la onda sobria, en `CallViewClassic.tsx` y `VoiceWave.tsx`;
+  - los círculos de la v1, en `RespiraCirculos.tsx`.
 
 ## Tokens
 

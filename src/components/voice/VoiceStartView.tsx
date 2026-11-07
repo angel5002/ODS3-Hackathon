@@ -1,13 +1,11 @@
 "use client";
 
 // Presentational start screen of the voice registration in /pedir-cita (E5 stoic). The same skeleton as the
-// "Respira" call screen, so starting the call changes only the word in the disc: the identification line, the
-// still circles around the dark disc, one title, one supporting line and one action. No demo notice here (the
+// "Respira" call screen, so starting the call only changes what the wave follows: the identification line, the
+// breathing wave, one title, one supporting line and one action. No demo notice here (the
 // page footer carries it). It receives only these props: no SDK, no server calls. The controller
 // (PedirCita › VoiceRegister) mounts it while the voice state is "idle" and passes `ready` (the anonymous chat
 // session exists) and `onStart`. Rendered as `absolute inset-0` inside a relative container.
-import { useRef } from "react";
-import { Mic } from "lucide-react";
 import { DEFAULT_VOICE_THEME, type VoiceTheme } from "@/lib/voice/theme";
 import { callIdentification } from "./CallView";
 import { Respira } from "./Respira";
@@ -24,7 +22,6 @@ export type VoiceStartViewProps = {
 };
 
 export function VoiceStartView({ ready, onStart, theme = DEFAULT_VOICE_THEME, establishment = "Hospital Mirasur", className = "" }: VoiceStartViewProps) {
-  const disc = useRef<HTMLDivElement>(null);
   return (
     <section
       aria-label="Hablar con el asistente"
@@ -36,13 +33,9 @@ export function VoiceStartView({ ready, onStart, theme = DEFAULT_VOICE_THEME, es
       </p>
 
       <div className="relative min-h-0 w-full flex-1">
+        {/* the same wave as the call, breathing: starting the call only changes what it follows */}
         <div className="absolute inset-0">
-          <Respira mode="rest" levels={null} discRef={disc} />
-        </div>
-        <div className="absolute inset-0 grid place-items-center">
-          <div ref={disc} className="grid aspect-square w-[clamp(120px,30cqmin,200px)] place-items-center rounded-full bg-vc-text text-vc-on-primary">
-            <Mic className="size-9" aria-hidden />
-          </div>
+          <Respira mode="listen" levels={null} />
         </div>
       </div>
 
