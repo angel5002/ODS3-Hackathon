@@ -98,7 +98,7 @@ export type RequestState =
 
 export const REQUEST_STATE: Record<RequestState, { label: string; tone: string }> = {
   registrada: { label: "Registrada", tone: "neutral" },
-  pendiente_regulacion: { label: "Pendiente de regulación", tone: "sent" },
+  pendiente_regulacion: { label: "Sin prioridad asignada", tone: "sent" },
   pendiente_informacion: { label: "Pendiente de información", tone: "warn" },
   priorizada_sin_cupo: { label: "En lista, sin cupo", tone: "neutral" },
   con_oferta: { label: "Con oferta abierta", tone: "free" },

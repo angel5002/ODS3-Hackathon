@@ -76,15 +76,12 @@ export function CallCenterApp() {
     <main className="mx-auto max-w-[1200px] space-y-4 px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Call center</h1>
-          <p className="mt-1 max-w-[75ch] text-sm text-muted">
-            El asistente hace las llamadas repetitivas. Aquí llegan solo los casos que necesitan a una persona: piden hablar con
-            alguien, una duda clínica, una validación sin éxito, un paciente P1 sin contacto o signos de alarma.
-          </p>
+          <h1 className="font-display text-[40px] leading-tight">Central de llamadas</h1>
+          <p className="mt-1 max-w-[60ch] text-muted">Solo los casos que necesitan a una persona.</p>
         </div>
-        <div className="rounded-2xl bg-night px-4 py-3 text-white">
+        <div className="rounded-3xl bg-night px-5 py-4 text-white">
           <p className="text-xs text-white/60">Carga del personal hoy</p>
-          <p className="font-display text-3xl font-bold tabular-nums text-mint">{num(data?.load.total ?? 0)}</p>
+          <p className="font-display text-[40px] leading-none tabular-nums text-mint">{num(data?.load.total ?? 0)}</p>
           <p className="text-xs text-white/60">
             {num(data?.load.closed ?? 0)} atendidas · {num(data?.load.agent ?? 0)} derivadas por el asistente
           </p>
@@ -94,11 +91,11 @@ export function CallCenterApp() {
       {data && !open.length && <p className="rounded-2xl bg-surface p-8 text-center text-muted ring-1 ring-line">No hay tareas abiertas.</p>}
 
       {groups.map(([type, list]) => (
-        <section key={type} className="rounded-2xl bg-surface p-4 ring-1 ring-line">
+        <section key={type} className="rounded-3xl bg-surface p-5 ring-1 ring-line">
           <h2 className="flex items-center gap-2 font-semibold">
-            <Headset className="size-4 text-brand" aria-hidden /> {TASK_TYPE[type]} <span className="text-sm font-normal text-muted">({list.length})</span>
+            <Headset className="size-4 text-ink" aria-hidden /> {TASK_TYPE[type]} <span className="text-sm font-normal text-muted">({list.length})</span>
           </h2>
-          <p className="mt-1 rounded-lg bg-sunken px-3 py-2 text-sm italic text-muted">Guion: «{SCRIPT[type]}»</p>
+          <details className="mt-1 text-sm"><summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-muted hover:text-ink">Ver guion</summary><p className="rounded-xl bg-sunken px-3 py-2 text-muted">«{SCRIPT[type]}»</p></details>
           <ul className="mt-2 divide-y divide-line">
             {list.map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-3 py-3">
@@ -123,7 +120,7 @@ export function CallCenterApp() {
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {OUTCOMES.map(([id, label]) => (
-                    <Button key={id} className="min-h-9 text-xs" variant={id === "confirmo" ? "primary" : "secondary"} disabled={busy === t.id} onClick={() => close(t, id)}>
+                    <Button key={id} className="min-h-11 rounded-full text-sm" variant={id === "confirmo" ? "primary" : "secondary"} disabled={busy === t.id} onClick={() => close(t, id)}>
                       {label}
                     </Button>
                   ))}
@@ -136,7 +133,7 @@ export function CallCenterApp() {
 
       {closed.length > 0 && (
         <section>
-          <button onClick={() => setShowClosed(!showClosed)} className="text-sm font-semibold text-brand hover:underline">
+          <button onClick={() => setShowClosed(!showClosed)} className="inline-flex min-h-11 items-center text-sm font-semibold text-ink underline decoration-1 underline-offset-4">
             {showClosed ? "Ocultar" : "Ver"} tareas atendidas ({num(closed.length)})
           </button>
           {showClosed && (

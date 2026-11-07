@@ -132,20 +132,20 @@ export function Board() {
       <section aria-labelledby="live">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 id="live" className="font-display text-3xl font-bold tracking-tight">
+            <h1 id="live" className="font-display text-[40px] leading-tight">
               Tablero en vivo
             </h1>
-            <p className="text-sm text-muted">Demanda, reasignación, equidad y carga del personal. Se actualiza solo.</p>
+            <p className="text-muted">Se actualiza solo.</p>
           </div>
           {state?.reminders_sent_min != null && <p className="text-sm text-muted">Recordatorios 72 h enviados a las {fmtMin(state.reminders_sent_min)}</p>}
         </div>
 
         <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <Tile label="Personas registradas sin cupo" value={b?.registered_without_slot ?? 0} sub={`${num(b?.pending_regulation ?? 0)} pendientes de regulación`} strong />
+          <Tile label="Personas registradas sin cupo" value={b?.registered_without_slot ?? 0} sub={`${num(b?.pending_regulation ?? 0)} sin prioridad asignada`} strong />
           <Tile label="Solicitudes con atención" value={b ? Math.round((100 * b.with_care) / Math.max(1, b.requests_total)) : 0} unit="%" sub={`${num(b?.with_care ?? 0)} de ${num(b?.requests_total ?? 0)} con cita`} />
           <Tile label="Espera desde el primer intento" value={Math.round(b?.wait_median ?? 0)} unit="días" sub={`mediana · 9 de cada 10 esperan hasta ${num(Math.round(b?.wait_p90 ?? 0))} días`} />
           <Tile label="Fuera de plazo" value={b ? Math.round((100 * b.over_deadline) / Math.max(1, b.regulated)) : 0} unit="%" sub={`${num(b?.over_deadline ?? 0)} superan el plazo de su categoría`} />
-          <Tile label="Cupos liberados que se llenan" value={b?.slots_filled ?? 0} sub={`de ${num(b?.slots_freed ?? 0)} liberados · ${num(b?.domino ?? 0)} por efecto dominó`} />
+          <Tile label="Cupos liberados que se llenan" value={b?.slots_filled ?? 0} sub={`de ${num(b?.slots_freed ?? 0)} liberados · ${num(b?.domino ?? 0)} en cadena`} />
           <Tile label="Ofertas enviadas" value={b?.offers_sent ?? 0} sub={`${num(b?.accepted ?? 0)} aceptadas · ${num(b?.declined ?? 0)} declinadas · ${num(b?.no_answer ?? 0)} sin respuesta`} />
           <Tile label="Validaciones" value={v.confirmada ?? 0} sub={`${num(v.pendiente ?? 0)} pendientes · ${num((v.fallida ?? 0) + (v.vencida ?? 0))} sin éxito · ${num(b?.reverted ?? 0)} revertidas`} />
           <Tile
@@ -231,7 +231,7 @@ function Scenario({ params }: { params?: Record<string, number> }) {
         {field("f", "f · cupos liberados que se vuelven a llenar")}
       </div>
       <p className="mt-4 text-sm">
-        r ≈ <strong className="font-display text-3xl tabular-nums text-brand">{Math.round(r * 1000) / 10} %</strong> → unas{" "}
+        r ≈ <strong className="font-display text-3xl tabular-nums text-accent">{Math.round(r * 1000) / 10} %</strong> → unas{" "}
         <strong className="tabular-nums">{num(Math.round(annual / 100) * 100)}</strong> citas al año (106,100 × r)
       </p>
       <div className="relative mt-3 h-3 rounded-md bg-sunken" role="img" aria-label={`r frente al umbral de ${(breakeven * 100).toFixed(1)} %`}>
@@ -298,15 +298,15 @@ function Equity({ rows }: { rows: EquityRow[] }) {
 
 function Tile({ label, value, sub, strong, unit }: { label: string; value: number; sub?: string; strong?: boolean; unit?: string }) {
   return (
-    <li className={`rounded-2xl p-4 ring-1 ${strong ? "bg-night text-white ring-night" : "bg-surface ring-line"}`}>
+    <li className={`rounded-3xl p-5 ring-1 ${strong ? "bg-night text-white ring-night" : "bg-surface ring-line"}`}>
       <p className="text-sm font-medium">{label}</p>
-      <p className={`mt-2 font-display text-4xl font-bold tabular-nums ${strong ? "text-mint" : ""}`}>
+      <p className={`mt-3 font-display text-[44px] leading-none tabular-nums ${strong ? "text-mint" : ""}`}>
         <span key={value} className="bump inline-block">
           {num(value)}
         </span>
-        {unit ? <span className="ml-1 text-lg font-semibold">{unit}</span> : null}
+        {unit ? <span className="ml-1 font-sans text-lg font-semibold">{unit}</span> : null}
       </p>
-      {sub && <p className={`mt-1 text-xs ${strong ? "text-white/60" : "text-muted"}`}>{sub}</p>}
+      {sub && <p className={`mt-2 text-xs ${strong ? "text-white/70" : "text-muted"}`}>{sub}</p>}
     </li>
   );
 }
@@ -355,7 +355,7 @@ function History({ hist, card }: { hist: Historical; card: ModelCard }) {
   return (
     <section aria-labelledby="hist" className="space-y-4">
       <div>
-        <h2 id="hist" className="font-display text-2xl font-bold tracking-tight">
+        <h2 id="hist" className="font-display text-[30px] leading-tight">
           Histórico 2023 y ficha del modelo
         </h2>
         <p className="max-w-[90ch] text-sm text-muted">

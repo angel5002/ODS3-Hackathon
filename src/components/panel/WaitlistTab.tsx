@@ -38,7 +38,7 @@ export type RequestRow = {
 const CHANNEL: Record<string, string> = { mensaje: "Mensaje", llamada: "Llamada", chat: "Chat" };
 const GROUPS = [
   { id: "activas", label: "En espera" },
-  { id: "regulacion", label: "Pendientes de regulación" },
+  { id: "regulacion", label: "Sin prioridad" },
   { id: "cerradas", label: "Cerradas" },
   { id: "todas", label: "Todas" },
 ] as const;
@@ -75,19 +75,17 @@ export function WaitlistTab() {
     <div className="mx-auto max-w-[1500px] space-y-4 px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Lista de espera</h1>
-          <p className="mt-1 max-w-[80ch] text-sm text-muted">
-            Toda la demanda, aunque no haya cupo. Orden: primero la categoría clínica que asignó un profesional (P1, P2, P3,
-            P4) y, dentro de ella, la parte del plazo máximo ya consumida desde el primer intento. Sin puntos extra. Nunca se
-            usan el seguro, el sexo ni las faltas anteriores.
+          <h1 className="font-display text-[40px] leading-tight">Lista de espera</h1>
+          <p className="mt-1 max-w-[70ch] text-muted" title="Dentro de cada categoría, la parte del plazo máximo ya consumida desde el primer intento. Nunca se usan el seguro, el sexo ni las faltas anteriores.">
+            Toda la demanda, aunque no haya cupo. Primero la categoría (P1 a P4), luego el tiempo esperado.
           </p>
         </div>
-        <Button variant="primary" className="min-h-11 rounded-md px-5" onClick={() => setRegistering(true)}>
+        <Button variant="primary" className="min-h-11 rounded-full px-5" onClick={() => setRegistering(true)}>
           <Plus className="size-4" aria-hidden /> Registrar solicitud
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
+      <div className="overflow-hidden rounded-3xl bg-surface ring-1 ring-line">
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-3">
           <div role="tablist" className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-sunken p-1 [scrollbar-width:none]">
             {GROUPS.map((g) => (
@@ -163,7 +161,7 @@ export function WaitlistTab() {
                     </span>
                   </td>
                   <td className="px-3 py-2">{r.specialty}</td>
-                  <td className="px-3 py-2" title={r.category ? CATEGORY_TEXT[r.category] : "Pendiente de regulación: se ordena como P3"}>
+                  <td className="px-3 py-2" title={r.category ? CATEGORY_TEXT[r.category] : "Sin prioridad asignada: se ordena como P3"}>
                     <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${CAT_TONE[r.cat]} ${r.category ? "" : "opacity-60"}`}>
                       {r.category ?? "P3?"}
                     </span>
@@ -460,7 +458,7 @@ function RequestDetail({ row, onClose }: { row: RequestRow; onClose: () => void 
   return (
     <Dialog title={`${row.code} · ${row.name}`} onClose={onClose}>
       <p className="text-sm text-muted">
-        {row.specialty} · {row.category ? CATEGORY_TEXT[row.category] : "pendiente de regulación"} · {row.pct_deadline} % de su plazo
+        {row.specialty} · {row.category ? CATEGORY_TEXT[row.category] : "sin prioridad asignada"} · {row.pct_deadline} % de su plazo
       </p>
       <p className="mt-1 text-sm">{row.reason}</p>
       {data?.person && (

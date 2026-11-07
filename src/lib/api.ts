@@ -19,7 +19,7 @@ const FRIENDLY: [RegExp, string][] = [
   [/request is not pending/, "La solicitud ya fue regulada."],
   [/invalid category/, "Elija una categoría de P1 a P4."],
   [/revert reason required/, "Escriba el motivo para revertir."],
-  [/revert downstream first/, "Primero revierta la asignación del cupo que se liberó por efecto dominó."],
+  [/revert downstream first/, "Primero revierta la asignación del cupo que se liberó en cadena."],
   [/nothing to review/, "Esa reprogramación ya fue revisada."],
   [/invalid reschedule option/, "Esa fecha ya no está disponible."],
   [/name required/, "Escriba el nombre (puede ser ficticio)."],

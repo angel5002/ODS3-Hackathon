@@ -63,15 +63,12 @@ export function ValidateTab() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-5 px-4 py-6 sm:px-6">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Por validar</h1>
-        <p className="mt-1 max-w-[85ch] text-sm text-muted">
-          Antes de registrar la cita se confirma con la persona que aceptó el cupo que es el paciente o su cuidador y que podrá asistir. Las
-          reprogramaciones elegidas por los pacientes esperan aquí su aprobación. Toda asignación se puede revertir, con un motivo.
-        </p>
+        <h1 className="font-display text-[40px] leading-tight">Por validar</h1>
+        <p className="mt-1 max-w-[70ch] text-muted">Confirme con el paciente antes de registrar la cita. Todo se puede revertir, con un motivo.</p>
       </div>
       {error && <p className="text-risk-alto">{error}</p>}
 
-      <section className="rounded-2xl bg-surface p-4 ring-1 ring-line">
+      <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
         <h2 className="font-semibold">Asignaciones por validar</h2>
         {data && !data.assignments.length && <p className="mt-1 text-sm text-muted">Ninguna asignación espera validación.</p>}
         <ul className="mt-2 divide-y divide-line">
@@ -82,7 +79,7 @@ export function ValidateTab() {
                   {a.name} <span className="font-normal text-muted">· {a.code}</span>
                 </p>
                 <p className="text-sm text-muted">
-                  {a.specialty}, {dateEs(a.date)} a las {a.time} · {a.origin === "domino" ? "cupo del efecto dominó" : "cupo liberado"} · aviso por{" "}
+                  {a.specialty}, {dateEs(a.date)} a las {a.time} · {a.origin === "domino" ? "cupo liberado en cadena" : "cupo liberado"} · aviso por{" "}
                   {a.channel} · {a.attempts ? `${a.attempts} intento(s) del agente · ` : ""}vence a las {fmtMin(a.deadline_min)} (
                   {Math.max(0, a.deadline_min - nowMin)} min)
                 </p>
@@ -113,7 +110,7 @@ export function ValidateTab() {
         </ul>
       </section>
 
-      <section className="rounded-2xl bg-surface p-4 ring-1 ring-line">
+      <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
         <h2 className="flex items-center gap-2 font-semibold">
           <CalendarClock className="size-4 text-st-human" aria-hidden /> Reprogramaciones por aprobar
         </h2>
@@ -139,7 +136,7 @@ export function ValidateTab() {
       </section>
 
       {data && data.recent.length > 0 && (
-        <section className="rounded-2xl bg-surface p-4 ring-1 ring-line">
+        <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
           <h2 className="font-semibold">Asignaciones recientes</h2>
           <ul className="mt-2 divide-y divide-line">
             {data.recent.map((r) => (
