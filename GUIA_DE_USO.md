@@ -66,7 +66,7 @@ Cada cupo libre muestra su **zona** (cercana 2–3 días: P1–P2 y poco aviso; 
 
 ### Por validar (Admisión)
 
-Asignaciones que esperan la confirmación del paciente (por mensaje, chat o el agente de voz) y reprogramaciones elegidas por los pacientes. Botones: **Llamar con el agente**, **Validé por teléfono**, **Usar simulado: confirma**, **No puede** (pasa al siguiente que aceptó), **Revertir** (pide motivo), **Aprobar / Rechazar** reprogramación.
+Asignaciones que esperan la confirmación del paciente (por mensaje, chat o el agente de voz) y reprogramaciones elegidas por los pacientes. Botones: **Llamar con el agente**, **Validé con el paciente**, **Usar simulado: confirma**, **No puede** (pasa al siguiente que aceptó), **Revertir** (pide motivo), **Aprobar / Rechazar** reprogramación.
 
 ![Por validar](capturas/v4/14-por-validar.png)
 
@@ -114,7 +114,7 @@ Personas registradas sin cupo, % con atención, mediana y percentil 90 de la esp
 |---|---|
 | El chat no recibe | Recargar la página (la conversación se mantiene). Si no, usar el **Formulario** de `/pedir-cita` o registrar en ventanilla |
 | Una oferta no llega a un celular | En Por reasignar, **Acepta / No** del candidato (usar simulado) |
-| La validación no llega | Por validar → **Usar simulado: confirma** o **Validé por teléfono** |
+| La validación no llega | Por validar → **Usar simulado: confirma** o **Validé con el paciente** |
 | La voz de ElevenLabs no conecta (cuota, red) | La misma llamada sigue sola con el **guion fijo** con la voz del navegador. Para forzarlo desde el inicio, abra el teléfono con `?voz=guion` (por ejemplo `/t/rosa?voz=guion`) |
 | Una llamada quedó colgada | En **En vivo** → **Terminar (usar simulado)** |
 | Todo se desordenó | `/demo` → **Reiniciar demo** y volver a vincular las sesiones |
