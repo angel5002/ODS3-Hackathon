@@ -192,12 +192,15 @@ function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpea
       // a real unmount ends the session; a StrictMode remount runs the effect again right away and cancels this
       endTimer.current = setTimeout(() => {
         voiceDiag(sid, "effect.desmontaje", { callId });
+        // the parent removed the live voice on purpose (e.g. "Chat"): the SDK's own disconnect must not end the call
+        const alreadyFinished = finished.current;
+        finished.current = true;
         try {
           convRef.current.endSession();
         } catch {
           // already closed
         }
-        if (!finished.current) sendVoiceEnd(voiceSessionId, "pantalla cerrada", false);
+        if (!alreadyFinished) sendVoiceEnd(voiceSessionId, "pantalla cerrada", false);
       }, 0);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

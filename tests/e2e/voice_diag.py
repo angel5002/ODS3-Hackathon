@@ -371,7 +371,26 @@ async def scenario_s(d: Demo, staff, ids):
     await ctx.close()
 
 
-SCENARIOS = {"S": scenario_s, "C0": scenario_c0, "A": scenario_a, "B": scenario_b, "C": scenario_c, "D": scenario_d, "E": scenario_e, "F": scenario_f, "G": scenario_g}
+async def scenario_h(d: Demo, staff, ids):
+    """H. En plena llamada de voz la persona toca "Chat": la voz se cierra, la llamada sigue con las opciones escritas."""
+    ctx = await d.context()
+    p = await d.open_phone(ctx, "carmen", "carmen")
+    call_id = await d.test_call(staff, ids["carmen"])
+    await d.answer(p, "carmen")
+    await d.sample({"carmen": p}, 8)
+    await p.get_by_role("button", name="Chat").click(timeout=5000)
+    d.rec.add("carmen", "ui", action="chat")
+    await d.sample({"carmen": p}, 8)
+    opts = await p.get_by_role("group", name="Opciones de respuesta").get_by_role("button").all_inner_texts()
+    d.rec.add("carmen", "opciones", opciones=opts)
+    d.rec.add("staff", "llamadas", calls=[c for c in await d.calls(staff) if c["id"] == call_id])
+    d.rec.add("staff", "voz", **(await d.voice(staff)))
+    await d.hang(p, "carmen")
+    await asyncio.sleep(3)
+    await ctx.close()
+
+
+SCENARIOS = {"H": scenario_h, "S": scenario_s, "C0": scenario_c0, "A": scenario_a, "B": scenario_b, "C": scenario_c, "D": scenario_d, "E": scenario_e, "F": scenario_f, "G": scenario_g}
 
 
 async def main():

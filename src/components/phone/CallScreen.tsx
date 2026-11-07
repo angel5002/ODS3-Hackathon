@@ -330,9 +330,17 @@ export function CallScreen({
           toggleMute: live || provider === "guion" ? toggleMute : undefined,
           toggleCaptions: () => setCaptionsVisible((v) => !v),
           retry: failed ? () => void connect() : undefined,
+          // "Chat": from any voice state the person can switch to the written options (fixed script); logged with its reason
           continueByChat:
-            failed || busy?.kind === "capacidad" || viewPhase === "conectando"
-              ? () => fallback(failed ? `La persona eligió seguir por chat: ${failure}` : "Líneas de voz ocupadas o lentas: la persona eligió seguir por chat")
+            provider !== "guion" && (failed || busy?.kind === "capacidad" || viewPhase === "conectando" || viewPhase === "activa")
+              ? () =>
+                  fallback(
+                    failed
+                      ? `La persona eligió seguir por chat: ${failure}`
+                      : viewPhase === "activa"
+                        ? "La persona eligió seguir por chat durante la llamada"
+                        : "Líneas de voz ocupadas o lentas: la persona eligió seguir por chat",
+                  )
               : undefined,
           talkToPerson: live || provider === "guion" ? talkToPerson : undefined,
           leave: busy?.kind === "otro_dispositivo" || phase === "closing" ? leave : undefined,
