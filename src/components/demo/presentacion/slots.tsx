@@ -7,7 +7,8 @@
 //   PreconsultaChatSlot -> track C: the scene 2 chat (the lines shown by the scene controller)
 //   DoctorSummarySlot   -> track C: the doctor summary, built by the real pre-visit machine (scene2Summary)
 //   useJuryOverview     -> track E: GET /api/staff/data?view=jurado (hooks.ts; falls back to fixtures.ts on 4xx)
-import { Check, CircleDashed, HelpCircle, Pill, ShieldAlert, ShieldCheck, Stethoscope } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { BatteryFull, Check, CircleDashed, HelpCircle, Pill, ShieldAlert, ShieldCheck, Signal, Stethoscope, Wifi } from "lucide-react";
 import type { PreconsultaSummary, SceneLine } from "@/lib/demo/contract";
 import type { PreconsultaDetail } from "@/lib/preconsulta/machine";
 import { CallView } from "@/components/voice/CallView";
@@ -32,30 +33,85 @@ export type SceneController = { next: () => void };
  * shows Tito's appointment ticket. The AI lines play their pre-generated audio and the wave follows THAT audio.
  * The phone is a picture of a phone on the projector: inert and hidden from screen readers, which get the line said.
  */
+// The phone is drawn at a real phone's size (360 × 760 CSS px, the call screen's own layout) and scaled to the
+// height the moment gives it, so the call screen, the ticket and the type keep their phone proportions.
+const PHONE_W = 360;
+const PHONE_H = 760;
+
 export function Scene1CallSlot({ controller: c }: { controller: PlaybackController }) {
   const call = scene1CallProps(c);
-  const said = c.line.who === "ia" ? c.line.text : call ? (call.phase === "entrante" ? "Llamada entrante del hospital" : "") : "Cita de Tito: oncología, dentro de 5 semanas";
+  const cue = c.line.cue?.phone ?? "ticket";
+  const booked = cue === "finalizada"; // after "Listo. Su cita quedó reservada…": the new appointment, highlighted
+  const said = c.line.who === "ia" ? c.line.text : booked ? "Nueva cita de Tito: oncología, mañana 9:00" : call ? (call.phase === "entrante" ? "Llamada entrante del hospital" : "") : "Cita de Tito: oncología, dentro de 5 semanas";
+  const box = useRef<HTMLDivElement>(null);
+  const [k, setK] = useState(0.8);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const fit = () => setK(Math.max(0.3, Math.min(el.clientHeight / (PHONE_H + 20), 1.2)));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <div className="flex h-full min-h-0 items-center justify-center">
-      <div
-        className="relative aspect-[9/17] h-full max-h-full max-w-full overflow-hidden rounded-[1.6em] border-[0.45em] border-(--pr-ink) bg-(--pr-bg)"
-        aria-hidden
-        inert
-      >
-        {call ? (
-          <CallView {...call} />
-        ) : (
-          <div className="absolute inset-0 flex flex-col justify-center gap-[0.5em] p-[1em] text-center">
-            <p className="text-[0.85em] font-semibold text-(--pr-muted)">Hospital Mirasur · Su cita</p>
-            <p className="pr-title text-[1.6em]">Oncología</p>
-            <p className="text-[1em]">Lunes 20 de noviembre, 9:00</p>
-            <p className="mx-auto rounded-[0.3em] bg-(--pr-no-soft) px-[0.6em] py-[0.2em] text-[1.05em] font-bold text-(--pr-no)">Dentro de 5 semanas</p>
+    <figure className="flex h-full min-h-0 flex-col items-center justify-center gap-[0.5em] self-stretch">
+      <div ref={box} className="flex min-h-0 w-full flex-1 items-center justify-center">
+        <div style={{ width: (PHONE_W + 20) * k, height: (PHONE_H + 20) * k }} className="relative shrink-0" aria-hidden inert>
+          <div
+            style={{ width: PHONE_W + 20, height: PHONE_H + 20, transform: `scale(${k})`, transformOrigin: "top left" }}
+            className="absolute left-0 top-0 rounded-[52px] bg-[#151a19] p-[10px] shadow-[0_18px_50px_-24px_rgba(0,0,0,0.45)]"
+          >
+            <div className="relative h-full w-full overflow-hidden rounded-[42px] bg-(--pr-bg)">
+              {/* status bar */}
+              <div className="absolute inset-x-0 top-0 z-10 flex h-[38px] items-center justify-between px-[26px] text-[14px] font-semibold text-(--pr-ink)">
+                <span className="tabular-nums">9:41</span>
+                <span className="absolute left-1/2 top-[10px] h-[22px] w-[92px] -translate-x-1/2 rounded-full bg-[#151a19]" />
+                <span className="flex items-center gap-[5px]">
+                  <Signal className="size-[15px]" />
+                  <Wifi className="size-[15px]" />
+                  <BatteryFull className="size-[19px]" />
+                </span>
+              </div>
+              <div className="absolute inset-x-0 bottom-0 top-[38px]">
+                {call && !booked ? <CallView {...call} /> : <Appointment booked={booked} />}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
+      <figcaption className="shrink-0 text-[0.9em] font-semibold text-(--pr-muted)">Celular de Tito</figcaption>
       <p className="sr-only" aria-live="polite">
         {said}
       </p>
+    </figure>
+  );
+}
+
+function Appointment({ booked }: { booked: boolean }) {
+  return (
+    <div key={booked ? "new" : "old"} className="pr-fade flex h-full flex-col items-center justify-center gap-[14px] px-[28px] text-center">
+      <p className="whitespace-nowrap text-[16px] font-semibold text-(--pr-muted)">Hospital Mirasur · Su cita</p>
+      <p className="pr-title text-[40px] leading-none">Oncología</p>
+      {booked ? (
+        <>
+          <p className="rounded-[14px] px-[18px] py-[8px] text-[34px] font-bold leading-tight text-white" style={{ background: "var(--color-accent, #0c6b62)" }}>
+            Mañana 9:00
+          </p>
+          <p className="text-[18px] font-semibold" style={{ color: "var(--color-accent, #0c6b62)" }}>
+            Cita reservada
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-[22px] leading-snug">
+            Lunes 20 de noviembre
+            <br />
+            9:00
+          </p>
+          <p className="rounded-[10px] bg-(--pr-no-soft) px-[14px] py-[6px] text-[20px] font-bold text-(--pr-no)">Dentro de 5 semanas</p>
+        </>
+      )}
     </div>
   );
 }

@@ -134,7 +134,8 @@ export function Scene1Moment({
         <h1 className="pr-title text-[1.9em]">Cada cupo, a quien más lo necesita</h1>
         {source === "ejemplo" ? <SampleTag /> : null}
       </div>
-      <div className="mt-[0.9em] grid min-h-0 flex-1 grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)] gap-[1.6em] max-[900px]:grid-cols-1">
+      {/* the phone and the slot flow read as one centered group */}
+      <div className="mx-auto mt-[0.6em] grid min-h-0 w-full max-w-[64em] flex-1 grid-cols-[minmax(0,0.75fr)_minmax(0,1.6fr)] items-center gap-[2em] max-[900px]:grid-cols-1">
         <Scene1CallSlot controller={c} />
         <div className="flex min-h-0 flex-col justify-center gap-[1.1em]">
           {/* who had the slot, who gets it */}
@@ -166,7 +167,7 @@ export function Scene1Moment({
           </ol>
         </div>
       </div>
-      <div className="mt-[1em] grid grid-cols-2 gap-[1em]">
+      <div className="mx-auto mt-[0.8em] grid w-full max-w-[64em] grid-cols-2 gap-[1em]">
         <Band on={red} tone="no" title="Sin AsistIA" text="Tito espera cinco semanas" />
         <Band on={green} tone="yes" title="Con AsistIA" text="Cita mañana a las 9:00" />
       </div>
