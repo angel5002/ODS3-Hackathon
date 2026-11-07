@@ -148,6 +148,8 @@ async def open_card(page: Page, base: str, token: str, character: str):
     await page.goto(f"{base}/j/{token}", wait_until="domcontentloaded", timeout=90000)
     await expect(page.get_by_role("heading", name=character)).to_be_visible(timeout=60000)
     await expect(page.get_by_text("Qué puede probar")).to_be_visible()
+    # a tap before React is attached does nothing: wait for it, as a person would see the page settle
+    await page.locator("[data-jury-ready]").wait_for(timeout=60000)
 
 
 async def chat_say(page: Page, text: str, expect_text: str | None = None, timeout=45000):
@@ -155,6 +157,8 @@ async def chat_say(page: Page, text: str, expect_text: str | None = None, timeou
     await expect(box).to_be_enabled(timeout=timeout)
     async with page.expect_response(lambda r: "/api/chat/messages" in r.url and r.request.method == "POST", timeout=timeout) as resp:
         await box.fill(text)
+        # the composer ignores a message while the previous answer is still loading: wait until it can send
+        await expect(page.get_by_role("button", name="Enviar")).to_be_enabled(timeout=timeout)
         await box.press("Enter")
     r = await resp.value
     if not r.ok:

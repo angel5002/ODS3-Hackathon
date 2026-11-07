@@ -5,7 +5,7 @@
 //   cancela / confirma / acepta_oferta -> the simulated phone of the character (messages, and the call when
 //   there is a free voice line); pide_cita -> /pedir-cita tied to this card (voice and/or chat).
 // When every voice line is busy the page simply offers messages or chat: no error on the card page.
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { MessageCircle, Mic, Phone, QrCode, Smartphone } from "lucide-react";
 import { BrandMark, Wordmark } from "@/components/Brand";
 import { DemoNotice } from "@/components/chat/ChatParts";
@@ -17,12 +17,15 @@ import { unlockAudio } from "@/lib/voice/audio";
 import type { PublicCard } from "@/lib/jury/server";
 
 type Stage = "intro" | "phone" | "chat" | "voz";
+const noSubscribe = () => () => {};
 const stagger = (n: number) => ({ "--i": n }) as CSSProperties;
 
 export function JuryApp({ card, voice }: { card: PublicCard; voice: boolean }) {
   const [stage, setStage] = useState<Stage>("intro");
   const [busy, setBusy] = useState(false);
   const [voiceFree, setVoiceFree] = useState(voice);
+  // the buttons only work once React is attached; the attribute lets automated checks wait for it
+  const ready = useSyncExternalStore(noSubscribe, () => true, () => false);
 
   async function call() {
     if (busy) return;
@@ -84,14 +87,14 @@ export function JuryApp({ card, voice }: { card: PublicCard; voice: boolean }) {
 
   return (
     <PedirCitaFrame>
-      <JuryCardIntro card={card} voiceBusy={withVoice && !voiceFree} actions={actions} />
+      <JuryCardIntro card={card} voiceBusy={withVoice && !voiceFree} actions={actions} ready={ready} />
     </PedirCitaFrame>
   );
 }
 
 // ---------- Presentational pieces: props only ----------
 
-export function JuryCardIntro({ card, actions, voiceBusy }: { card: PublicCard; actions: ReactNode; voiceBusy?: boolean }) {
+export function JuryCardIntro({ card, actions, voiceBusy, ready }: { card: PublicCard; actions: ReactNode; voiceBusy?: boolean; ready?: boolean }) {
   return (
     <>
       <header className="flex shrink-0 items-center gap-2.5 border-b border-vc-line bg-vc-bg px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
@@ -126,7 +129,9 @@ export function JuryCardIntro({ card, actions, voiceBusy }: { card: PublicCard; 
             Las llamadas de voz están ocupadas en este momento: puede hacerlo por mensaje, el resultado es el mismo.
           </p>
         )}
-        <ul className="mt-5 space-y-2.5">{actions}</ul>
+        <ul className="mt-5 space-y-2.5" data-jury-ready={ready ? "1" : undefined}>
+          {actions}
+        </ul>
       </main>
       <DemoNotice>{DISCLAIMER}</DemoNotice>
     </>
