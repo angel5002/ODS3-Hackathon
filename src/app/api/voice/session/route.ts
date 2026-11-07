@@ -1,7 +1,8 @@
 // Opens THE voice session of one call (RF-15, E5 hito 2), only for the phone or chat session that owns it.
 //   1. claims the session atomically in Postgres (voice_claim): one live session per call, a capacity limit
 //      (VOICE_MAX_CONCURRENT) and a FIFO queue when it is full;
-//   2. only then asks ElevenLabs for a signed URL (per request, never cached);
+//   2. only then asks ElevenLabs for this session's credentials (per request, never cached): a WebRTC
+//      conversation token and a WebSocket signed URL as the fallback;
 //   3. returns the URL with the call's dynamic variables, all present (neutral phrase if one is missing).
 // Answers { session: null, busy } when another device has the call or every line is taken, and
 // { session: null, reason } when voice is unavailable (the call screen then falls back to the fixed script).
@@ -10,7 +11,8 @@ import { fail } from "@/lib/api";
 import { readCookie } from "@/lib/chat/session";
 import { rpc, serverDb } from "@/lib/supabase/server";
 import { ownsCall } from "@/lib/voice/auth";
-import { AGENT_FOR_PURPOSE, signedUrl, toolToken } from "@/lib/voice/server";
+import { AGENT_FOR_PURPOSE, conversationToken, signedUrl, toolToken } from "@/lib/voice/server";
+import { pickTransport } from "@/lib/voice/transport";
 import { UUID, claimSession, completeVariables, endSession, logEvent, updateSession } from "@/lib/voice/sessions";
 import { callContext, loadCall } from "@/lib/voice/tools";
 
@@ -70,11 +72,24 @@ export async function POST(req: Request) {
   }
   const sessionId = claim.session_id;
 
-  // 2. signed URL for this session only
+  // 2. credentials for this session only (never cached): a WebRTC conversation token and, as the fallback the
+  //    client uses if WebRTC cannot connect, a WebSocket signed URL. Both are requested in parallel.
   const key = AGENT_FOR_PURPOSE[call.purpose];
+  const transport = pickTransport(process.env.VOICE_TRANSPORT, body.transport);
   let url: string | null = null;
+  let token: string | null = null;
   try {
-    url = await signedUrl(key, diag);
+    const [u, t] = await Promise.all([
+      signedUrl(key, diag),
+      transport === "webrtc"
+        ? conversationToken(key, diag).catch(async (e) => {
+            await logEvent(sessionId, call.id, "elevenlabs", "token.error", { http: (e as { status?: number }).status ?? 0 });
+            return null;
+          })
+        : Promise.resolve(null),
+    ]);
+    url = u;
+    token = t;
   } catch (e) {
     const status = (e as { status?: number }).status ?? 0;
     await logEvent(sessionId, call.id, "elevenlabs", "url_firmada.error", { http: status });
@@ -94,10 +109,15 @@ export async function POST(req: Request) {
   const { vars, missing } = completeVariables(call.purpose, await callContext(call));
   if (missing.length) await logEvent(sessionId, call.id, "servidor", "variables.faltantes", { faltan: missing.join(",") });
   await updateSession(sessionId, "conectando", { agent: key });
-  log(`call=${callId} purpose=${call.purpose} -> 200 url_firmada sesion=${sessionId.slice(0, 8)}${missing.length ? ` faltan=${missing.join(",")}` : ""}`);
+  log(`call=${callId} purpose=${call.purpose} -> 200 ${token ? "token_webrtc+" : ""}url_firmada sesion=${sessionId.slice(0, 8)}${missing.length ? ` faltan=${missing.join(",")}` : ""}`);
   return NextResponse.json({
     callId,
     voiceSessionId: sessionId,
-    session: { signedUrl: url, agent: key, dynamicVariables: { ...vars, call_id: String(call.id), token: toolToken(call.id) } },
+    session: {
+      signedUrl: url,
+      ...(token ? { conversationToken: token } : {}),
+      agent: key,
+      dynamicVariables: { ...vars, call_id: String(call.id), token: toolToken(call.id) },
+    },
   });
 }

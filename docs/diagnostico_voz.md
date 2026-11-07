@@ -318,3 +318,85 @@ Al terminar, la base quedó sin solicitudes ni tareas nuevas y sin llamadas abie
   - https://elevenlabs.io/docs/help-center/product/eleven-agents/how-many-eleven-agents-requests-can-i-make-and-can-i-increase-it
   - https://elevenlabs.io/docs/eleven-agents/libraries/react
   - los tipos y el código de `@elevenlabs/react` 1.21.1 en `node_modules`.
+
+## 13. Calidad de la voz en un teléfono real (rama `e5-voz`, 7/11)
+
+**Lo que vio el equipo** (Android, Chrome, datos móviles; llamadas 4535 y 4536, 08:49–08:51 UTC): la voz se trababa y cortaba frases, el agente dijo cosas incoherentes («Fui yo quien le preguntó…»), los subtítulos se cortaban con «…» y la transferencia a una persona tardó mucho.
+
+### Causas, con evidencia
+
+| Síntoma | Causa | Evidencia |
+|---|---|---|
+| Incoherencias y frases cortadas | **Eco**: el micrófono captaba la voz del agente por el parlante y la transcripción la tomaba como si hablara la persona; cada eco **interrumpía** al agente | Transcripción de ElevenLabs de 4536 (59 s): 4 turnos «de la persona» que repiten frases del agente («…problema técnico al intentar obtener…», «Gracias por su llamada.»); 4 turnos del agente con `interrupted=true`. El agente respondió a su propio eco: «Fui yo quien le preguntó…» |
+| Voz que se traba | En modo WebSocket el audio llega por el hilo principal y se reproduce **sin búfer de red**: con red móvil el búfer se vacía en mitad de una frase | Llamada larga local con 4G lenta simulada: **5–7 vaciados** del búfer por llamada con o sin la onda y con o sin CPU lenta; **0** sin limitar la red. La onda **no** los causa |
+| «Problema técnico» en la llamada de prueba | La llamada de prueba usa el agente de confirmación, que pide `get_appointment`; el servidor responde 403 porque no hay cita | 4536: `get_appointment → HTTP 403`; el agente improvisó un error técnico |
+| Transferencia lenta | El agente anunciaba la transferencia, **esperaba respuesta**, se despedía y su `end_call` era **cancelado por el eco** («Tool execution was abandoned due to user input») | 4536: 14 s entre `transfer_to_human` y el fin; en local, 15–20 s desde «Quiero hablar con una persona» |
+| Subtítulos cortados | La respuesta completa llega como texto al empezar a hablar; se mostraba **el principio** recortado a dos líneas | Código de `CallView` (`line-clamp-2` sobre la primera parte) |
+| Apertura larga | Saludo + lista de seguridad + presentación: 13–22 s hasta la primera pregunta | Tabla de aperturas, abajo |
+
+### Qué se cambió
+
+- **Transporte WebRTC** (`src/components/voice/LiveVoice.tsx`, `src/app/api/voice/session/route.ts`, `src/lib/voice/server.ts`, `src/lib/voice/transport.ts`): el servidor emite por sesión, sin caché, un **token de conversación** (`GET /v1/convai/conversation/token`) y, en paralelo, la URL firmada como respaldo. El audio del agente llega como pista WebRTC: el navegador aplica su **cancelación de eco** (sabe qué suena por el parlante), supresión de ruido y un **búfer de red**, y la reproducción no depende del hilo principal. Si WebRTC no conecta, `LiveVoice` vuelve a empezar una vez por WebSocket. Plan B manual: `?transporte=websocket` o `VOICE_TRANSPORT=websocket`. Se mantienen el reclamo, el latido y `pagehide`.
+  - El SDK 1.35.0 ya pide el micrófono con `echoCancellation`, `noiseSuppression`, `autoGainControl` y `voiceIsolation` en ambos modos (`platform/web/input.js`, LiveKit en WebRTC); lo que faltaba era que el audio del agente pasara por WebRTC.
+- **Agentes sin interrupciones por voz**, primer mensaje no interrumpible, `end_call` y `transfer_to_human` protegidos (ver «Cambios en los agentes»).
+- **Cierre rápido al transferir** (`src/lib/voice/transfer.ts`): cuando `transfer_to_human` responde bien, el cliente cuelga apenas el agente termina su frase (mínimo 2.5 s, máximo 9 s).
+- **Llamada de prueba**: las herramientas de una tarea real responden «Esta es una llamada de prueba: no hay una cita real y no se registró ningún cambio» (`src/lib/voice/tools.ts`). **Requiere desplegar este código en producción**, porque ElevenLabs llama las herramientas en `PUBLIC_BASE_URL` (producción): mientras tanto, la vista previa sigue recibiendo el 403 de producción, y el agente ahora lo maneja sin hablar de errores técnicos.
+- **Subtítulos** (`src/lib/voice/captions.ts`, para la pista que rehace la pantalla de llamada; `CallView` no se tocó): `useRevealedCaption(último, agentSpeaking)` revela las palabras del agente al ritmo de la voz (16 caracteres por segundo, medido en este agente) y `captionTail(texto)` deja **la cola**: lo último dicho, desde una palabra entera; en una caja de dos líneas anclada abajo siempre se ven las palabras más nuevas. `stripAudioTags` quita las etiquetas entre corchetes. Probado en la pantalla actual antes de revertir el cambio de `CallView` (capturas de la llamada 4549).
+- **Diagnóstico** (`voice_events`): transporte, interrupciones, herramientas, fallo de WebRTC, cierre por transferencia y un resumen cada 30 s (cambios de modo, interrupciones, vaciados del búfer, tareas largas): 2 eventos por minuto, bajo el límite de 60.
+- **Nombre del hospital en un solo lugar**: `voice/hospital.json` («Hospital Mirasur»). Lo usan las pantallas de llamada (`src/lib/voice/hospital.ts` → `ESTABLISHMENT`), el guion fijo, el consentimiento del chat y los 4 agentes (`%HOSPITAL%`, reemplazado por `npm run voice:sync`).
+
+### Mediciones (antes → después)
+
+Llamada larga (`tests/e2e/voice_long_call.py`): Chromium con Pixel 7, micrófono simulado con 6 frases en español y pausas (voz «Microsoft Sabina Desktop»), que termina con «Quiero hablar con una persona». Compilación de producción local.
+
+| Configuración | Transporte | Fotogramas p95 | Tareas largas (ms/min) | Vaciados del búfer | Interrupciones | Transferencia |
+|---|---|---|---|---|---|---|
+| Antes · onda · CPU ×4 · 4G lenta | WebSocket | 33.4 ms | 514–844 | 5–6 | 4 en 4536 (teléfono real) | 15.5 s |
+| Antes · sin onda · CPU ×4 · 4G lenta | WebSocket | 16.8 ms | 159 | 5 | — | 20.4 s |
+| Antes · onda · CPU ×1 · 4G lenta | WebSocket | 16.7 ms | 28 | 7 | — | 16.2 s |
+| Antes · onda · CPU ×1 · sin límite | WebSocket | 16.7 ms | 67 | 0 | — | 15.3 s |
+| **Después** · onda · CPU ×4 · 4G lenta | WebRTC | 33.4 ms | 496–1082 | **0** | **0** | **8.5–8.9 s** |
+| Después · sin onda · CPU ×4 · 4G lenta | WebRTC | 16.7 ms | 438 | 0 | 0 | 7.9 s |
+| Después · onda · CPU ×1 · sin límite | WebRTC | 16.7 ms | 0 | 0 | 0 | 6.5 s |
+| Después · plan B · CPU ×4 · 4G lenta | WebSocket | 33.4 ms | 369 | 3 | 0 | 6.0 s |
+
+- La onda cuesta ~16 ms en el p95 con CPU ×4 (de 60 a 30 fps), pero **no** causa vaciados del búfer: con y sin onda hay los mismos. No se modificó `VoiceWave`.
+- Límite de la prueba: la limitación de red de Chrome se aplica a HTTP y WebSocket, **no al UDP de WebRTC**. Las estadísticas WebRTC (ocultamiento < 15 ms en toda la llamada, búfer de 30–51 ms) muestran que el audio llega entero, pero el beneficio en una red móvil real y la cancelación de eco en un parlante real **solo se pueden confirmar en un teléfono**.
+
+**Apertura** (`scripts/dev/voice-opening.mjs`, una conversación por agente, tiempos de la alineación del audio):
+
+| Agente | Primera palabra | Antes: fin de la primera pregunta | Después: inicio / fin de la primera pregunta |
+|---|---|---|---|
+| Confirmación | 0.29–0.31 s | 13.9 s | 5.1 / 7.5 s |
+| Oferta | 0.29–0.31 s | 12.7 s | 6.3 / 7.4 s |
+| Registro | 0.29–0.30 s | 21.9 s | 5.9 / 8.2 s |
+| Validación | 0.31–0.32 s | 14.2 s | 5.0 / 7.4 s |
+
+La «primera palabra» se mide desde que se abre la conexión con ElevenLabs; en el teléfono del equipo, preparar el micrófono y conectar tomó además ~5 s desde «Contestar» (`sdk.start_session` → `sdk.connect`).
+
+### Cambios en los agentes de ElevenLabs
+
+Aplicados con `npm run voice:sync` (antes, `--dry`: solo `PATCH` de las 14 herramientas y los 4 agentes existentes; ningún `POST`). Afectan también a producción, que comparte los agentes.
+
+1. **Primer mensaje de una frase** + la pregunta, sin la lista de seguridad (está en pantalla):
+   - Confirmación: «Hola, le llama el asistente automatizado del Hospital Mirasur para confirmar su cita. ¿Hablo con {{patient_name}} o con su cuidador?»
+   - Oferta: «Hola, le llama el asistente automatizado del Hospital Mirasur porque se liberó un cupo de {{specialty}}. ¿Hablo con {{patient_name}}?»
+   - Validación: «Hola, le llama el asistente automatizado del Hospital Mirasur para validar su cupo. ¿Hablo con {{patient_name}} o con su cuidador?»
+   - Registro: «Hola, le habla el asistente automatizado del Hospital Mirasur para registrar su solicitud de cita. ¿Es para usted o para otra persona?»
+2. **Prompt común**: Hospital Mirasur; frases cortas, una idea y una pregunta por turno; no repetir la presentación; la seguridad solo si la persona pregunta o antes de pedir un dato; para confirmar identidad basta un «sí» y **nunca** se pide nombre completo, DNI ni número de documento (en una llamada de prueba previa el agente pidió el DNI); transferencia: «Claro, le paso con el equipo de citas», `transfer_to_human` en el mismo turno y `end_call` enseguida; si una herramienta falla, no hablar de errores técnicos; el eco del parlante se ignora; no terminar la llamada solo por un silencio; sin etiquetas entre corchetes.
+3. **Tareas**: registro pide el nombre ficticio al preguntar el nombre y recuerda no compartir datos reales de salud antes del motivo (antes iba en el saludo); confirmación no inventa la especialidad ni la fecha si no las tiene.
+4. `conversation.client_events`: **sin `interruption`** (la voz de la persona o el eco ya no cortan al agente; lo que se dice mientras habla no se transcribe). Para volver atrás: `"interruptions": true` en `voice/agents/common.json`.
+5. `agent.disable_first_message_interruptions: true`.
+6. `turn.turn_timeout`: 7 → **10 s** (menos «¿Sigue ahí?» mientras la persona piensa).
+7. `tts.expressive_mode`: **false** (el modelo escribía etiquetas como «[Entendido]» que se colaban en los subtítulos y cambian la entonación).
+8. `end_call` y la herramienta `transfer_to_human`: `interruption_mode: "disable_during_tool_and_turn"`; descripción de `transfer_to_human`: «Úsala en cuanto la persona lo pida y después termina la llamada con end_call».
+9. `platform_settings.auth.allowlist`: se agrega `localhost:3110` (pruebas locales).
+
+Evaluado y **no** activado: `vad.background_voice_detection` (filtra voces de fondo, pero podría descartar a la persona si sostiene el teléfono lejos; sin prueba en un teléfono real no conviene), `turn.noisy_environment_detection` (solo Enterprise y su mensaje está en inglés), `soft_timeout` (relleno en inglés) y `turn_eagerness` (sigue en `normal`).
+
+### Documentación consultada
+
+- https://elevenlabs.io/docs/eleven-agents/libraries/java-script (WebRTC con `conversationToken`)
+- https://elevenlabs.io/docs/eleven-agents/customization/conversation-flow (turnos, interrupciones por eventos del cliente, `turn_eagerness`, `soft_timeout_config`)
+- https://elevenlabs.io/docs/eleven-agents/customization/tools/tool-configuration/tool-interruptions (`interruption_mode`)
+- Código de `@elevenlabs/client` 1.35.0: `utils/ConnectionFactory.js` (la URL firmada solo admite WebSocket; el token, WebRTC), `utils/WebRTCConnection.js`, `platform/web/input.js` (restricciones del micrófono), `platform/web/output.js` y el procesador `audioConcatProcessor` (sin búfer de red en WebSocket).

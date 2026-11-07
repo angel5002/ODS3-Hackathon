@@ -20,10 +20,12 @@ import { initialVoiceState, isBusy, voiceReducer } from "@/lib/voice/machine";
 import type { AudioLevels, CallPhase, Caption } from "@/lib/voice/contract";
 import type { LiveVoiceControl, VoiceSession } from "@/components/voice/LiveVoice";
 import { CallView } from "@/components/voice/CallView";
+import { HOSPITAL_NAME } from "@/lib/voice/hospital";
 
 const LiveVoice = dynamic(() => import("@/components/voice/LiveVoice").then((m) => m.LiveVoice), { ssr: false });
 
-export const ESTABLISHMENT = "Hospital de demostración";
+/** the hospital named on every call screen: ONE place for the agents and the screens (voice/hospital.json) */
+export const ESTABLISHMENT = HOSPITAL_NAME;
 
 const PURPOSE_LABEL: Record<string, string> = {
   confirmacion: "Confirmación de su cita",
@@ -156,7 +158,9 @@ export function CallScreen({
     dispatch({ type: "START" });
     voiceDiag(sid, "session.request", { callId: call.id, queued: !!queueId.current });
     try {
-      const s = await post<SessionResponse>("/api/voice/session", { token: auth.token, callId: call.id, diag: sid, queueId: queueId.current });
+      // ?transporte=websocket: plan B on a network that blocks WebRTC (the server defaults to WebRTC)
+      const transport = new URLSearchParams(window.location.search).get("transporte") ?? undefined;
+      const s = await post<SessionResponse>("/api/voice/session", { token: auth.token, callId: call.id, diag: sid, queueId: queueId.current, transport });
       voiceDiag(sid, "session.response", { callId: call.id, ok: !!s.session, busy: s.busy ?? null, reason: s.reason ?? null });
       if (s.session && s.voiceSessionId) {
         bindDiag(sid, s.voiceSessionId, call.id);
