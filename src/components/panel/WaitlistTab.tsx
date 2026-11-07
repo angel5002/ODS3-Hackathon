@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Eye, MessageCircle, Plus, Search, UserMinus, X } from "lucide-react";
 import { Button } from "@/components/ui";
 import { getJson, post } from "@/lib/post";
-import { CATEGORY_TEXT, REQUEST_STATE, SPECIALTIES, WITHDRAW_REASONS, dateShort, index2, num, type RequestState } from "@/lib/labels";
+import { CATEGORY_TEXT, REQUEST_STATE, SPECIALTIES, WITHDRAW_REASONS, dateShort, num, type RequestState } from "@/lib/labels";
 import { useServerView } from "./useStaffView";
 import { RequestBadge } from "./badges";
 
@@ -77,9 +77,9 @@ export function WaitlistTab() {
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">Lista de espera</h1>
           <p className="mt-1 max-w-[80ch] text-sm text-muted">
-            Toda la demanda, aunque no haya cupo. Orden: primero la categoría clínica y luego el índice de prioridad
-            (0.75 · plazo consumido + 0.15 · primera consulta + 0.10 · atención preferente). Nunca se usan el seguro, el sexo
-            ni las faltas anteriores.
+            Toda la demanda, aunque no haya cupo. Orden: primero la categoría clínica que asignó un profesional (P1, P2, P3,
+            P4) y, dentro de ella, la parte del plazo máximo ya consumida desde el primer intento. Sin puntos extra. Nunca se
+            usan el seguro, el sexo ni las faltas anteriores.
           </p>
         </div>
         <Button variant="primary" className="min-h-11 rounded-full px-5" onClick={() => setRegistering(true)}>
@@ -131,9 +131,6 @@ export function WaitlistTab() {
                 <th className="px-3 py-2 font-semibold">Categoría</th>
                 <th className="px-3 py-2 text-right font-semibold">Días esperados</th>
                 <th className="px-3 py-2 text-right font-semibold">% del plazo</th>
-                <th className="px-3 py-2 font-semibold">1.ª consulta</th>
-                <th className="px-3 py-2 font-semibold">Preferente</th>
-                <th className="px-3 py-2 text-right font-semibold">Índice</th>
                 <th className="px-3 py-2 font-semibold">Razón</th>
                 <th className="px-3 py-2 font-semibold">Estado</th>
                 <th className="px-3 py-2 font-semibold">Canal</th>
@@ -143,17 +140,17 @@ export function WaitlistTab() {
             <tbody>
               {!data && !error && (
                 <tr>
-                  <td colSpan={13} className="px-4 py-10 text-center text-muted">Cargando la lista…</td>
+                  <td colSpan={10} className="px-4 py-10 text-center text-muted">Cargando la lista…</td>
                 </tr>
               )}
               {error && (
                 <tr>
-                  <td colSpan={13} className="px-4 py-10 text-center text-risk-alto">{error}</td>
+                  <td colSpan={10} className="px-4 py-10 text-center text-risk-alto">{error}</td>
                 </tr>
               )}
               {data && !visible.length && (
                 <tr>
-                  <td colSpan={13} className="px-4 py-10 text-center text-muted">Ninguna solicitud coincide.</td>
+                  <td colSpan={10} className="px-4 py-10 text-center text-muted">Ninguna solicitud coincide.</td>
                 </tr>
               )}
               {visible.slice(0, limit).map((r, i) => (
@@ -172,10 +169,7 @@ export function WaitlistTab() {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.days_waited}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.pct_deadline} %</td>
-                  <td className="px-3 py-2">{r.first_visit ? "Sí" : "No"}</td>
-                  <td className="px-3 py-2">{r.preferential ? "Sí" : "No"}</td>
-                  <td className="px-3 py-2 text-right font-semibold tabular-nums">{index2(r.idx)}</td>
+                  <td className="px-3 py-2 text-right font-semibold tabular-nums">{r.pct_deadline} %</td>
                   <td className="max-w-[18rem] px-3 py-2 text-xs text-muted">{r.reason}</td>
                   <td className="px-3 py-2">
                     <RequestBadge state={r.state} />
@@ -464,7 +458,7 @@ function RequestDetail({ row, onClose }: { row: RequestRow; onClose: () => void 
   return (
     <Dialog title={`${row.code} · ${row.name}`} onClose={onClose}>
       <p className="text-sm text-muted">
-        {row.specialty} · {row.category ? CATEGORY_TEXT[row.category] : "pendiente de regulación"} · índice {index2(row.idx)}
+        {row.specialty} · {row.category ? CATEGORY_TEXT[row.category] : "pendiente de regulación"} · {row.pct_deadline} % de su plazo
       </p>
       <p className="mt-1 text-sm">{row.reason}</p>
       {data?.person && (

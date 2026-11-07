@@ -11,7 +11,7 @@ const PRIORITY: Record<string, string> = { P1: "asap", P2: "urgent", P3: "routin
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const d = await rpc<{ request: Record<string, unknown> | null; events: { type: string; at: string; actor: string; payload: Record<string, unknown> }[] }>(
-    "staff_request_detail",
+    "staff_request_detail_v51",
     { p_request: Number(id) },
   );
   const r = d.request;
@@ -42,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         occurrencePeriod: { start: r.first_attempt_at, end: r.due_date ?? undefined },
         code: { text: `Consulta externa de ${r.specialty}` },
         reasonCode: r.reason_text ? [{ text: r.reason_text }] : undefined,
-        note: [{ text: `Categoría ${r.category ?? "pendiente"} · índice ${r.idx} · ${r.reason}` }],
+        note: [{ text: `Prioridad: ${r.reason} (orden: categoría clínica y, dentro de ella, fracción del plazo consumida)` }],
       },
     },
     {
