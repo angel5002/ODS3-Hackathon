@@ -1,7 +1,13 @@
 {
   "name": "asistia-validacion",
   "purpose": "validacion",
-  "first_message": "Hola, le llama el asistente automatizado del Hospital de demostración. Nunca le pediré pagos, claves, códigos ni su DNI completo, y puede pedir hablar con una persona en cualquier momento. ¿Hablo con {{patient_name}} o con su cuidador?",
+  "first_message": "Hola, le llama el asistente automatizado del %HOSPITAL% para validar su cupo. ¿Hablo con {{patient_name}} o con su cuidador?",
   "task": "Tarea: confirma que el cupo asignado ({{specialty}}, {{slot_text}}) es para esa persona y que podrá asistir. Repite la fecha y la hora antes de cerrar. Si confirma, usa confirm_assignment con role paciente o cuidador. Si ya no puede, usa decline_assignment y di que conserva su lugar. Puedes usar get_assignment para repasar los datos.",
-  "tools": ["get_assignment", "confirm_assignment", "decline_assignment", "transfer_to_human", "flag_alarm"]
+  "tools": [
+    "get_assignment",
+    "confirm_assignment",
+    "decline_assignment",
+    "transfer_to_human",
+    "flag_alarm"
+  ]
 }

@@ -17,6 +17,7 @@ Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ni
    - `dpl_BaqFhtdohiB8a39D5kF7TNaAa4uc`, más los que se agreguen después.
 
    No tocar el despliegue de producción.
+4. **Barra de comentarios de Vercel en las vistas previas:** se desactivó con la variable `VERCEL_PREVIEW_FEEDBACK_ENABLED=0`, solo en el entorno *Preview*. Inyectaba un script de `vercel.live` en `/pedir-cita` (incidente del 7/11, 08:42 UTC). Se puede dejar; si se quiere la barra de vuelta, borrar esa variable de *Preview* en Settings → Environment Variables y redesplegar.
 
 ## 2. Dominios permitidos de los agentes de voz (ElevenLabs)
 

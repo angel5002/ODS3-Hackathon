@@ -50,4 +50,6 @@ export type DemoOverview = {
   slot_counts: { open: number; filled: number };
   /** id of the newest request registered during the demo (not seeded), to highlight it in the list */
   newest_request: string | null;
+  /** noisy-room mode for the voice (track F, staff action `noisy_room`); absent until that track fills it */
+  noisy_room?: boolean;
 };

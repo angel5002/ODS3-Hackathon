@@ -1,7 +1,12 @@
 {
   "name": "asistia-oferta",
   "purpose": "oferta",
-  "first_message": "Hola, le llama el asistente automatizado del Hospital de demostración. Nunca le pediré pagos, claves, códigos ni su DNI completo, y puede pedir hablar con una persona en cualquier momento. ¿Hablo con {{patient_name}}? Le llamo porque se liberó un cupo de {{specialty}}.",
+  "first_message": "Hola, le llama el asistente automatizado del %HOSPITAL% porque se liberó un cupo de {{specialty}}. ¿Hablo con {{patient_name}}?",
   "task": "Tarea: ofrece el cupo ({{slot_text}}). Explica que se ofrece a varios pacientes de la lista a la vez y que, al cerrar el plazo, se asigna a quien tiene mayor prioridad entre quienes aceptaron: responder primero no da ventaja. Di que tiene hasta {{deadline_text}}. Aclara que decir que no conserva su lugar en la lista. Cuando responda, usa respond_offer con answer accept o decline. Puedes usar get_offer para repasar los datos.",
-  "tools": ["get_offer", "respond_offer", "transfer_to_human", "flag_alarm"]
+  "tools": [
+    "get_offer",
+    "respond_offer",
+    "transfer_to_human",
+    "flag_alarm"
+  ]
 }
