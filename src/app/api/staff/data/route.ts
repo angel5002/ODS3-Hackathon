@@ -103,8 +103,11 @@ export async function GET(req: Request) {
         ]);
         return NextResponse.json({ board, statuses: lite.data ?? [], calls: calls.count ?? 0, metrics: metrics.data ?? [] });
       }
-      case "voice":
-        return NextResponse.json(await rpc("voice_overview"));
+      case "voice": {
+        // scene playbacks (kind "escena.*", /api/staff/scene-event) are not calls: never shown nor counted here
+        const v = await rpc<{ events?: { kind?: string }[] }>("voice_overview");
+        return NextResponse.json({ ...v, events: (v.events ?? []).filter((e) => !String(e.kind ?? "").startsWith("escena")) });
+      }
       case "overview":
         // /demo control center: stages, waiting list, slots and the assignment rule in one read
         return NextResponse.json(await demoOverview());
