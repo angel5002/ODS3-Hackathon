@@ -14,6 +14,8 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   let callId = Number(body.callId);
+  const diag = typeof body.diag === "string" && /^[a-z0-9]{4,16}$/.test(body.diag) ? body.diag : "-";
+  const log = (msg: string) => console.info(`[voz ${diag}] servidor session ${msg}`);
 
   // registration by voice from /pedir-cita: the chat session starts its own call
   if (body.mode === "registro") {
@@ -26,25 +28,40 @@ export async function POST(req: Request) {
       .insert({ chat_session_id: session, purpose: "registro", agent: "asistia-registro", status: "en_curso", answered_at: new Date().toISOString() })
       .select("id")
       .single();
-    if (error || !c) return fail(error?.message ?? "call", 500);
+    if (error || !c) {
+      log(`registro insert_error -> 500`);
+      return fail(error?.message ?? "call", 500);
+    }
     callId = c.id;
+    log(`registro nueva llamada call=${callId}`);
     await rpc("hint", { p_kind: "call" });
   }
 
   const call = await loadCall(callId);
-  if (!call || !(await ownsCall(req, call, body.token))) return fail("unknown call", 404);
-  if (!["sonando", "en_curso"].includes(call.status)) return fail("call ended", 409);
+  if (!call || !(await ownsCall(req, call, body.token))) {
+    log(`call=${callId} sin_dueño -> 404`);
+    return fail("unknown call", 404);
+  }
+  if (!["sonando", "en_curso"].includes(call.status)) {
+    log(`call=${callId} estado=${call.status} -> 409`);
+    return fail("call ended", 409);
+  }
 
   try {
     const key = AGENT_FOR_PURPOSE[call.purpose];
-    const url = await signedUrl(key);
-    if (!url) return NextResponse.json({ session: null, callId, reason: "Los agentes de voz no están configurados" });
+    const url = await signedUrl(key, diag);
+    if (!url) {
+      log(`call=${callId} sin_agentes -> 200 session=null`);
+      return NextResponse.json({ session: null, callId, reason: "Los agentes de voz no están configurados" });
+    }
+    log(`call=${callId} purpose=${call.purpose} estado=${call.status} -> 200 url_firmada`);
     const ctx = await callContext(call);
     return NextResponse.json({
       callId,
       session: { signedUrl: url, agent: key, dynamicVariables: { ...ctx, token: toolToken(call.id) } },
     });
   } catch (e) {
+    log(`call=${callId} error=${(e as Error).message} -> 200 session=null`);
     return NextResponse.json({ session: null, callId, reason: (e as Error).message });
   }
 }

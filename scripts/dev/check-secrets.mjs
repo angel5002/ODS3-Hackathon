@@ -101,11 +101,17 @@ const skRe = new RegExp("sk" + "_[A-Za-z0-9]{20}", "g");
 const sk = { total: 0, commits: [], files: [] };
 for (const c of commits) {
   const n = (c.text.match(skRe) ?? []).length;
-  if (n) (sk.total += n), sk.commits.push(c.id);
+  if (n) {
+    sk.total += n;
+    sk.commits.push(c.id);
+  }
 }
 for (const f of files) {
   const n = (f.text.match(skRe) ?? []).length;
-  if (n) (sk.total += n), sk.files.push(f.path);
+  if (n) {
+    sk.total += n;
+    sk.files.push(f.path);
+  }
 }
 found += report("sk_ + 20 caracteres", sk);
 

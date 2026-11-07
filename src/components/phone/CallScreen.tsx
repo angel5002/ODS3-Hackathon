@@ -14,6 +14,7 @@ import type { Option, Turn, VoiceAgent } from "@/lib/voice/agent";
 import { ScriptedVoiceAgent, stopSpeaking } from "@/lib/voice/scripted";
 import { ring } from "@/lib/voice/audio";
 import type { VoiceSession } from "./ElevenLabsCall";
+import { newDiagId, voiceDiag } from "@/lib/voice/diag";
 
 const ElevenLabsCall = dynamic(() => import("./ElevenLabsCall").then((m) => m.ElevenLabsCall), { ssr: false });
 
@@ -52,6 +53,21 @@ export function CallScreen({
   const transcript = useRef<Turn[]>([]);
   const logRef = useRef<HTMLOListElement>(null);
   const ended = useRef(false);
+  const [sid] = useState(newDiagId);
+  const answerClicks = useRef(0);
+
+  // diagnostics (E5, hito 1): mount, unmount and tab close while this call screen is open
+  useEffect(() => {
+    const s = sid;
+    voiceDiag(s, "screen.mount", { callId: call.id, status: call.status, purpose: call.purpose ?? null, outgoing: !!outgoing });
+    const onHide = () => voiceDiag(s, "page.pagehide", { callId: call.id, ended: ended.current });
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      voiceDiag(s, "screen.unmount", { callId: call.id, ended: ended.current });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (phase !== "ringing") return;
@@ -87,6 +103,8 @@ export function CallScreen({
   }
 
   async function answer() {
+    answerClicks.current += 1;
+    voiceDiag(sid, "ui.answer", { callId: call.id, clicks: answerClicks.current });
     setPhase("connecting");
     await setStatus("en_curso").catch(() => {});
     await connect();
@@ -95,8 +113,10 @@ export function CallScreen({
   async function connect() {
     // plan B (and tests without a microphone): ?voz=guion forces the fixed script
     if (new URLSearchParams(window.location.search).get("voz") === "guion") return fallback("Modo guion fijo (plan B)");
+    voiceDiag(sid, "session.request", { callId: call.id });
     try {
-      const s = await post<{ session: VoiceSession | null; reason?: string }>("/api/voice/session", { token: auth.token, callId: call.id });
+      const s = await post<{ session: VoiceSession | null; reason?: string }>("/api/voice/session", { token: auth.token, callId: call.id, diag: sid });
+      voiceDiag(sid, "session.response", { callId: call.id, ok: !!s.session, reason: s.reason ?? null });
       if (s.session) {
         setProvider("elevenlabs");
         setLive(s.session);
@@ -111,6 +131,7 @@ export function CallScreen({
   }
 
   async function fallback(reason: string) {
+    voiceDiag(sid, "fallback", { callId: call.id, reason: reason.slice(0, 140), ended: ended.current, provider });
     if (ended.current) return;
     setLive(null);
     if (provider === "guion") return;
@@ -137,6 +158,7 @@ export function CallScreen({
   }
 
   async function finish(result: string) {
+    voiceDiag(sid, "finish", { callId: call.id, result, alreadyEnded: ended.current });
     if (ended.current) return;
     ended.current = true;
     await setStatus("finalizada", result, transcript.current).catch(() => {});
@@ -156,6 +178,7 @@ export function CallScreen({
   }, [outgoing]);
 
   async function reject() {
+    voiceDiag(sid, "ui.reject", { callId: call.id });
     ended.current = true;
     setPhase("ended");
     await setStatus("rechazada", "Rechazó la llamada").catch(() => {});
@@ -163,6 +186,7 @@ export function CallScreen({
   }
 
   async function hangUp() {
+    voiceDiag(sid, "ui.hangup", { callId: call.id, live: !!live });
     stopSpeaking();
     if (live && hangUpLive.current) {
       hangUpLive.current();
@@ -217,6 +241,7 @@ export function CallScreen({
 
       {live && (
         <ElevenLabsCall
+          sid={sid}
           session={live}
           hangUpRef={hangUpLive}
           onTurn={addTurn}

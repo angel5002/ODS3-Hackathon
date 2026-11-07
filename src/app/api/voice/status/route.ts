@@ -10,7 +10,12 @@ const STATUS = ["en_curso", "rechazada", "no_contesta", "finalizada", "fallo"] a
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const call = await loadCall(Number(body.callId));
-  if (!call || !(await ownsCall(req, call, body.token))) return fail("unknown call", 404);
+  if (!call || !(await ownsCall(req, call, body.token))) {
+    console.info(`[voz -] servidor status call=${Number(body.callId)} sin_dueño -> 404`);
+    return fail("unknown call", 404);
+  }
+  // diagnostics (E5, hito 1): every requested transition, with the state it found
+  console.info(`[voz -] servidor status call=${call.id} ${call.status} -> ${String(body.status)}${body.provider ? ` provider=${String(body.provider).slice(0, 20)}` : ""}${typeof body.first_turn_ms === "number" ? ` primera_frase_ms=${body.first_turn_ms}` : ""}`);
   if (!STATUS.includes(body.status)) return fail("invalid call status");
   try {
     const patch: Record<string, unknown> = {};

@@ -6,10 +6,13 @@
 import { useEffect, useRef } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import type { Turn } from "@/lib/voice/agent";
+import { voiceDiag } from "@/lib/voice/diag";
 
 export type VoiceSession = { signedUrl: string; dynamicVariables: Record<string, string>; agent: string };
 
 type Props = {
+  /** diagnostics id of this voice session (E5, hito 1) */
+  sid: string;
   session: VoiceSession;
   onTurn: (t: Turn) => void;
   onSpeaking: (speaking: boolean) => void;
@@ -27,29 +30,37 @@ export function ElevenLabsCall(props: Props) {
   );
 }
 
-function Live({ session, onTurn, onSpeaking, onConnected, onEnd, onFail, hangUpRef }: Props) {
+function Live({ sid, session, onTurn, onSpeaking, onConnected, onEnd, onFail, hangUpRef }: Props) {
   const started = useRef(false);
   const t0 = useRef(0);
   const firstAgentTurn = useRef(true);
   const failed = useRef(false);
+  const callId = session.dynamicVariables.call_id;
   const conv = useConversation({
     onConnect: () => {
       t0.current = performance.now();
+      voiceDiag(sid, "sdk.connect", { callId });
     },
+    onStatusChange: ({ status }) => voiceDiag(sid, "sdk.status", { callId, status }),
     onMessage: ({ message, role }) => {
       if (role === "agent" && firstAgentTurn.current) {
         firstAgentTurn.current = false;
-        onConnected(Math.round(performance.now() - t0.current));
+        const ms = Math.round(performance.now() - t0.current);
+        voiceDiag(sid, "sdk.first_agent_turn", { callId, ms });
+        onConnected(ms);
       }
       onTurn({ who: role === "agent" ? "agente" : "paciente", text: message });
     },
     onModeChange: ({ mode }) => onSpeaking(mode === "speaking"),
     onError: (message) => {
+      voiceDiag(sid, "sdk.error", { callId, message: String(message), alreadyFailed: failed.current });
       if (failed.current) return;
       failed.current = true;
       onFail(String(message));
     },
     onDisconnect: (d) => {
+      const ctx = (d as { context?: { code?: number; reason?: string } }).context;
+      voiceDiag(sid, "sdk.disconnect", { callId, reason: d.reason, code: ctx?.code ?? null, closeReason: ctx?.reason ?? null, alreadyFailed: failed.current });
       if (failed.current) return;
       if (d.reason === "error") {
         failed.current = true;
@@ -61,19 +72,26 @@ function Live({ session, onTurn, onSpeaking, onConnected, onEnd, onFail, hangUpR
   });
 
   useEffect(() => {
-    hangUpRef.current = () => conv.endSession();
+    hangUpRef.current = () => {
+      voiceDiag(sid, "ui.hangup_end_session", { callId });
+      conv.endSession();
+    };
   });
 
   useEffect(() => {
+    voiceDiag(sid, "effect.run", { callId, alreadyStarted: started.current });
     if (started.current) return;
     started.current = true;
     try {
+      voiceDiag(sid, "sdk.start_session", { callId, agent: session.agent });
       conv.startSession({ signedUrl: session.signedUrl, connectionType: "websocket", dynamicVariables: session.dynamicVariables });
     } catch (e) {
+      voiceDiag(sid, "sdk.start_session_throw", { callId, message: (e as Error).message });
       failed.current = true;
       onFail((e as Error).message);
     }
     return () => {
+      voiceDiag(sid, "effect.cleanup_end_session", { callId });
       try {
         conv.endSession();
       } catch {

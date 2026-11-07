@@ -30,15 +30,22 @@ export function sameSecret(a: string | null | undefined, b: string | null | unde
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-export async function signedUrl(key: AgentKey) {
+export async function signedUrl(key: AgentKey, diag = "-") {
   const id = agentId(key);
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!id || !apiKey) return null;
+  const t = Date.now();
   const res = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(id)}`, {
     headers: { "xi-api-key": apiKey },
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`ElevenLabs ${res.status}`);
+  // diagnostics (E5, hito 1): ElevenLabs status code and latency, never the URL or the key
+  console.info(`[voz ${diag}] servidor elevenlabs.signed_url agent=${key} http=${res.status} ms=${Date.now() - t}`);
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 200);
+    console.warn(`[voz ${diag}] servidor elevenlabs.signed_url_error http=${res.status} ${detail}`);
+    throw new Error(`ElevenLabs ${res.status}`);
+  }
   const data = (await res.json()) as { signed_url?: string };
   return data.signed_url ?? null;
 }

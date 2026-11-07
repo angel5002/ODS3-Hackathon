@@ -16,6 +16,7 @@ import type { Turn } from "@/lib/voice/agent";
 import { CallScreen } from "@/components/phone/CallScreen";
 import { RegisterForm } from "@/components/panel/WaitlistTab";
 import type { VoiceSession } from "@/components/phone/ElevenLabsCall";
+import { newDiagId, voiceDiag } from "@/lib/voice/diag";
 
 const ElevenLabsCall = dynamic(() => import("@/components/phone/ElevenLabsCall").then((m) => m.ElevenLabsCall), { ssr: false });
 
@@ -291,28 +292,38 @@ function VoiceRegister({ onDone }: { onDone: () => void }) {
   const [speaking, setSpeaking] = useState(false);
   const [reason, setReason] = useState("");
   const hangUp = useRef<(() => void) | null>(null);
+  const [sid, setSid] = useState("");
+  const clicks = useRef(0);
 
   async function start() {
+    clicks.current += 1;
+    const id = newDiagId();
+    setSid(id);
+    voiceDiag(id, "ui.start", { clicks: clicks.current, mode: "registro" });
     setState("connecting");
     const mic = await unlockAudio({ microphone: true });
+    voiceDiag(id, "mic.unlock", { ok: mic });
     if (!mic) {
       setReason("No se pudo usar el micrófono. Revise el permiso del navegador o use el chat.");
       setState("unavailable");
       return;
     }
     try {
-      const r = await post<{ session: VoiceSession | null; callId: number; reason?: string }>("/api/voice/session", { mode: "registro" });
+      const r = await post<{ session: VoiceSession | null; callId: number; reason?: string }>("/api/voice/session", { mode: "registro", diag: id });
+      voiceDiag(id, "session.response", { callId: r.callId ?? null, ok: !!r.session, reason: r.reason ?? null });
       setCallId(r.callId);
       if (!r.session) throw new Error(r.reason ?? "La llamada no está disponible ahora.");
       setSession(r.session);
       setState("live");
     } catch (e) {
+      voiceDiag(id, "session.error", { message: (e as Error).message.slice(0, 140) });
       setReason((e as Error).message);
       setState("unavailable");
     }
   }
 
   async function end(result: string) {
+    voiceDiag(sid, "finish", { callId, result });
     setState("ended");
     if (callId) await post("/api/voice/status", { callId, status: "finalizada", result }).catch(() => {});
   }
@@ -361,6 +372,7 @@ function VoiceRegister({ onDone }: { onDone: () => void }) {
       )}
       {session && state === "live" && (
         <ElevenLabsCall
+          sid={sid}
           session={session}
           hangUpRef={hangUp}
           onTurn={(t) => setTurns((x) => [...x, t])}
@@ -368,6 +380,7 @@ function VoiceRegister({ onDone }: { onDone: () => void }) {
           onConnected={(ms) => callId && post("/api/voice/status", { callId, status: "en_curso", first_turn_ms: ms, provider: "elevenlabs" }).catch(() => {})}
           onEnd={(r) => end(r)}
           onFail={(err) => {
+            voiceDiag(sid, "fail", { callId, message: err.slice(0, 140) });
             setReason(`La voz falló (${err}). Puede seguir por el chat o el formulario.`);
             setState("unavailable");
             if (callId) post("/api/voice/status", { callId, status: "fallo", result: err.slice(0, 120) }).catch(() => {});
