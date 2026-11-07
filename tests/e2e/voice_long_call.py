@@ -273,6 +273,8 @@ async def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--query", default="metricas=1")
     ap.add_argument("--no-thresholds", action="store_true")
+    ap.add_argument("--ptt-after", type=float, default=30,
+                    help="noisy-room mode: seconds after answering before holding 'Mantener para hablar' down")
     ap.add_argument("--shots", default="", help="seconds after answering to take screenshots, e.g. 15,32 (needs --out)")
     a = ap.parse_args()
     if a.who == "rosa":
@@ -312,6 +314,7 @@ async def main():
         call_id = await ops.test_call(patient)
         print(f"llamada de prueba {call_id} a {a.who}", flush=True)
         t_answer = None
+        ptt = {"button": False, "held_at": None, "user_turns_before_hold": None}
         try:
             btn = page.get_by_role("button", name="Contestar")
             await btn.wait_for(timeout=30000)
@@ -320,9 +323,26 @@ async def main():
             deadline = time.time() + a.seconds
             shots = [int(x) for x in a.shots.split(",") if x] if a.shots else []
             started = time.time()
+            ptt = {"button": False, "held_at": None, "user_turns_before_hold": None}
             while time.time() < deadline:
                 if await page.evaluate("!!(window.__m && window.__m.ended)"):
                     break
+                # noisy-room mode: the microphone only works while "Mantener para hablar" is held. The WAV's first
+                # phrase plays while it is NOT held (it must not reach the agent); from --ptt-after seconds on the
+                # button is held down until the end, so the rest of the conversation can happen.
+                if ptt["held_at"] is None and time.time() - started >= a.ptt_after:
+                    hold = page.get_by_role("button", name="Mantener para hablar")
+                    if await hold.count():
+                        ptt["button"] = True
+                        ptt["user_turns_before_hold"] = await page.evaluate(
+                            "window.__asistiaVoz ? window.__asistiaVoz.events.filter(e => e[1] === 'user_turn').length : null")
+                        box = await hold.first.bounding_box()
+                        await page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+                        await page.mouse.down()
+                        ptt["held_at"] = round(time.time() - started, 1)
+                    else:
+                        ptt["held_at"] = -1  # no button: open microphone
+
                 if shots and time.time() - started >= shots[0] and a.out:
                     s = shots.pop(0)
                     Path(a.out).mkdir(parents=True, exist_ok=True)
@@ -400,6 +420,7 @@ async def main():
         "interruptions": interruptions,
         "transfer_s": transfer_s,
         "webrtc_last": dict(zip(["t", "samples", "concealed", "silent_concealed", "inserted_decel", "removed_accel", "lost", "jitter", "jb_ms"], rtc)) if rtc else None,
+        "push_to_talk": ptt,
         "page_errors": errors[:8],
         "sdk_events": {k: sum(1 for e in voz if e[1] == k) for k in sorted({e[1] for e in voz})} if voz else None,
     }
