@@ -8,14 +8,16 @@ import { LIMITS, handleMessage } from "@/lib/chat/router";
 
 export const dynamic = "force-dynamic";
 
-function unauthorized() {
+function unauthorized(req?: Request, id?: string | null) {
+  // E5 diagnostics (no personal data): why a chat request is rejected
+  if (req) console.info(`[chat] 401 ${!req.headers.get("cookie")?.includes(CHAT_COOKIE) ? "sin cookie" : !id ? "cookie inválida" : "sesión inexistente o vencida"}`);
   return NextResponse.json({ error: "Su sesión de chat venció. Recargue la página." }, { status: 401 });
 }
 
 export async function GET(req: Request) {
   const id = readCookie(req);
   const s = id ? await loadSession(id) : null;
-  if (!s) return unauthorized();
+  if (!s) return unauthorized(req, id);
   const db = serverDb();
   const { data: conv } = await db.from("conversations").select("id").eq("session_id", s.id).single();
   const [{ data: messages }, { data: calls }, { data: linked }] = await Promise.all([
@@ -44,7 +46,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const id = readCookie(req);
   const s = id ? await loadSession(id) : null;
-  if (!s) return unauthorized();
+  if (!s) return unauthorized(req, id);
   const body = await req.json().catch(() => ({}));
   if (body.soundReady != null) {
     await serverDb().from("chat_sessions").update({ sound_ready: Boolean(body.soundReady) }).eq("id", s.id);

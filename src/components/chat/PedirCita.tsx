@@ -9,6 +9,7 @@ import { Bubble, DemoNotice, QuickReplies, SoundBar, ThreadList, TypingBubble } 
 import { toast } from "sonner";
 import { Brand } from "@/components/Brand";
 import { getJson, post } from "@/lib/post";
+import { mayReload, shouldRecover } from "@/lib/chat/recovery";
 import { browserDb } from "@/lib/supabase/browser";
 import { DISCLAIMER } from "@/lib/labels";
 import { ring, unlockAudio } from "@/lib/voice/audio";
@@ -36,9 +37,37 @@ export function PedirCita() {
   const [sound, setSound] = useState(false);
   const lastCount = useRef(0);
 
+  // E5: one session request at a time; a failed load recreates the session (at most twice per page) before
+  // showing "expired"; once expired the page stops polling. Incident 7/11 08:42 UTC: reload/expired loop.
+  const ensuring = useRef<Promise<{ topic: string } | null> | null>(null);
+  const recoveries = useRef(0);
+  const expiredRef = useRef(false);
+  const ensureSession = useCallback(() => {
+    ensuring.current ??= post<{ topic: string }>("/api/chat/session", {})
+      .catch((e) => {
+        console.info("[chat] no se pudo crear la sesión", (e as Error).message);
+        return null;
+      })
+      .finally(() => {
+        setTimeout(() => (ensuring.current = null), 0);
+      });
+    return ensuring.current;
+  }, []);
+
   const load = useCallback(async () => {
+    if (expiredRef.current) return;
     try {
-      const d = await getJson<ChatData>("/api/chat/messages");
+      let d: ChatData;
+      try {
+        d = await getJson<ChatData>("/api/chat/messages");
+      } catch (first) {
+        if (!shouldRecover(recoveries.current)) throw first;
+        recoveries.current += 1;
+        console.info("[chat] la sesión no responde; se crea otra", recoveries.current, (first as Error).message);
+        const s = await ensureSession();
+        if (!s) throw first;
+        d = await getJson<ChatData>("/api/chat/messages");
+      }
       setData(d);
       setExpired(false);
       // notify when a new message arrives with the tab in the background
@@ -48,17 +77,19 @@ export function PedirCita() {
         navigator.vibrate?.(200);
       }
       lastCount.current = d.messages.length;
-    } catch {
+    } catch (e) {
+      console.info("[chat] conversación no disponible", (e as Error).message);
+      expiredRef.current = true;
       setExpired(true);
     }
-  }, []);
+  }, [ensureSession]);
 
   // session first, then the conversation; Realtime hints (content-free) + a light poll as safety net
   useEffect(() => {
     let channel: ReturnType<ReturnType<typeof browserDb>["channel"]> | null = null;
     let alive = true;
     (async () => {
-      const s = await post<{ topic: string }>("/api/chat/session", {}).catch(() => null);
+      const s = await ensureSession();
       if (!alive || !s) return;
       await load();
       channel = browserDb()
@@ -80,7 +111,7 @@ export function PedirCita() {
       document.removeEventListener("visibilitychange", onVis);
       if (channel) browserDb().removeChannel(channel);
     };
-  }, [load]);
+  }, [load, ensureSession]);
 
   async function enableSound() {
     const mic = await unlockAudio({ microphone: true });
@@ -92,7 +123,7 @@ export function PedirCita() {
   async function wipe() {
     if (!window.confirm("¿Borrar esta conversación? Se elimina del sistema y empieza una nueva.")) return;
     await fetch("/api/chat/session", { method: "DELETE" });
-    window.location.reload();
+    safeReload();
   }
 
   const call = data?.call && (data.call.status === "sonando" || data.call.status === "en_curso") ? data.call : null;
@@ -108,7 +139,7 @@ export function PedirCita() {
       <DemoNotice>{DISCLAIMER} Use un nombre ficticio.</DemoNotice>
       {!sound && <SoundBar onEnable={enableSound} />}
 
-      {expired && <ExpiredNotice onRestart={() => window.location.reload()} />}
+      {expired && <ExpiredNotice onRestart={safeReload} />}
 
       {!expired && view === "inicio" && <Home onPick={setView} />}
       {!expired && view === "chat" && data && <ChatView data={data} reload={load} />}
@@ -190,6 +221,25 @@ export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View
       )}
     </header>
   );
+}
+
+/** Reload, but never in a loop: at most 2 reloads per minute; otherwise say what to do. */
+function safeReload() {
+  let store: Storage | null = null;
+  try {
+    store = window.sessionStorage;
+  } catch {
+    store = null;
+  }
+  if (mayReload(store, Date.now())) {
+    window.location.reload();
+    return;
+  }
+  console.info("[chat] recarga bloqueada para evitar un bucle");
+  toast.error("No pudimos abrir la conversación. Revise que el navegador permita cookies de este sitio y vuelva a intentar en un minuto.", {
+    position: "bottom-center",
+    duration: 8000,
+  });
 }
 
 export function ExpiredNotice({ onRestart }: { onRestart: () => void }) {
@@ -294,7 +344,7 @@ function ChatView({ data, reload }: { data: ChatData; reload: () => Promise<void
       const r = await post<{ deleted?: boolean; replies?: { body: string }[] }>("/api/chat/messages", { text: v });
       if (r.deleted) {
         toast(r.replies?.[0]?.body ?? "Listo, borramos esta conversación.");
-        setTimeout(() => window.location.reload(), 1200);
+        setTimeout(safeReload, 1200);
         return;
       }
       await reload();
