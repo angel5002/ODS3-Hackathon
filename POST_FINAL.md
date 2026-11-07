@@ -34,6 +34,12 @@ Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ni
    node scripts/voice-sync.mjs
    ```
 4. Commit del cambio de `common.json`.
+5. **Ajustes de la final en los agentes** (compartidos con producción; lista completa en `docs/diagnostico_voz.md` §13–14):
+   - `client_events` sin `interruption` (la voz de la persona y el eco no cortan al agente). Para volver atrás: `"interruptions": true` en `common.json`;
+   - `turn_timeout` de 7 a 10 s, `disable_first_message_interruptions`, `tts.expressive_mode: false`;
+   - `localhost:3110` agregado a `allowed_hosts` (pruebas locales): quitarlo;
+   - primeros mensajes de una frase, una sola pregunta de signos de alarma y cierres nuevos. Esos textos **no** son temporales: se quedan.
+6. **Modo sala ruidosa** (`settings_v51.sala_ruidosa = 'on'`): es para el auditorio. Después de la final, apagarlo desde `/demo` (interruptor «Sala ruidosa») para que el teléfono vuelva a «Silenciar» en vez de «Mantener para hablar».
 
 > `voice:sync` sube a ElevenLabs la configuración completa de los agentes desde la rama en la que se ejecute. Hay que ejecutarlo desde la rama que tenga los textos vigentes: `e5`, o `main` después del merge.
 
@@ -51,6 +57,9 @@ Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ni
   - la tabla `settings_v51`.
 
   Se quedan si `e5` se integra. Si se descarta `e5`, se revierten con `supabase/rollback/*.down.sql`, en orden inverso: 040000, 030000, 020000 y 010000.
+- **Objetos de la final** (aditivos, aplicados el 7/11): `20261107050000_e5_sala_ruidosa`, `20261107070000_e5_jury_cards` (tablas `jury_cards`, `jury_visits`, `jury_slots` y 12 funciones `jury_*`), `20261108010000_e5_escena1_seed` (`seed_escena1`, `escena1_offer_to_tito`) y `20261108020000_e5_preconsulta` (3 tablas `preconsulta_*` y 3 funciones). Los de la preconsulta son parte del producto; los del jurado y la escena 1 son de la presentación. Si se quieren quitar, sus reversas están en `supabase/rollback/` (en orden inverso). Los pacientes del jurado (ids `J…`, `demo_role = 'jurado'`) sobreviven a «Reiniciar demo»; se borran con la reversa de `jury_cards` o a mano.
+- **Tito Quispe Rojas** (escena 1) es una solicitud sembrada por `seed_escena1()`: «Reiniciar demo» la borra.
+- **Audios de las escenas** en `public/escenas/*.mp3`: generados con la voz de los agentes; son de la presentación.
 - **`breakeven_r`** sigue en 0.053. El cambio a 0.052 (`supabase/data/20261107_breakeven_v51.sql`) se aplica en el merge y no tiene nada que deshacer.
 
 ## 4. Archivos y carpetas locales (fuera de git o ignorados)
@@ -65,7 +74,7 @@ Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ni
   ```
   Ramas locales que quedaron:
   - `worktree-agent-*`;
-  - `e5-ui`, `e5-ui-v2`, `e5-ui-app`, `e5-v51`, `e5-db51` y `e5-preview`.
+  - `e5-ui`, `e5-ui-v2`, `e5-ui-app`, `e5-v51`, `e5-db51`, `e5-preview`, `e5-demo`, `e5-qa`, `e5-estilo`, `e5-voz`, `e5-stoic`, `e5-escenas`, `e5-presentacion` y `e5-jurado`.
 
   Todas ya están integradas en `e5` y se pueden borrar con `git branch -D`. `e5`, `e4-original` y `recuperado-vercel` se quedan.
 - **`.claude/launch.json`:** tiene la configuración `web-start` (producción local con el PIN de prueba). Es local e ignorada; se puede dejar.
