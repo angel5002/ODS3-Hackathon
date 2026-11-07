@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CallView } from "@/components/voice/CallView";
+import { VoiceStartView } from "@/components/voice/VoiceStartView";
 import type { AudioLevels, BusyInfo, CallPhase, CallViewProps, Caption, ScriptOption } from "@/lib/voice/contract";
 import { DISCLAIMER } from "@/lib/labels";
 import { PLAYGROUND_STATES, type PlaygroundState } from "./states";
@@ -70,23 +71,30 @@ export function CallPlayground({
   muted: initialMuted,
 }: {
   initial: PlaygroundState;
-  frame: "pantalla" | "telefono";
+  frame: "pantalla" | "telefono" | "pedir";
   panel: boolean;
   captions: boolean;
   muted: boolean;
 }) {
   const [state, setState] = useState<PlaygroundState>(initial);
-  const [frame, setFrame] = useState(initialFrame);
+  const [frame, setFrame] = useState<"pantalla" | "telefono" | "pedir">(initialFrame);
   const [captionsVisible, setCaptionsVisible] = useState(initialCaptions);
   const [muted, setMuted] = useState(initialMuted);
-  const [seconds, setSeconds] = useState(initial === "finalizada" ? 94 : initial.startsWith("activa") || initial === "guion" ? 37 : 0);
+  const [seconds, setSeconds] = useState(initial === "finalizada" ? 94 : initial === "finalizando" ? 41 : initial.startsWith("activa") || initial === "guion" ? 37 : 0);
   const [turn, setTurn] = useState(0);
   const [scriptCaptions, setScriptCaptions] = useState<Caption[]>(() => (initial === "guion" ? GUION_FIRST : []));
   const [sheetOpen, setSheetOpen] = useState(false);
   const voice = useRef<Voice>("silencio");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const phase: CallPhase = state.startsWith("activa") ? "activa" : state.startsWith("ocupado") ? "ocupado" : (state as CallPhase);
+  const start = state === "inicio-voz";
+  const phase: CallPhase = start
+    ? "entrante"
+    : state.startsWith("activa")
+      ? "activa"
+      : state.startsWith("ocupado")
+        ? "ocupado"
+        : (state as CallPhase);
   const auto = state === "activa-auto";
   const t = TURNS[turn % TURNS.length];
   const agentSpeaking = state === "activa-habla" || (auto && t.voice === "agente");
@@ -140,7 +148,8 @@ export function CallPlayground({
     setState(next);
     setTurn(0);
     setScriptCaptions(next === "guion" ? GUION_FIRST : []);
-    setSeconds(next === "finalizada" ? 94 : next.startsWith("activa") || next === "guion" ? 37 : 0);
+    // hanging up keeps the call's time on screen while it ends
+    setSeconds((s) => (next === "finalizando" ? Math.max(s, 41) : next === "finalizada" ? Math.max(s, 94) : next.startsWith("activa") || next === "guion" ? 37 : 0));
   }
 
   const captions: Caption[] =
@@ -199,17 +208,45 @@ export function CallPlayground({
     },
   };
 
+  const screen = start ? (
+    <VoiceStartView
+      ready
+      onStart={() => {
+        go("conectando");
+        later(1600, () => go("activa-auto"));
+      }}
+    />
+  ) : (
+    <CallView {...props} />
+  );
+
   const stage =
     frame === "telefono" ? (
       <div className="grid h-full place-items-center p-4">
         <div className="relative h-[min(800px,calc(100dvh-2rem))] w-full max-w-[400px] overflow-hidden rounded-[28px] border-[6px] border-ink shadow-xl">
-          <CallView {...props} />
+          {screen}
+        </div>
+      </div>
+    ) : frame === "pedir" ? (
+      // same boxes as /pedir-cita (PedirCita): app bar, notice, sound bar and the voice view <main>
+      <div className="flex h-full justify-center bg-[#cfd8d4] sm:py-6">
+        <div className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-paper sm:rounded-[28px] sm:shadow-xl">
+          <header className="flex items-center gap-2 bg-brand px-3 pb-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))] text-white">
+            <span className="grid size-9 place-items-center" aria-hidden>
+              ←
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate font-semibold">Llamada con el asistente</p>
+              <p className="truncate text-xs text-white/75">Usted aparece como «Cóndor 267»</p>
+            </div>
+          </header>
+          <p className="bg-[#fff8e1] px-3 py-1.5 text-[11px] leading-snug text-[#6b4e00]">{DISCLAIMER} Use un nombre ficticio.</p>
+          <p className="bg-[#10302f] px-3 py-2.5 text-center text-sm font-semibold text-white">Activar sonido y llamadas</p>
+          <main className="relative flex flex-1 flex-col p-4">{screen}</main>
         </div>
       </div>
     ) : (
-      <div className="relative h-full w-full">
-        <CallView {...props} />
-      </div>
+      <div className="relative h-full w-full">{screen}</div>
     );
 
   const controls = (
@@ -244,11 +281,20 @@ export function CallPlayground({
         <input type="checkbox" checked={frame === "telefono"} onChange={(e) => setFrame(e.target.checked ? "telefono" : "pantalla")} className="size-5" />
         Dentro del marco de teléfono
       </label>
+      <label className="flex min-h-11 items-center gap-2">
+        <input type="checkbox" checked={frame === "pedir"} onChange={(e) => setFrame(e.target.checked ? "pedir" : "pantalla")} className="size-5" />
+        Dentro de /pedir-cita
+      </label>
       <p className="text-xs leading-snug text-muted">Audio simulado. Página solo para desarrollo. {DISCLAIMER}</p>
     </div>
   );
 
-  if (!panel) return <div className="h-dvh bg-[#10302f]">{stage}</div>;
+  if (!panel)
+    return (
+      <div data-voice-theme="claro" className="h-dvh">
+        {stage}
+      </div>
+    );
 
   return (
     <div className="flex h-dvh bg-paper">

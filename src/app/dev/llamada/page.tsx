@@ -19,7 +19,7 @@ export default async function DevCallPage({ searchParams }: { searchParams: Prom
   return (
     <CallPlayground
       initial={initial}
-      frame={one(sp.marco) === "telefono" ? "telefono" : "pantalla"}
+      frame={one(sp.marco) === "telefono" ? "telefono" : one(sp.marco) === "pedir" ? "pedir" : "pantalla"}
       panel={one(sp.panel) !== "0"}
       captions={one(sp.subtitulos) !== "0"}
       muted={one(sp.silencio) === "1"}
