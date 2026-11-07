@@ -1,51 +1,53 @@
 import Link from "next/link";
-import { FolderGit2, Info } from "lucide-react";
 import { DISCLAIMER } from "@/lib/labels";
 import { Brand } from "./Brand";
 
+const LINKS = [
+  { href: "/pedir-cita", label: "Pedir una cita" },
+  { href: "/panel", label: "Panel de citas" },
+  { href: "/tablero", label: "Tablero" },
+  { href: "/demo", label: "Demo y códigos QR" },
+];
+
+const linkCls = "inline-flex min-h-11 items-center text-brand underline decoration-1 underline-offset-4 hover:text-brand-hover hover:decoration-2";
+
+/** Site footer: links, the data source and the one demo notice line of the page. */
 export function SiteFooter() {
   return (
-    <footer className="bg-night text-white/70">
-      <div className="mx-auto grid max-w-[1200px] gap-8 px-5 py-10 sm:px-8 md:grid-cols-[1.2fr_1fr_1fr]">
+    <footer className="border-t border-line bg-surface text-[15px] text-muted">
+      <div className="mx-auto grid max-w-[1200px] gap-6 px-4 py-8 sm:px-8 md:grid-cols-[1.2fr_1fr_1fr]">
         <div>
-          <Brand tone="light" />
-          <p className="mt-3 max-w-[34ch] text-sm leading-relaxed">
-            Recupera las citas que se pierden y se las da a quien espera.
-          </p>
-          <p className="mt-4 text-xs text-white/50">CientíficaHack 2026 · Desafío 4 · ODS 3</p>
+          <Brand />
+          <p className="mt-2 max-w-[34ch] leading-relaxed">Recupera las citas que se pierden y se las da a quien espera.</p>
+          <p className="mt-2 text-sm">CientíficaHack 2026 · Desafío 4 · ODS 3</p>
         </div>
-        <div className="text-sm">
-          <p className="font-semibold text-white">Explorar AsistIA</p>
-          <ul className="mt-3 space-y-2">
+        <nav aria-label="Explorar AsistIA">
+          <h2 className="font-semibold text-ink">Explorar AsistIA</h2>
+          <ul className="mt-1">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <Link prefetch={false} href={l.href} className={linkCls}>
+                  {l.label}
+                </Link>
+              </li>
+            ))}
             <li>
-              <Link prefetch={false} href="/pedir-cita" className="hover:text-white">Pedir una cita</Link>
-            </li>
-            <li>
-              <Link prefetch={false} href="/panel" className="hover:text-white">Panel de citas</Link>
-            </li>
-            <li>
-              <Link prefetch={false} href="/tablero" className="hover:text-white">Tablero</Link>
-            </li>
-            <li>
-              <Link prefetch={false} href="/demo" className="hover:text-white">Demo y códigos QR</Link>
-            </li>
-            <li>
-              <a href="https://github.com/angel5002/ODS3-Hackathon" className="inline-flex items-center gap-1.5 hover:text-white">
-                <FolderGit2 className="size-4" aria-hidden /> Código del proyecto
+              <a href="https://github.com/angel5002/ODS3-Hackathon" className={linkCls}>
+                Código del proyecto
               </a>
             </li>
           </ul>
-        </div>
-        <div className="text-xs leading-relaxed">
-          <p className="flex items-start gap-2 rounded-lg bg-white/5 p-3 text-white/85">
-            <Info className="mt-0.5 size-4 shrink-0 text-mint" aria-hidden />
-            {DISCLAIMER}
-          </p>
-          <p className="mt-3">
-            Datos: «Citas médicas en el Hospital de Apoyo María Auxiliadora - [HMA]», Plataforma Nacional de Datos
-            Abiertos del Perú. Licencia Open Data Commons Attribution (ODC-BY).
+        </nav>
+        <div className="text-sm leading-relaxed">
+          <h2 className="text-[15px] font-semibold text-ink">Datos</h2>
+          <p className="mt-2">
+            «Citas médicas en el Hospital de Apoyo María Auxiliadora - [HMA]», Plataforma Nacional de Datos Abiertos del
+            Perú. Licencia Open Data Commons Attribution (ODC-BY).
           </p>
         </div>
+      </div>
+      <div className="border-t border-line">
+        <p className="mx-auto max-w-[1200px] px-4 py-3 text-sm leading-snug sm:px-8">{DISCLAIMER}</p>
       </div>
     </footer>
   );

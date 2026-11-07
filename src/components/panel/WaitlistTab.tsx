@@ -82,28 +82,28 @@ export function WaitlistTab() {
             usan el seguro, el sexo ni las faltas anteriores.
           </p>
         </div>
-        <Button variant="primary" className="min-h-11 rounded-full px-5" onClick={() => setRegistering(true)}>
+        <Button variant="primary" className="min-h-11 rounded-md px-5" onClick={() => setRegistering(true)}>
           <Plus className="size-4" aria-hidden /> Registrar solicitud
         </Button>
       </div>
 
       <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-3">
-          <div role="tablist" className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-sunken p-1 [scrollbar-width:none]">
+          <div role="tablist" className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-sunken p-1 [scrollbar-width:none]">
             {GROUPS.map((g) => (
               <button
                 key={g.id}
                 role="tab"
                 aria-selected={group === g.id}
                 onClick={() => setGroup(g.id)}
-                className={`flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold ${group === g.id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}
+                className={`flex shrink-0 items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold ${group === g.id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}
               >
                 {g.label}
-                <span className="rounded-full bg-line/70 px-1.5 text-xs tabular-nums text-muted">{num(counts[g.id])}</span>
+                <span className="rounded-md bg-line/70 px-1.5 text-xs tabular-nums text-muted">{num(counts[g.id])}</span>
               </button>
             ))}
           </div>
-          <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} aria-label="Especialidad" className={`rounded-full border bg-surface px-3 py-1.5 text-sm ${specialty ? "border-brand text-brand" : "border-line"}`}>
+          <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} aria-label="Especialidad" className={`rounded-md border bg-surface px-3 py-1.5 text-sm ${specialty ? "border-brand text-brand" : "border-line"}`}>
             <option value="">Todas las especialidades</option>
             {specialties.map((s) => (
               <option key={s}>{s}</option>
@@ -117,7 +117,7 @@ export function WaitlistTab() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Código o nombre…"
-              className="w-full rounded-full border border-line bg-sunken py-2 pl-9 pr-3 text-sm focus:bg-surface"
+              className="w-full rounded-md border border-line bg-sunken py-2 pl-9 pr-3 text-sm focus:bg-surface"
             />
           </label>
         </div>
@@ -188,11 +188,11 @@ export function WaitlistTab() {
                     )}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 text-right">
-                    <button onClick={() => setDetail(r)} className="press rounded-full p-1.5 text-muted hover:bg-line/60 hover:text-ink" aria-label={`Ver ${r.code}`} title="Ver detalle y fechas">
+                    <button onClick={() => setDetail(r)} className="press rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink" aria-label={`Ver ${r.code}`} title="Ver detalle y fechas">
                       <Eye className="size-4" />
                     </button>
                     {!["cerrada_con_causal", "atendida", "con_oferta", "asignada_por_validar"].includes(r.state) && (
-                      <button onClick={() => setWithdrawing(r)} className="press rounded-full p-1.5 text-muted hover:bg-risk-alto-soft hover:text-risk-alto" aria-label={`Retirar ${r.code}`} title="Retirar de la lista (con motivo)">
+                      <button onClick={() => setWithdrawing(r)} className="press rounded-md p-1.5 text-muted hover:bg-risk-alto-soft hover:text-risk-alto" aria-label={`Retirar ${r.code}`} title="Retirar de la lista (con motivo)">
                         <UserMinus className="size-4" />
                       </button>
                     )}
@@ -242,7 +242,7 @@ export function Dialog({ title, children, onClose }: { title: string; children: 
       >
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-display text-xl font-bold">{title}</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="press -mr-1 rounded-full p-1.5 hover:bg-sunken">
+          <button onClick={onClose} aria-label="Cerrar" className="press -mr-1 rounded-md p-1.5 hover:bg-sunken">
             <X className="size-5" />
           </button>
         </div>
@@ -368,7 +368,7 @@ export function RegisterForm({ onDone, endpoint = "/api/staff", compact }: { onD
           fecha de hoy queda como primer intento y no se reinicia nunca.
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={busy} className="min-h-11 rounded-full sm:col-span-2">
+      <Button type="submit" variant="primary" disabled={busy} className="min-h-11 rounded-md sm:col-span-2">
         {busy ? "Registrando…" : "Registrar solicitud"}
       </Button>
     </form>

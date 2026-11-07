@@ -37,14 +37,12 @@ function AccessForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rise rounded-3xl bg-surface p-7 shadow-[0_24px_60px_-30px_rgba(15,42,44,0.45)] ring-1 ring-line">
-      <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-brand">
-        <Lock className="size-6" aria-hidden />
-      </span>
-      <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">{switching ? "Cambiar de rol" : "Acceso del equipo"}</h1>
-      <p className="mt-1 text-sm text-muted">Elija su rol{switching ? "" : " e ingrese el PIN"}.</p>
+    <form onSubmit={submit} className="rounded-2xl border border-line bg-surface p-6">
+      <Lock className="size-6 text-brand" aria-hidden />
+      <h1 className="mt-3 text-[26px] font-bold leading-tight">{switching ? "Cambiar de rol" : "Acceso del equipo"}</h1>
+      <p className="mt-1 text-muted">Elija su rol{switching ? "" : " e ingrese el PIN"}.</p>
       <fieldset className="mt-5">
-        <legend className="text-sm font-semibold">Rol</legend>
+        <legend className="font-semibold">Rol</legend>
         <div className="mt-1.5 grid gap-2">
           {ROLES.map((r) => {
             const Icon = ICON[r.id];
@@ -52,13 +50,13 @@ function AccessForm() {
             return (
               <label
                 key={r.id}
-                className={`press flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 ${on ? "border-brand bg-brand-soft/60" : "border-line hover:bg-sunken"}`}
+                className={`press flex min-h-11 cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 ${on ? "border-brand bg-brand-soft shadow-[inset_0_0_0_1px_var(--color-brand)]" : "border-line-strong hover:bg-sunken"}`}
               >
-                <input type="radio" name="role" value={r.id} checked={on} onChange={() => setRole(r.id)} className="sr-only" />
+                <input type="radio" name="role" value={r.id} checked={on} onChange={() => setRole(r.id)} className="shrink-0" />
                 <Icon className={`size-5 shrink-0 ${on ? "text-brand" : "text-muted"}`} aria-hidden />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold">{r.label}</span>
-                  <span className="block text-xs text-muted">{r.description}</span>
+                  <span className="block font-semibold">{r.label}</span>
+                  <span className="block text-sm text-muted">{r.description}</span>
                 </span>
               </label>
             );
@@ -67,7 +65,7 @@ function AccessForm() {
       </fieldset>
       {!switching && (
         <>
-          <label htmlFor="pin" className="mt-5 block text-sm font-semibold">
+          <label htmlFor="pin" className="mt-5 block font-semibold">
             PIN
           </label>
           <input
@@ -81,7 +79,7 @@ function AccessForm() {
             onChange={(e) => setPin(e.target.value)}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? "pin-error" : undefined}
-            className="mt-1.5 w-full rounded-xl border border-line-strong bg-sunken px-4 py-3 text-center text-2xl tracking-[0.5em] transition-colors focus:bg-surface"
+            className="mt-1.5 w-full rounded-md border border-line-strong bg-surface px-4 py-2.5 text-center text-2xl tracking-[0.5em]"
           />
         </>
       )}
@@ -90,7 +88,7 @@ function AccessForm() {
           {error}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={busy || (!switching && !pin)} className="mt-5 min-h-12 w-full rounded-full">
+      <Button type="submit" variant="primary" disabled={busy || (!switching && !pin)} className="mt-5 min-h-12 w-full">
         {busy ? "Verificando…" : `Entrar como ${ROLES.find((r) => r.id === role)!.label}`}
       </Button>
     </form>

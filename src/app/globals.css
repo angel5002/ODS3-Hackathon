@@ -1,31 +1,56 @@
 @import "tailwindcss";
 
-/* Clinical admissions desk: cool grey-green paper, slate ink, one deep teal for actions.
-   Every status has its own tone and always comes with a text label. */
+/* AsistIA style (E5 estilo, docs/estilo.md): a sober public-health service in the line of the NHS and
+   U.S. Web Design Systems. One typeface (Public Sans), white surfaces on a light neutral page, deep teal ink,
+   one teal brand for actions, 1 px borders, small radii, no glows, gradients or decorative shadows.
+   Every status comes with a text label (and usually an icon), never colour alone.
+   Every text/background pair is measured by `node scripts/dev/contrast-check.mjs`. */
 @theme {
   --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-bricolage), var(--font-public-sans), ui-sans-serif, sans-serif;
+  /* kept as an alias so older `font-display` classes resolve to Public Sans: there is one typeface */
+  --font-display: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
 
-  --color-night: #0f2a2c;
-  --color-night-2: #163a3c;
+  /* small radii: 2 px tags, 4 px controls and buttons, 6 px large containers. rounded-full stays for dots,
+     avatars and the round call buttons of the phone call (a phone convention) */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 6px;
+
+  /* flat surfaces: the small shadows become a 1 px line, the large ones a subtle elevation for overlays only */
+  --shadow-2xs: 0 0 0 1px var(--color-line);
+  --shadow-xs: 0 0 0 1px var(--color-line);
+  --shadow-sm: 0 0 0 1px var(--color-line-strong);
+  --shadow-md: 0 0 0 1px var(--color-line-strong);
+  --shadow-lg: 0 6px 16px -8px rgb(16 48 47 / 0.28);
+  --shadow-xl: 0 8px 24px -10px rgb(16 48 47 / 0.3);
+  --shadow-2xl: 0 8px 24px -10px rgb(16 48 47 / 0.3);
+
+  /* deep teal for dark callouts; mint is the one accent, used only on those dark surfaces */
+  --color-night: #10302f;
+  --color-night-2: #1b4745;
   --color-mint: #5fd0b4;
-  --color-mint-soft: #c9f0e4;
+  --color-mint-soft: #d5efe8;
 
-  --color-paper: #eef2f0;
+  --color-paper: #f3f5f5;
   --color-surface: #ffffff;
-  --color-sunken: #f6f8f7;
-  --color-ink: #16212c;
-  --color-muted: #56636d;
-  --color-faint: #8a969e;
-  --color-line: #d5ddd9;
-  --color-line-strong: #b9c5c0;
+  --color-sunken: #eef2f1;
+  --color-ink: #10302f;
+  --color-muted: #46605d;
+  --color-faint: #57706c;
+  --color-line: #d3dcda;
+  --color-line-strong: #718784;
   --color-brand: #0e5a57;
   --color-brand-hover: #0b4846;
-  --color-brand-soft: #dcebea;
+  --color-brand-soft: #e1eeec;
 
   --color-risk-alto: #b42318;
   --color-risk-alto-soft: #fde8e6;
-  --color-risk-medio: #9a5a05;
+  --color-risk-medio: #8f5405;
   --color-risk-medio-soft: #fbf0db;
   --color-risk-bajo: #3f6b2a;
   --color-risk-bajo-soft: #e7f0df;
@@ -34,13 +59,13 @@
   --color-st-neutral-soft: #eceff0;
   --color-st-sent: #2f5d8c;
   --color-st-sent-soft: #e2ebf5;
-  --color-st-ok: #1c7445;
+  --color-st-ok: #1b6e43;
   --color-st-ok-soft: #dff1e6;
   --color-st-free: #6941c6;
   --color-st-free-soft: #ece6fb;
-  --color-st-warn: #c2410c;
+  --color-st-warn: #b33a09;
   --color-st-warn-soft: #fdebdc;
-  --color-st-call: #0b6bcb;
+  --color-st-call: #0a5fb4;
   --color-st-call-soft: #deedfc;
   --color-st-human: #9f1a55;
   --color-st-human-soft: #fbe4ee;
@@ -85,13 +110,23 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* iOS zooms into inputs under 16px */
-@media (pointer: coarse) {
-  input,
-  select,
-  textarea {
-    font-size: 16px;
-  }
+/* iOS zooms into inputs under 16px; the team rule is 16 px text in every field anyway */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  font-size: max(16px, 1em);
+}
+/* and a 44 px touch target for every field */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+select {
+  min-height: 44px;
+}
+/* checkboxes and radios: a 20 px box (the label around it carries the 44 px target) */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-brand);
 }
 
 button,
@@ -105,10 +140,11 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-feature-settings: "tnum" 1;
+  line-height: 1.5;
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-brand);
+  outline: 3px solid var(--color-brand);
   outline-offset: 2px;
 }
 
@@ -121,15 +157,15 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Pressable feedback */
+/* Pressable feedback: colour only, no movement */
 .press {
-  transition: transform 140ms var(--ease-out), background-color 140ms ease, border-color 140ms ease;
-}
-.press:active:not(:disabled) {
-  transform: scale(0.97);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
-/* A row that just changed state: brief highlight so the eye finds it */
+/* A row that just changed state: a short highlight so the eye finds it */
 @keyframes flash {
   from {
     background-color: #fff5c2;
@@ -139,7 +175,7 @@ button:disabled {
   }
 }
 .flash {
-  animation: flash 1600ms ease-out;
+  animation: flash 1200ms ease-out;
 }
 
 /* Rows outside the viewport skip rendering work (1,500 appointments) */
@@ -151,171 +187,92 @@ button:disabled {
 @keyframes ring {
   0%,
   100% {
-    transform: scale(1);
-    opacity: 0.55;
+    opacity: 0.5;
   }
   50% {
-    transform: scale(1.18);
     opacity: 0;
   }
 }
 .ring-pulse::after {
   content: "";
   position: absolute;
-  inset: -10px;
+  inset: -6px;
   border-radius: 9999px;
-  border: 3px solid currentColor;
-  animation: ring 1.4s ease-out infinite;
+  border: 2px solid currentColor;
+  animation: ring 1.6s ease-in-out infinite;
 }
 
+/* a new chat bubble: a short fade, nothing moves */
 .bubble-in {
-  transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+  transition: opacity 160ms ease;
   @starting-style {
     opacity: 0;
-    transform: translateY(6px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .flash {
-    animation-duration: 1ms;
+    animation: none;
   }
   .ring-pulse::after {
     animation: none;
   }
   .bubble-in {
-    transition: opacity 150ms ease;
+    transition: none;
   }
-  .press:active:not(:disabled) {
-    transform: none;
+  .press {
+    transition: none;
   }
 }
 
 /* ---------- Landing ---------- */
-@keyframes rise {
+@keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
+/* the hero and modal panels: a 200 ms fade, no rise */
 .rise {
-  animation: rise 700ms var(--ease-out) both;
-  animation-delay: var(--d, 0ms);
+  animation: fade-in 200ms ease both;
 }
 
-/* agenda: 100 appointment slots. Opacity/transform only (no repaint while scrolling). */
-@keyframes row-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes fade-out {
-  to {
-    opacity: 0;
-  }
-}
-@keyframes fade-in {
-  to {
-    opacity: 1;
-  }
-}
-@keyframes pop-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.agenda-row {
-  animation: row-in 600ms var(--ease-out) both;
-  animation-delay: calc(var(--row) * 70ms + 250ms);
-}
+/* agenda: 100 appointment slots, drawn in their final state (static figure) */
 .cell {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 5px;
+  border-radius: 2px;
+  background: #7f938f;
 }
-.cell::before,
-.cell::after,
-.cell-mint {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
+.cell[data-kind="empty"] {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--color-line-strong);
 }
-.cell::before {
-  background: rgb(255 255 255 / 0.22);
-}
-.cell[data-kind="empty"]::after,
-.cell[data-kind="recovered"]::after {
-  border: 1.5px solid rgb(255 255 255 / 0.55);
-  opacity: 0;
-  animation: fade-in 500ms ease forwards calc(1500ms + var(--i) * 4ms);
-}
-.cell[data-kind="empty"]::before,
-.cell[data-kind="recovered"]::before {
-  animation: fade-out 500ms ease forwards calc(1500ms + var(--i) * 4ms);
-}
-.cell-mint {
-  z-index: 1;
-  background: var(--color-mint);
-  opacity: 0;
-  animation: pop-in 650ms var(--ease-out) forwards calc(2900ms + var(--r) * 260ms);
+.cell[data-kind="recovered"] {
+  background: var(--color-brand);
 }
 
-/* scroll reveal */
+/* scroll reveal: content is simply there (kept as a class so the markup does not change) */
 .reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 700ms var(--ease-out),
-    transform 700ms var(--ease-out);
-  transition-delay: var(--d, 0ms);
-}
-.reveal[data-shown="true"] {
   opacity: 1;
-  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rise,
-  .agenda-row,
-  .cell::before,
-  .cell::after,
-  .cell-mint {
-    animation-duration: 1ms !important;
-    animation-delay: 0ms !important;
-  }
-  .reveal {
-    transform: none;
-    transition: opacity 200ms ease;
+  .rise {
+    animation: none;
   }
 }
 
-/* ---------- Panel: detail pane slides in only when an appointment is picked ---------- */
+/* ---------- Panel: detail pane opens only when an appointment is picked ---------- */
 .panel-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 0px;
   column-gap: 0px;
   transition:
-    grid-template-columns 460ms var(--ease-drawer),
-    column-gap 460ms var(--ease-drawer);
+    grid-template-columns 200ms var(--ease-drawer),
+    column-gap 200ms var(--ease-drawer);
 }
 .panel-layout[data-open="true"] {
   grid-template-columns: minmax(0, 1fr) 440px;
@@ -328,7 +285,7 @@ button:disabled {
   min-width: 0;
   max-height: calc(100dvh - 32px);
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 6px;
 }
 .detail-inner {
   width: 440px;
@@ -337,17 +294,11 @@ button:disabled {
   overscroll-behavior: contain;
   scrollbar-width: thin;
   opacity: 0;
-  transform: translateX(40px);
-  transition:
-    opacity 260ms ease,
-    transform 460ms var(--ease-drawer);
+  transition: opacity 160ms ease;
 }
 .detail-pane[data-open="true"] .detail-inner {
   opacity: 1;
-  transform: none;
-  transition:
-    opacity 360ms ease 80ms,
-    transform 460ms var(--ease-drawer);
+  transition: opacity 200ms ease;
 }
 .detail-backdrop {
   display: none;
@@ -364,11 +315,12 @@ button:disabled {
     top: auto;
     z-index: 50;
     max-height: 90dvh;
-    border-radius: 24px 24px 0 0;
+    border-radius: 6px 6px 0 0;
+    border-top: 1px solid var(--color-line-strong);
     background: var(--color-paper);
-    box-shadow: 0 -20px 60px -20px rgb(15 42 44 / 0.45);
+    box-shadow: 0 -8px 24px -12px rgb(16 48 47 / 0.3);
     transform: translateY(100%);
-    transition: transform 460ms var(--ease-drawer);
+    transition: transform 200ms var(--ease-drawer);
   }
   .detail-pane[data-open="true"] {
     transform: none;
@@ -381,7 +333,7 @@ button:disabled {
     width: 40px;
     height: 4px;
     margin-left: -20px;
-    border-radius: 9999px;
+    border-radius: 2px;
     background: var(--color-line-strong);
   }
   .detail-inner,
@@ -390,17 +342,16 @@ button:disabled {
     max-height: 90dvh;
     padding: 22px 12px calc(12px + env(safe-area-inset-bottom));
     opacity: 1;
-    transform: none;
   }
   .detail-backdrop {
     display: block;
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgb(15 42 44 / 0.4);
+    background: rgb(16 48 47 / 0.4);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 300ms ease;
+    transition: opacity 200ms ease;
   }
   .detail-backdrop[data-open="true"] {
     opacity: 1;
@@ -408,19 +359,17 @@ button:disabled {
   }
 }
 
-/* a number that just changed */
+/* a number that just changed: a short fade */
 @keyframes bump {
   from {
-    opacity: 0.2;
-    transform: translateY(5px);
+    opacity: 0.3;
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 .bump {
-  animation: bump 380ms var(--ease-out);
+  animation: bump 180ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -428,14 +377,14 @@ button:disabled {
   .detail-inner,
   .detail-pane,
   .detail-backdrop {
-    transition-duration: 1ms !important;
+    transition: none !important;
   }
   .bump {
     animation: none;
   }
 }
 
-/* ---------- Voice call tokens (E5 v2): the light palette chosen by the team ----------
+/* ---------- Voice call tokens (E5 estilo): the light palette, flattened ----------
    Used by the call screen, the incoming call and the voice start screen, and available to the whole app
    (declared on :root, so bg-vc-bg, text-vc-text… work anywhere). [data-voice-theme="claro"] re-applies them
    inside any subtree. Every value that a contrast pair uses is an opaque hex so
@@ -444,33 +393,32 @@ button:disabled {
 :root,
 [data-voice-theme="claro"] {
   --vc-bg: #ffffff;
-  --vc-bg-2: #eef6f4;
+  --vc-bg-2: #f3f5f5;
   --vc-text: #10302f;
   --vc-text-2: #2f5250;
   --vc-text-3: #4b6a67;
-  --vc-surface: #e3efec;
-  --vc-surface-press: #d2e5e1;
+  --vc-surface: #eef2f1;
+  --vc-surface-press: #dfe6e4;
   --vc-edge: #6b8f8a;
-  --vc-icon: #0b7a6c;
-  --vc-agent: #0a9884;
-  --vc-person: #e2590b;
+  --vc-icon: #0e5a57;
+  --vc-agent: #0b7a6c;
+  --vc-person: #c2410c;
   --vc-rest: #6f8f8a;
   --vc-danger: #d92d20;
   --vc-danger-press: #b42318;
   --vc-on-danger: #ffffff;
-  --vc-accept: #079455;
-  --vc-accept-press: #067647;
+  --vc-accept: #067647;
+  --vc-accept-press: #085d3a;
   --vc-on-accept: #ffffff;
-  --vc-primary: #10302f;
-  --vc-primary-press: #1b4745;
+  --vc-primary: #0e5a57;
+  --vc-primary-press: #0b4846;
   --vc-on-primary: #ffffff;
   --vc-toggle: #10302f;
   --vc-on-toggle: #ffffff;
   --vc-warn: #b54708;
-  --vc-focus: #0b7a6c;
-  /* wave: ink on paper, layers stack normally */
+  --vc-focus: #0e5a57;
+  /* wave: flat colours, layers stack normally */
   --vc-wave-blend: source-over;
-  --vc-glow: 16%;
   color-scheme: light;
 }
 [data-voice-theme] {
@@ -478,59 +426,36 @@ button:disabled {
   color: var(--vc-text);
 }
 [data-voice-theme] :focus-visible {
-  outline: 2px solid var(--vc-focus);
-  outline-offset: 3px;
+  outline: 3px solid var(--vc-focus);
+  outline-offset: 2px;
 }
 
-/* the soft wash behind the wave: two fixed layers, only their opacity changes */
-.vc-wash {
-  background: radial-gradient(
-    60% 50% at 50% 50%,
-    color-mix(in srgb, var(--vc-wash-color) var(--vc-glow), transparent) 0%,
-    transparent 70%
-  );
-  transition: opacity 700ms ease;
-}
-
-/* a screen of the call entering: fade and a short rise, children staggered by --i */
-@keyframes vc-rise {
+/* a screen of the call that just opened: a short fade (no stagger, no rise) */
+@keyframes vc-fade {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 .vc-enter > * {
-  animation: vc-rise 340ms var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation: vc-fade 180ms ease both;
 }
 /* a word or a caption that just changed */
-@keyframes vc-swap {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 .vc-swap {
-  animation: vc-swap 240ms var(--ease-out) both;
+  animation: vc-fade 160ms ease both;
 }
 
-/* incoming call: three rings leave the avatar one after another */
+/* incoming call: one ring leaves the avatar, slowly (the call is ringing) */
 @keyframes vc-ring {
   0% {
-    opacity: 0.55;
+    opacity: 0.6;
     transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: scale(1.9);
+    transform: scale(1.45);
   }
 }
 .vc-rings > span {
@@ -538,76 +463,38 @@ button:disabled {
   inset: 0;
   border-radius: 9999px;
   border: 2px solid var(--vc-agent);
-  animation: vc-ring 2400ms var(--ease-out) infinite;
+  animation: vc-ring 2000ms ease-out infinite;
   will-change: transform, opacity;
 }
-.vc-rings > span:nth-child(2) {
-  animation-delay: 800ms;
+.vc-rings > span:nth-child(n + 2) {
+  display: none;
 }
-.vc-rings > span:nth-child(3) {
-  animation-delay: 1600ms;
-}
-/* the answer button nudges every ring cycle so the eye goes there */
-@keyframes vc-nudge {
-  0%,
-  70%,
-  100% {
-    transform: none;
-  }
-  78% {
-    transform: translateY(-3px) rotate(-8deg);
-  }
-  86% {
-    transform: translateY(0) rotate(6deg);
-  }
-}
+/* kept for older markup: no wiggle */
 .vc-nudge > svg {
-  animation: vc-nudge 2400ms ease-in-out infinite;
+  animation: none;
 }
 
-/* round call buttons: press feedback on pointer-down */
-.vc-round {
-  transition:
-    transform 150ms var(--ease-out),
-    background-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
-}
-.vc-round:active:not(:disabled) {
-  transform: scale(0.93);
-}
+/* call buttons: colour feedback on press, no movement */
+.vc-round,
 .vc-pill {
   transition:
-    transform 140ms var(--ease-out),
-    background-color 140ms ease;
-}
-.vc-pill:active:not(:disabled) {
-  transform: scale(0.97);
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .vc-enter > *,
-  .vc-swap,
-  .vc-nudge > svg {
+  .vc-swap {
     animation: none;
   }
   .vc-rings > span {
     animation: none;
-    opacity: 0.35;
-    transform: scale(1.25);
+    opacity: 0.4;
+    transform: scale(1.2);
   }
-  .vc-rings > span:nth-child(2),
-  .vc-rings > span:nth-child(3) {
-    display: none;
-  }
-  .vc-wash,
   .vc-round,
   .vc-pill {
     transition: none;
-  }
-  .vc-round:active:not(:disabled),
-  .vc-pill:active:not(:disabled) {
-    transform: none;
   }
 }
 
@@ -617,7 +504,6 @@ button:disabled {
   .vc-emblem {
     width: 4rem;
     height: 4rem;
-    border-radius: 20px;
   }
   .vc-emblem svg {
     width: 1.75rem;
@@ -653,26 +539,24 @@ button:disabled {
 :root,
 [data-voice-theme="claro"] {
   /* hairlines and card edges: decorative only (a control edge uses --vc-edge) */
-  --vc-line: #d3e3df;
-  /* secondary text on the ink surfaces (own chat bubbles, the main option card) */
+  --vc-line: #d3dcda;
+  /* secondary text on the brand surfaces (own chat bubbles, the main option) */
   --vc-on-primary-2: #c5dcd8;
-  /* "Se cierra a las…" chip */
-  --vc-warn-soft: #fdf1e4;
+  /* "Se cierra a las…" */
+  --vc-warn-soft: #fef3e6;
   /* emergency note */
-  --vc-danger-soft: #fdecea;
+  --vc-danger-soft: #fdeceb;
 }
 
-/* "escribiendo…": three dots that rise one after another */
+/* "escribiendo…": three dots that light up one after another (opacity only) */
 @keyframes app-typing {
   0%,
   60%,
   100% {
     opacity: 0.35;
-    transform: none;
   }
   30% {
     opacity: 1;
-    transform: translateY(-3px);
   }
 }
 .app-typing {
@@ -693,34 +577,16 @@ button:disabled {
   animation-delay: 280ms;
 }
 
-/* a view that just opened (chat thread, phone inbox): a short fade, the list itself does not move */
-@keyframes app-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* a view that just opened (chat thread, phone inbox): a short fade */
 .app-fade {
-  animation: app-fade 240ms ease both;
+  animation: vc-fade 160ms ease both;
 }
 
-/* cards that lift a little under a mouse only (touch keeps the :active feedback) */
+/* option rows: a background change under a mouse, nothing lifts */
 .app-lift {
   transition:
-    transform 160ms var(--ease-out),
-    box-shadow 160ms ease,
-    background-color 140ms ease;
-}
-@media (hover: hover) and (pointer: fine) {
-  .app-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 26px -16px rgb(16 48 47 / 0.4);
-  }
-}
-.app-lift:active {
-  transform: scale(0.98);
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -732,13 +598,6 @@ button:disabled {
     opacity: 0.6;
   }
   .app-lift {
-    transition: none;
-  }
-  .app-lift:hover,
-  .app-lift:active {
-    transform: none;
-  }
-  [data-voice-theme] .bubble-in {
     transition: none;
   }
 }

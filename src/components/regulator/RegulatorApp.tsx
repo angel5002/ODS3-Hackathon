@@ -61,14 +61,14 @@ export function RegulatorApp() {
         </p>
       </aside>
 
-      <div role="tablist" className="flex gap-1 rounded-full bg-sunken p-1 sm:inline-flex">
+      <div role="tablist" className="flex gap-1 rounded-md bg-sunken p-1 sm:inline-flex">
         {(
           [
             ["pendientes", `Pendientes de regulación (${num(pending.length)})`],
             ["reguladas", `Reguladas (${num(done.length)})`],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`rounded-full px-4 py-1.5 text-sm font-semibold ${tab === id ? "bg-surface shadow-sm" : "text-muted"}`}>
+          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`rounded-md px-4 py-1.5 text-sm font-semibold ${tab === id ? "bg-surface shadow-sm" : "text-muted"}`}>
             {label}
           </button>
         ))}
@@ -92,7 +92,7 @@ export function RegulatorApp() {
                     {r.hours_waiting} h de {DUE_HOURS} h para regular
                   </span>
                 </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-sunken" role="img" aria-label={`${pct} % del plazo de regulación`}>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-md bg-sunken" role="img" aria-label={`${pct} % del plazo de regulación`}>
                   <div className={`h-full ${late ? "bg-risk-alto" : pct > 66 ? "bg-risk-medio" : "bg-brand"}`} style={{ width: `${pct}%` }} />
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">

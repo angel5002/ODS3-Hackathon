@@ -1,15 +1,15 @@
 "use client";
 
-// Voice wave for the call screens (E5 v2). <canvas> + requestAnimationFrame; React never re-renders per frame.
-// Four layers: two translucent ribbons (back and middle), a soft halo and a crisp front line. Their height
+// Voice wave for the call screens (E5 estilo). <canvas> + requestAnimationFrame; React never re-renders per frame.
+// Two flat layers: one translucent ribbon and a crisp 2 px line (no halo, no glow, no gradients). Their height
 // follows the real frequency data of the agent's voice (levels.output) or the person's microphone
-// (levels.input), read inside the frame. The agent and the person have their own colour and the wave blends
-// between them when the turn changes. At rest it breathes slowly; while connecting it beats; on the moment of
-// connecting it swells once; on hang-up (`ending`) it flattens and fades out, then the loop stops.
-// Colours come from the --vc-* tokens of the nearest [data-voice-theme] (src/app/globals.css).
-// Budget for a mid-range phone: DPR capped at 2, a point every 4 px, gradients cached (no allocations per
-// frame once warm), 30 fps while resting, the loop stops while the tab is hidden. Reduced motion: one static
-// drawing per change of props, nothing moves.
+// (levels.input), read inside the frame. The agent (teal) and the person (orange) have their own flat colour
+// and the wave blends between them when the turn changes. At rest it breathes slowly; while connecting it
+// beats; on the moment of connecting it swells once; on hang-up (`ending`) it flattens and fades out, then the
+// loop stops. Colours come from the --vc-* tokens of the nearest [data-voice-theme] (src/app/globals.css).
+// Budget for a low-end phone: DPR capped at 2, a point every 4 px, two paths per frame (was four), colour
+// strings cached (no allocations per frame once warm), 30 fps while resting, the loop stops while the tab is
+// hidden. Reduced motion: one static drawing per change of props, nothing moves.
 import { useEffect, useRef } from "react";
 import type { AudioLevels, VoiceWaveProps } from "@/lib/voice/contract";
 import type { VoiceTheme } from "@/lib/voice/theme";
@@ -82,11 +82,9 @@ function parseColour(value: string, fallback: RGB): RGB {
   return fallback;
 }
 
-/** layers, back to front */
+/** layers, back to front: one flat ribbon, one crisp line */
 const LAYERS = [
-  { gain: 0.78, offset: 2.1, speed: 0.8, alpha: 0.2, kind: "ribbon" as const },
-  { gain: 0.56, offset: 0.7, speed: 1.25, alpha: 0.3, kind: "ribbon" as const },
-  { gain: 1, offset: 0, speed: 1, alpha: 0.16, kind: "halo" as const },
+  { gain: 0.7, offset: 1.4, speed: 0.9, alpha: 0.14, kind: "ribbon" as const },
   { gain: 1, offset: 0, speed: 1, alpha: 1, kind: "line" as const },
 ];
 
@@ -118,7 +116,7 @@ export function VoiceWave({
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
     const target = new Float32Array(BANDS);
     const bands = new Float32Array(BANDS);
-    const caches = LAYERS.map(() => new Map<number, CanvasGradient>());
+    const caches = LAYERS.map(() => new Map<number, string>());
     let agent: RGB = [10, 152, 132];
     let person: RGB = [226, 89, 11];
     let restC: RGB = [111, 143, 138];
@@ -160,8 +158,8 @@ export function VoiceWave({
       caches.forEach((c) => c.clear());
     }
 
-    /** horizontal gradient that fades at both ends, cached per quantized colour */
-    function gradient(layer: number) {
+    /** flat colour of a layer, cached per quantized mix (agent/person) and rest */
+    function colour(layer: number) {
       const ms = Math.round(mix * MIX_STEPS);
       const rs = Math.round(rest * REST_STEPS);
       const key = ms * (REST_STEPS + 1) + rs;
@@ -174,16 +172,9 @@ export function VoiceWave({
         const v = person[i] + (agent[i] - person[i]) * m;
         return Math.round(v + (restC[i] - v) * r0);
       });
-      const a = LAYERS[layer].alpha;
-      const rgb = `${c[0]},${c[1]},${c[2]}`;
-      const g = ctx!.createLinearGradient(0, 0, width, 0);
-      g.addColorStop(0, `rgba(${rgb},0)`);
-      g.addColorStop(0.16, `rgba(${rgb},${a})`);
-      g.addColorStop(0.5, `rgba(${rgb},${Math.min(1, a * 1.15)})`);
-      g.addColorStop(0.84, `rgba(${rgb},${a})`);
-      g.addColorStop(1, `rgba(${rgb},0)`);
-      cache.set(key, g);
-      return g;
+      const value = `rgba(${c[0]},${c[1]},${c[2]},${LAYERS[layer].alpha})`;
+      cache.set(key, value);
+      return value;
     }
 
     /** energy at position u (0..1): low bands in the centre, high bands toward both ends */
@@ -231,7 +222,7 @@ export function VoiceWave({
         ctx!.lineTo(px, mid + h);
       }
       ctx!.closePath();
-      ctx!.fillStyle = gradient(layer);
+      ctx!.fillStyle = colour(layer);
       ctx!.fill();
     }
 
@@ -245,7 +236,7 @@ export function VoiceWave({
         if (x === 0) ctx!.moveTo(px, y);
         else ctx!.lineTo(px, y);
       }
-      ctx!.strokeStyle = gradient(layer);
+      ctx!.strokeStyle = colour(layer);
       ctx!.lineWidth = lineWidth;
       ctx!.stroke();
     }
@@ -261,10 +252,8 @@ export function VoiceWave({
       ctx!.lineJoin = "round";
       ctx!.globalCompositeOperation = blend;
       ribbon(0, t, floor * 0.9, amp);
-      ribbon(1, t, floor, amp);
       ctx!.globalCompositeOperation = "source-over";
-      line(2, t, floor, amp, Math.max(8, height * 0.05));
-      line(3, t, floor, amp, 2.5);
+      line(1, t, floor, amp, 2);
     }
 
     function stop() {
@@ -302,10 +291,10 @@ export function VoiceWave({
         const beat = Math.exp(-((c - 0.18) ** 2) / 0.004) + 0.6 * Math.exp(-((c - 0.42) ** 2) / 0.004);
         floor = 0.07 + 0.2 * beat;
       } else if (live) floor = hasData ? 0.05 : 0.1 + 0.05 * Math.sin(now / 700);
-      else floor = 0.045 + 0.03 * Math.sin(now / 1100); // resting: slow breathing
+      else floor = 0.04 + 0.025 * Math.sin(now / 1600); // resting: a calm, slow breath (~10 s per cycle)
       floor += kick * 0.35;
 
-      phase += dt * (live ? 0.8 + level * 3.2 : p.connecting ? 1.1 : 0.35);
+      phase += dt * (live ? 0.8 + level * 3.2 : p.connecting ? 1.1 : 0.25);
 
       const idle = !live && !p.connecting && kick < 0.01 && Math.abs(fade - (p.ending ? 0 : 1)) < 0.01;
       // resting: 30 fps is enough for a slow breath

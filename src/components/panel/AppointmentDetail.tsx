@@ -108,7 +108,6 @@ export function AppointmentDetail({
   return (
     <div className="space-y-3 pb-6">
       <section className="relative overflow-hidden rounded-2xl bg-surface p-5 ring-1 ring-line">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-brand-soft/70 to-transparent" aria-hidden />
         <div className="relative flex items-start gap-3">
           <span className={`grid size-12 shrink-0 place-items-center rounded-2xl font-display text-lg font-bold ${level ? AVATAR_TONE[level] : "bg-st-done-soft text-st-done"}`} aria-hidden>
             {row.patient.full_name.split(" ").slice(0, 2).map((w) => w[0]).join("")}
@@ -120,7 +119,7 @@ export function AppointmentDetail({
               {p?.caregiver_name ? ` · responde ${p.caregiver_name} (${p.caregiver_relation})` : ""}
             </p>
           </div>
-          <Button variant="ghost" onClick={onClose} aria-label="Cerrar detalle" className="-mr-2 -mt-1 min-h-9 rounded-full px-2">
+          <Button variant="ghost" onClick={onClose} aria-label="Cerrar detalle" className="-mr-2 -mt-1 min-h-11 rounded-md px-2">
             <X className="size-5" />
           </Button>
         </div>
@@ -139,14 +138,14 @@ export function AppointmentDetail({
         </dl>
         <div className="mt-4 flex flex-wrap gap-2">
           {canCall && (
-            <Button variant="primary" className="rounded-full px-4" disabled={busy} onClick={() => act({ action: "call", appointmentId: row.id }, "Llamada iniciada")}>
+            <Button variant="primary" className="rounded-md px-4" disabled={busy} onClick={() => act({ action: "call", appointmentId: row.id }, "Llamada iniciada")}>
               <PhoneCall className="size-4" aria-hidden /> Llamar con el asistente
             </Button>
           )}
           <Link
             href={`/t/${row.patient.token}`}
             target="_blank"
-            className="press inline-flex min-h-10 items-center gap-2 rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-sunken"
+            className="press inline-flex min-h-11 items-center gap-2 rounded-md border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-sunken"
           >
             <Smartphone className="size-4" aria-hidden /> Ver su teléfono <ExternalLink className="size-3.5 text-muted" aria-hidden />
           </Link>
