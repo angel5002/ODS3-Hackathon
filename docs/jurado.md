@@ -49,6 +49,8 @@ PDF para imprimir: `docs/cartillas/cartillas.pdf` (A6, cuatro por A4, con su QR)
 
 El circuito de una solicitud nueva es: el jurado la registra → **Categorizar** → **Ofrecer** → el jurado acepta → **Cerrar** → el jurado confirma «Sí, soy el paciente».
 
+En `/demo` (modo Operar) el panel **Cartillas del jurado**, encima de la lista de espera, muestra solo lo que hay que decidir y lo hace con un clic: P1, P2, P3 o P4 para categorizar; «Ofrecer un cupo» (o «Ofrecer su cupo», en el caso de Carmen); «Cerrar y asignar». Si no hay nada pendiente, ofrece «Preparar cartillas». El panel lee `GET /api/staff/data?view=jurado_ops`, que devuelve `{ops: [{token, character, kind, request, next, status}]}`, donde `next` puede ser `categorizar`, `ofrecer`, `cerrar` o `null`.
+
 ## Vista del proyector
 
 `GET /api/staff/data?view=jurado` (solo personal, solo lectura) devuelve `JuryOverview` de `src/lib/demo/contract.ts`:
@@ -88,5 +90,34 @@ Crea 6 cartillas temporales (`j-test-…`, personajes que no se imprimen), las j
 
 - **Voz.** Lo que se puede automatizar es la llamada: se pide, el teléfono suena y se rechaza (no se abre sesión con ElevenLabs). La conversación con el agente necesita un micrófono real, así que la respuesta sigue por mensaje. El registro «por voz» se hace por chat, como respaldo.
 - **Comprobaciones.** Que cada acción llegue a la vista del jurado bajo su propio token, que todas las cartillas terminen en «completo», que las solicitudes nuevas muestren su código, P2 y «Con cita», y que la vista sin `test=1` no muestre las cartillas de prueba.
+
+### Resultados (7/11, base compartida, `next build` + `next start` en el puerto 3180)
+
+| Personaje (prueba) | Canal | Circuito | Duración | Llega al proyector (máx.) |
+|---|---|---|---|---|
+| Ciro | chat | cancela | 5.6 s | 1.7 s |
+| Ítalo | voz | pide la llamada, la rechaza y confirma por mensaje | 9.4 s | 1.9 s |
+| Bruno | chat | oferta → acepta → cierre → confirma | 10.1 s | 1.7 s |
+| Nadia | voz | oferta (llamada rechazada) → acepta → cierre → validación (2 llamadas rechazadas) → confirma | 16.7 s | 1.6 s |
+| Inés | chat | registro por chat (14 mensajes) → categorizar → ofrecer → acepta → cerrar → confirma | 43.4 s | 1.7 s |
+| Pilar | voz (respaldo por chat) | igual que Inés | 44.0 s | 1.4 s |
+
+Los 6, en paralelo, tardaron 45.2 s en total, sin errores en la consola y sin cruces entre cartillas. Una persona escribe más lento que la prueba, pero el circuito más largo (pedir una cita nueva y quedarse con ella) cabe en 1 a 2 minutos.
+
+Con `next dev`, la primera compilación de cada página bajo seis navegadores a la vez hizo fallar los clics antes de que la página respondiera (dos de seis en la primera corrida, todos en la segunda). Por eso la prueba se corre contra un build.
+
+Escena 1, comprobada con la cartilla impresa de Carmen y luego reiniciada:
+1. «No podré asistir» → `carmenSlot` = Oncología Médica, jueves 19/10 a las 9:00, `libre`.
+2. La propuesta de candidatos trae un solo nombre: **Tito Q. (P1)**.
+3. `jury_offer` → `carmenSlot.state = "ofrecido"`.
+4. `jury_rearm` → Tito vuelve a `con_cita`, con su cita, y Carmen queda lista y sin abrir.
+
+`tests/e2e/demo_panel.py` (solo lectura) pasa con el panel nuevo: Presentar en 1920×1080 y 1280×720, y Operar en 1920×1080 y 360×800.
+
+### Pendiente para la pista de voz
+
+`isCardCall()` (`src/lib/voice/sessions.ts`) reconoce las llamadas de los teléfonos de las cartillas (`patients.token` empieza con `j-`). No reconoce el **registro por voz de Lucía**, porque esa llamada solo tiene `chat_session_id` y la sesión no está vinculada a un paciente.
+
+Se arregla con una línea en esa función, que es de la pista de voz: si no hay paciente, buscar `jury_visits.chat_session_id = call.chat_session_id` y, si existe, tratarla como cartilla. El cuerpo de `/api/voice/session` también trae `jury: "<token>"` para ese caso.
 
 Pruebas unitarias en `npm run test:unit` (`tests/jury.test.ts`): formato y unicidad de los tokens (contra los tokens ya usados), el orden del feed, que cada actividad quede bajo su cartilla, los estados, `carmenSlot` y `newRequests`.

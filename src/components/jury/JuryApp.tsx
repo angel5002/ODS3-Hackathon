@@ -101,7 +101,7 @@ export function JuryCardIntro({ card, actions, voiceBusy }: { card: PublicCard; 
         </span>
         <div className="min-w-0 flex-1 border-l border-vc-line pl-2.5 leading-tight">
           <p className="truncate text-[17px] font-bold text-vc-text">Cartilla del jurado</p>
-          <p className="truncate text-[13px] text-vc-text-2">Personaje ficticio · no use datos reales</p>
+          <p className="truncate text-[13px] text-vc-text-2">Personaje ficticio</p>
         </div>
       </header>
       <main className="vc-enter flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-6">
@@ -113,6 +113,9 @@ export function JuryCardIntro({ card, actions, voiceBusy }: { card: PublicCard; 
         </h1>
         <p style={stagger(2)} className="mt-3 max-w-[38ch] text-pretty text-[17px] leading-snug text-vc-text">
           {card.story}
+        </p>
+        <p style={stagger(2)} className="mt-2 text-[14px] leading-snug text-vc-text-2">
+          No use datos reales: el nombre y la historia son ficticios.
         </p>
         <div style={stagger(3)} className="mt-4 border-l-4 border-vc-primary bg-vc-bg-2 p-3">
           <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-vc-text-2">Qué puede probar</p>
