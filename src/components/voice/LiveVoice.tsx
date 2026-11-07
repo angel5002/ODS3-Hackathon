@@ -36,7 +36,21 @@ export type LiveVoiceControl = {
   say: (text: string) => void;
   /** byte frequency data, read lazily: only the property that is read is computed */
   frequencies: () => { input: Uint8Array | null; output: Uint8Array | null };
+  // ---- noisy-room mode ("mantener para hablar"), for the call screen's button (UI track):
+  //   onPointerDown → talkStart(), onPointerUp / onPointerCancel / onPointerLeave → talkEnd().
+  //   While push-to-talk is on, the microphone is muted except while the button is held.
+  /** turn push-to-talk on or off (the `pushToTalk` prop sets the initial value) */
+  setPushToTalk: (on: boolean) => void;
+  /** is push-to-talk on? */
+  isPushToTalk: () => boolean;
+  /** the person holds "Mantener para hablar": open the microphone */
+  talkStart: () => void;
+  /** released: close the microphone after a short tail, so the last syllable is not cut */
+  talkEnd: () => void;
 };
+
+/** the microphone stays open this long after the button is released */
+export const PTT_TAIL_MS = 300;
 
 const HEARTBEAT_MS = 10_000;
 const SUMMARY_MS = 30_000;
@@ -71,6 +85,9 @@ type Props = {
   /** the session ended: by the person, the agent, an SDK error or from elsewhere */
   onEnd: (kind: "persona" | "agente" | "error" | "remoto", reason: string) => void;
   controlRef: React.MutableRefObject<LiveVoiceControl | null>;
+  /** noisy-room mode: the microphone is open only while talkStart()…talkEnd() (optional, default false).
+   *  Turn it on only when the screen shows the "Mantener para hablar" button, or the person cannot speak. */
+  pushToTalk?: boolean;
 };
 
 export function sendVoiceEnd(voiceSessionId: string, reason: string, closeCall: boolean, result?: string) {
@@ -91,7 +108,12 @@ export function LiveVoice(props: Props) {
   );
 }
 
-function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpeaking, onConnected, onEnd, controlRef }: Props) {
+function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpeaking, onConnected, onEnd, controlRef, pushToTalk = false }: Props) {
+  // noisy-room mode: push-to-talk state (refs: changes never re-render)
+  const ptt = useRef(pushToTalk);
+  const holding = useRef(false);
+  const userMuted = useRef(false);
+  const releaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const t0 = useRef(0);
   const firstTurn = useRef(true);
   const finished = useRef(false);
@@ -130,6 +152,10 @@ function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpea
       voiceDiag(sid, "sdk.connect", { callId, transport: transport.current });
       mark("connect", { transport: transport.current });
       cb.current.dispatch({ type: "SDK_CONNECTED", sessionId: voiceSessionId, at: wallClock() });
+      if (ptt.current) {
+        voiceDiag(sid, "ptt.activo", { callId });
+        applyMic();
+      }
       let conversationId: string | null = null;
       try {
         conversationId = convRef.current?.getId() || null;
@@ -234,6 +260,16 @@ function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpea
     convRef.current = conv;
   });
 
+  /** the microphone as it should be now: push-to-talk → open only while held; otherwise the person's mute */
+  function applyMic() {
+    if (!connected.current || finished.current) return;
+    try {
+      convRef.current.setMuted(ptt.current ? !holding.current : userMuted.current);
+    } catch {
+      // not connected
+    }
+  }
+
   async function beat(state: "activa" | "error" | null, conversationId: string | null = null, reason?: string) {
     try {
       const r = await fetch("/api/voice/heartbeat", {
@@ -266,7 +302,36 @@ function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpea
         cb.current.dispatch({ type: "HANGUP" });
         convRef.current.endSession();
       },
-      setMuted: (m) => convRef.current.setMuted(m),
+      setMuted: (m) => {
+        userMuted.current = m;
+        if (!ptt.current) convRef.current.setMuted(m);
+      },
+      setPushToTalk: (on) => {
+        if (ptt.current === on) return;
+        ptt.current = on;
+        holding.current = false;
+        voiceDiag(sid, on ? "ptt.activo" : "ptt.inactivo", { callId });
+        applyMic();
+      },
+      isPushToTalk: () => ptt.current,
+      talkStart: () => {
+        if (releaseTimer.current) {
+          clearTimeout(releaseTimer.current);
+          releaseTimer.current = null;
+        }
+        holding.current = true;
+        mark("ptt_start");
+        applyMic();
+      },
+      talkEnd: () => {
+        if (releaseTimer.current) clearTimeout(releaseTimer.current);
+        releaseTimer.current = setTimeout(() => {
+          releaseTimer.current = null;
+          holding.current = false;
+          mark("ptt_end");
+          applyMic();
+        }, PTT_TAIL_MS);
+      },
       say: (text) => {
         try {
           convRef.current.sendUserMessage(text);
@@ -296,6 +361,20 @@ function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpea
       },
     };
   });
+
+  // the screen turned push-to-talk on or off
+  useEffect(() => {
+    if (ptt.current !== pushToTalk) {
+      ptt.current = pushToTalk;
+      holding.current = false;
+      voiceDiag(sid, pushToTalk ? "ptt.activo" : "ptt.inactivo", { callId });
+      applyMic();
+    }
+    return () => {
+      if (releaseTimer.current) clearTimeout(releaseTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pushToTalk]);
 
   // start once per voice session; StrictMode-safe
   useEffect(() => {

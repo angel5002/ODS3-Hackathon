@@ -17,7 +17,7 @@ import { ScriptedVoiceAgent, stopSpeaking } from "@/lib/voice/scripted";
 import { ring } from "@/lib/voice/audio";
 import { bindDiag, newDiagId, voiceDiag } from "@/lib/voice/diag";
 import { initialVoiceState, isBusy, voiceReducer } from "@/lib/voice/machine";
-import type { AudioLevels, CallPhase, Caption } from "@/lib/voice/contract";
+import { PUSH_TO_TALK_BUTTON_READY, type AudioLevels, type CallPhase, type Caption } from "@/lib/voice/contract";
 import type { LiveVoiceControl, VoiceSession } from "@/components/voice/LiveVoice";
 import { CallView } from "@/components/voice/CallView";
 import { HOSPITAL_NAME } from "@/lib/voice/hospital";
@@ -45,6 +45,10 @@ type SessionResponse = {
   queueId?: string | null;
   position?: number | null;
   reason?: string;
+  /** noisy-room mode (push-to-talk), from settings_v51 'sala_ruidosa' */
+  pushToTalk?: boolean;
+  /** only the lines reserved for the jury cards are left: continue by chat */
+  chatInstead?: boolean;
 };
 
 /** Captions for CallView from the conversation turns. */
@@ -78,7 +82,8 @@ export function CallScreen({
   const [turns, setTurns] = useState<Turn[]>([]);
   const [options, setOptions] = useState<Option[]>([]);
   const [seconds, setSeconds] = useState(0);
-  const [live, setLive] = useState<{ session: VoiceSession; voiceSessionId: string } | null>(null);
+  const [live, setLive] = useState<{ session: VoiceSession; voiceSessionId: string; pushToTalk?: boolean } | null>(null);
+  const [talking, setTalking] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [muted, setMuted] = useState(false);
   const [captionsVisible, setCaptionsVisible] = useState(true);
@@ -167,9 +172,16 @@ export function CallScreen({
         queueId.current = null;
         dispatch({ type: "SESSION_GRANTED", sessionId: s.voiceSessionId });
         setProvider("elevenlabs");
-        setLive({ session: s.session, voiceSessionId: s.voiceSessionId });
+        setLive({ session: s.session, voiceSessionId: s.voiceSessionId, pushToTalk: !!s.pushToTalk });
         setPhase("talking");
         await setStatus("en_curso", undefined, undefined, { provider: "elevenlabs" }).catch(() => {});
+        return;
+      }
+      if (s.chatInstead) {
+        // only the lines reserved for the jury cards are left: continue by chat (the written options), no error
+        queueId.current = null;
+        dispatch({ type: "SESSION_FAILED", message: "líneas reservadas" });
+        void fallback("Líneas de voz reservadas para las tarjetas del jurado: sigue por chat");
         return;
       }
       if (s.busy) {
@@ -310,6 +322,9 @@ export function CallScreen({
                     ? "finalizada"
                     : "conectando";
 
+  // noisy-room mode: only when the view draws the "Mantener para hablar" button (see contract.ts)
+  const pushToTalk = !!live?.pushToTalk && PUSH_TO_TALK_BUTTON_READY && viewPhase === "activa";
+
   return (
     <>
       <CallView
@@ -349,6 +364,21 @@ export function CallScreen({
           talkToPerson: live || provider === "guion" ? talkToPerson : undefined,
           leave: busy?.kind === "otro_dispositivo" || phase === "closing" ? leave : undefined,
         }}
+        pushToTalk={
+          pushToTalk
+            ? {
+                talking,
+                start: () => {
+                  setTalking(true);
+                  control.current?.talkStart();
+                },
+                end: () => {
+                  setTalking(false);
+                  control.current?.talkEnd();
+                },
+              }
+            : undefined
+        }
       />
       {live && (
         <LiveVoice
@@ -356,6 +386,7 @@ export function CallScreen({
           callId={call.id}
           voiceSessionId={live.voiceSessionId}
           session={live.session}
+          pushToTalk={pushToTalk}
           dispatch={dispatch}
           controlRef={control}
           onTurn={addTurn}

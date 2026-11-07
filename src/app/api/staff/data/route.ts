@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { fail } from "@/lib/api";
 import { rpc, serverDb } from "@/lib/supabase/server";
 import { demoOverview } from "./overview";
+import { reservedForCards } from "@/lib/voice/capacity";
+import { maxConcurrent, noisyRoom } from "@/lib/voice/sessions";
 
 export const dynamic = "force-dynamic";
 
@@ -103,8 +105,12 @@ export async function GET(req: Request) {
         ]);
         return NextResponse.json({ board, statuses: lite.data ?? [], calls: calls.count ?? 0, metrics: metrics.data ?? [] });
       }
-      case "voice":
-        return NextResponse.json(await rpc("voice_overview"));
+      case "voice": {
+        // + the final day's voice settings: noisy-room mode and the lines reserved for the jury cards
+        const [overview, salaRuidosa] = await Promise.all([rpc<Record<string, unknown>>("voice_overview"), noisyRoom().catch(() => true)]);
+        const max = maxConcurrent();
+        return NextResponse.json({ ...overview, salaRuidosa, lineasReservadasTarjetas: reservedForCards(process.env.VOICE_RESERVED_FOR_CARDS, max) });
+      }
       case "overview":
         // /demo control center: stages, waiting list, slots and the assignment rule in one read
         return NextResponse.json(await demoOverview());

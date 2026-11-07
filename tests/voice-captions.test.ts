@@ -5,6 +5,26 @@ import assert from "node:assert/strict";
 import { CAPTION_TAIL_CHARS, REVEAL_CHARS_PER_S, captionTail, revealedPrefix, stripAudioTags } from "../src/lib/voice/captions.ts";
 import { TRANSFER_MAX_MS, TRANSFER_MIN_MS, TRANSFER_QUIET_MS, isTransferDone, shouldCloseAfterTransfer } from "../src/lib/voice/transfer.ts";
 import { pickTransport } from "../src/lib/voice/transport.ts";
+import { isCardToken, noisyRoomOn, reservedForCards, voiceLimit } from "../src/lib/voice/capacity.ts";
+
+test("jury cards: the last lines are reserved for card tokens (j-…), never all of them", () => {
+  assert.equal(isCardToken("j-carmen-7f3a"), true);
+  assert.equal(isCardToken("valeria"), false);
+  assert.equal(isCardToken(null), false);
+  assert.equal(reservedForCards(undefined, 8), 3, "default 3");
+  assert.equal(reservedForCards("5", 8), 5);
+  assert.equal(reservedForCards("20", 8), 7, "at least one line stays open for everyone");
+  assert.equal(reservedForCards("-1", 8), 3);
+  assert.equal(voiceLimit(true, 8, 3), 8, "a card may use every line");
+  assert.equal(voiceLimit(false, 8, 3), 5, "anyone else, all but the reserved ones");
+  assert.equal(voiceLimit(false, 1, 3), 1);
+});
+
+test("noisy room: ON unless the setting says off (final day default)", () => {
+  assert.equal(noisyRoomOn(null), true);
+  assert.equal(noisyRoomOn("on"), true);
+  assert.equal(noisyRoomOn("off"), false);
+});
 
 const LONG =
   "Hola, le llama el asistente automatizado del Hospital Mirasur para confirmar una cita. Si no puede asistir, su cupo se ofrecerá a otro paciente y usted conserva su lugar en la lista. ¿Hablo con Valeria o con su cuidador?";

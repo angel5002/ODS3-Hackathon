@@ -6,6 +6,11 @@
 //   3. returns the URL with the call's dynamic variables, all present (neutral phrase if one is missing).
 // Answers { session: null, busy } when another device has the call or every line is taken, and
 // { session: null, reason } when voice is unavailable (the call screen then falls back to the fixed script).
+// Final day (pitch v7):
+//   - pushToTalk (boolean, every answer): the noisy-room mode, settings_v51 'sala_ruidosa' (ON if missing);
+//   - the last VOICE_RESERVED_FOR_CARDS lines (default 3) are kept for the printed jury cards (patient token
+//     "j-…", directly or through the linked chat session); anyone else then gets
+//     { session: null, busy: "capacidad", chatInstead: true }: continue by chat, no queue, no error.
 import { NextResponse } from "next/server";
 import { fail } from "@/lib/api";
 import { readCookie } from "@/lib/chat/session";
@@ -13,7 +18,19 @@ import { rpc, serverDb } from "@/lib/supabase/server";
 import { ownsCall } from "@/lib/voice/auth";
 import { AGENT_FOR_PURPOSE, conversationToken, signedUrl, toolToken } from "@/lib/voice/server";
 import { pickTransport } from "@/lib/voice/transport";
-import { UUID, claimSession, completeVariables, endSession, logEvent, updateSession } from "@/lib/voice/sessions";
+import { reservedForCards, voiceLimit } from "@/lib/voice/capacity";
+import {
+  UUID,
+  claimSession,
+  completeVariables,
+  endSession,
+  isCardCall,
+  liveSessionCount,
+  logEvent,
+  maxConcurrent,
+  noisyRoom,
+  updateSession,
+} from "@/lib/voice/sessions";
 import { callContext, loadCall } from "@/lib/voice/tools";
 
 export const dynamic = "force-dynamic";
@@ -62,13 +79,34 @@ export async function POST(req: Request) {
     return fail("call ended", 409);
   }
 
+  // final day: noisy-room mode (push-to-talk on the phones) and the lines reserved for the jury cards
+  const [pushToTalk, card] = await Promise.all([noisyRoom().catch(() => true), isCardCall(call).catch(() => false)]);
+  const max = maxConcurrent();
+  const limit = voiceLimit(card, max, reservedForCards(process.env.VOICE_RESERVED_FOR_CARDS, max));
+  // a person without a card, when only the reserved lines are left: chat instead (the fixed script on the
+  // phone), no queue and no error on screen
+  const chatInstead = async (live: number) => {
+    log(`call=${callId} lineas_reservadas_para_tarjetas activas=${live} limite=${limit} -> chat`);
+    await logEvent(null, call.id, "servidor", "sesion.reservada_tarjetas", { activas: live, limite: limit, maximo: max });
+    return NextResponse.json({ callId, session: null, busy: "capacidad", chatInstead: true, queueId: null, position: null, pushToTalk });
+  };
+  if (!card && limit < max) {
+    const live = await liveSessionCount(call.id);
+    if (live >= limit) return chatInstead(live);
+  }
+
   // 1. one live session per call, capacity and queue (atomic in Postgres)
-  const claim = await claimSession(call.id, body.token ? "telefono" : "chat", queueId);
+  const claim = await claimSession(call.id, body.token ? "telefono" : "chat", queueId, limit);
   if (!claim.ok) {
     log(`call=${callId} reclamo=${claim.reason}`);
     if (claim.reason === "terminada") return fail("call ended", 409);
     if (claim.reason === "en_otro_dispositivo") return NextResponse.json({ callId, session: null, busy: "otro_dispositivo" });
-    return NextResponse.json({ callId, session: null, busy: "capacidad", queueId: claim.queue_id, position: claim.position });
+    if (!card && limit < max) {
+      // lost the race for the last free line: leave the queue at once, it is for the cards
+      await endSession(claim.queue_id, "líneas reservadas para las tarjetas", false).catch(() => {});
+      return chatInstead(claim.active);
+    }
+    return NextResponse.json({ callId, session: null, busy: "capacidad", queueId: claim.queue_id, position: claim.position, pushToTalk });
   }
   const sessionId = claim.session_id;
 
@@ -113,6 +151,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     callId,
     voiceSessionId: sessionId,
+    pushToTalk,
     session: {
       signedUrl: url,
       ...(token ? { conversationToken: token } : {}),

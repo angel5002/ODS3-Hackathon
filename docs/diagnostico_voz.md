@@ -394,6 +394,23 @@ Aplicados con `npm run voice:sync` (antes, `--dry`: solo `PATCH` de las 14 herra
 
 Evaluado y **no** activado: `vad.background_voice_detection` (filtra voces de fondo, pero podría descartar a la persona si sostiene el teléfono lejos; sin prueba en un teléfono real no conviene), `turn.noisy_environment_detection` (solo Enterprise y su mensaje está en inglés), `soft_timeout` (relleno en inglés) y `turn_eagerness` (sigue en `normal`).
 
+### Día de la final: modo sala ruidosa y líneas reservadas para las tarjetas
+
+**Modo sala ruidosa** («mantener para hablar»):
+- **Ajuste:** `settings_v51` con la clave `sala_ruidosa` = `on` | `off`. Si la clave no existe, cuenta como **`on`**. Migración solo aditiva `supabase/migrations/20261107050000_e5_sala_ruidosa.sql` (inserta la clave; **no aplicada**: la acción de abajo la crea igual con `upsert`).
+- **Cambiarlo desde /demo:** `POST /api/staff` con `{ "action": "noisy_room", "on": true | false }` → `{ "noisyRoom": boolean }`. **Leerlo:** `GET /api/staff/data?view=voice` agrega `salaRuidosa` y `lineasReservadasTarjetas`.
+- **Llega al teléfono** en cada respuesta de `POST /api/voice/session`: `pushToTalk: boolean`.
+- **Para la pista de la pantalla de llamada** (contrato en `src/lib/voice/contract.ts`):
+  - `CallViewProps.pushToTalk?: { talking, start, end }` (opcional): si viene, dibujar «Mantener para hablar»; `onPointerDown → start()`, `onPointerUp / onPointerCancel / onPointerLeave → end()`.
+  - `PUSH_TO_TALK_BUTTON_READY` (hoy `false`): ponerlo en `true` **en el mismo cambio** que dibuja el botón. Mientras sea `false`, `CallScreen` no silencia el micrófono (un micrófono silenciado sin botón dejaría a la persona sin poder hablar).
+  - Por debajo, `LiveVoice` tiene la prop `pushToTalk` y en `controlRef.current`: `setPushToTalk(on)`, `isPushToTalk()`, `talkStart()`, `talkEnd()` (el micrófono sigue abierto 300 ms después de soltar). Usa `setMuted` del SDK.
+- **Agentes:** las interrupciones por voz ya están desactivadas para todos (punto 4 de los cambios), que es la sensibilidad mínima posible; con el botón, el turno termina al soltar.
+
+**Líneas reservadas para las tarjetas del jurado:**
+- Las últimas `VOICE_RESERVED_FOR_CARDS` líneas (por defecto **3**, nunca todas) de `VOICE_MAX_CONCURRENT` (8) quedan para llamadas de pacientes cuyo token empieza con `j-`, directamente o por la sesión de chat vinculada.
+- Si no tiene tarjeta y solo quedan las reservadas, `POST /api/voice/session` responde `{ session: null, busy: "capacidad", chatInstead: true }`, sin fila de espera. El teléfono simulado pasa solo a las opciones escritas, sin pantalla de error (`voice_events`: `sesion.reservada_tarjetas`). `/pedir-cita` (fuera de esta rama) todavía muestra «Todas las líneas están ocupadas» con «Seguir por chat»: puede mapear `chatInstead` a `onDone()`.
+- Verificado en local con `VOICE_MAX_CONCURRENT=2` y `VOICE_RESERVED_FOR_CARDS=1`: Valeria habló por voz (llamada 4551) y Luis, al contestar, pasó directo a las opciones escritas (4552, proveedor `guion`).
+
 ### Documentación consultada
 
 - https://elevenlabs.io/docs/eleven-agents/libraries/java-script (WebRTC con `conversationToken`)
