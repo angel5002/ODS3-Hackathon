@@ -20,6 +20,7 @@ import { ControlCenter } from "./ControlCenter";
 import { DemoTheme } from "./DemoTheme";
 import { DemoButton, DemoCard, demoField } from "./DemoUi";
 import { PresentationMode, isMoment } from "./presentacion/PresentationMode";
+import type { JuryOp } from "@/lib/jury/overview";
 
 export type DemoMode = "presentar" | "operar";
 
@@ -76,6 +77,8 @@ export function DemoControls({
   const overview = useServerView<DemoOverview>("/api/staff/data?view=overview", ["full", "bulk", "req", "slot", "offer", "live", "call"]);
   const live = useServerView<LiveData>("/api/staff/data?view=live", ["full", "live", "call", "chat", "slot", "bulk"]);
   const voice = useServerView<VoiceOverview>("/api/staff/data?view=voice", ["full", "live", "call", "bulk"]);
+  // E5 final: the jury cards' next step (categorize, offer, close)
+  const jury = useServerView<{ ops: JuryOp[] }>("/api/staff/data?view=jurado_ops", ["full", "bulk", "req", "slot", "live", "call", "appt"]);
   // voice sessions and call states change without a database hint (heartbeats): refresh every 5 s while operating
   const { reload: reloadVoice } = voice;
   const { reload: reloadLive } = live;
@@ -103,12 +106,14 @@ export function DemoControls({
   }, []);
 
   const { reload: reloadOverview } = overview;
+  const { reload: reloadJury } = jury;
   const run: Run = async (action, body = {}, success) => {
     setBusy(action);
     try {
       const res = await post<{ sent?: number }>("/api/staff", { action, ...body });
       if (success) toast.success(success.replace("{n}", num(res.sent ?? 0)));
       reloadOverview(); // do not wait for the Realtime hint
+      if (action.startsWith("jury_")) reloadJury();
       if (action === "end_call") reloadLive();
       return true;
     } catch (e) {
@@ -139,6 +144,7 @@ export function DemoControls({
       voice={<VoiceSessionsView data={voice.data} />}
       params={<ParamsCard />}
       onPresent={() => switchMode("presentar")}
+      juryOps={jury.data?.ops ?? null}
     />
   );
 }
@@ -160,6 +166,8 @@ type DemoControlsViewProps = {
   voiceData?: VoiceOverview | null;
   /** switches to the projected mode (absent in /dev/pantallas) */
   onPresent?: () => void;
+  /** E5 final: next step of each jury card (absent in /dev/pantallas) */
+  juryOps?: JuryOp[] | null;
 };
 
 /** /demo OPERAR, props only (DemoControls owns the hooks and the server calls). Also rendered by /dev/pantallas.
@@ -179,12 +187,13 @@ export function DemoControlsView({
   liveData = null,
   voiceData = null,
   onPresent,
+  juryOps,
 }: DemoControlsViewProps) {
   const runP: Run = async (a, b, s) => (await run(a, b, s)) !== false;
   return (
     <div className="cc-root min-w-0">
       <DemoTheme />
-      <ControlCenter state={state} now={now} busy={busy} run={runP} overview={overview} live={liveData} voice={voiceData} onPresent={onPresent} />
+      <ControlCenter state={state} now={now} busy={busy} run={runP} overview={overview} live={liveData} voice={voiceData} onPresent={onPresent} jury={juryOps} />
 
       <main id="herramientas" className="mx-auto max-w-[1300px] scroll-mt-4 space-y-5 border-t border-(--cc-border) px-4 py-8 sm:px-6">
         <div>

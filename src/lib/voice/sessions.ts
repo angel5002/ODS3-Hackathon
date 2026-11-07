@@ -33,6 +33,9 @@ export async function isCardCall(call: Pick<CallRow, "patient_id" | "chat_sessio
   const db = serverDb();
   let patient = call.patient_id;
   if (!patient && call.chat_session_id) {
+    // a jury card that registers by voice (Lucía) opened /pedir-cita from its card: the visit links the chat session
+    const visit = await db.from("jury_visits").select("token").eq("chat_session_id", call.chat_session_id).limit(1).maybeSingle();
+    if (isCardToken((visit.data?.token as string | null) ?? null)) return true;
     const { data } = await db.from("chat_sessions").select("linked_patient_id").eq("id", call.chat_session_id).maybeSingle();
     patient = (data?.linked_patient_id as string | null) ?? null;
   }

@@ -32,6 +32,8 @@ import type { DemoOverview, OverviewEvent, OverviewSlot, OverviewWaitRow } from 
 import type { CallRow, LiveData } from "./LiveSection";
 import type { VoiceOverview } from "./VoiceSessionsCard";
 import { groupCalls } from "./calls";
+import { JuryOpsPanel } from "./JuryOps";
+import type { JuryOp } from "@/lib/jury/overview";
 
 export type Rule = DemoOverview["rule"];
 type Run = (action: string, body?: Record<string, unknown>, success?: string) => Promise<boolean>;
@@ -46,6 +48,8 @@ export type ControlCenterProps = {
   voice: VoiceOverview | null;
   /** switches to the projected mode (absent in /dev/pantallas) */
   onPresent?: () => void;
+  /** E5 final: next step of each jury card (absent in /dev/pantallas) */
+  jury?: JuryOp[] | null;
 };
 
 const NBSP = " ";
@@ -94,7 +98,7 @@ function useFlash<T extends HTMLElement>(k: string | number | null | undefined) 
 
 // ------------------------------------------------------------------------------------------------ the board
 
-export function ControlCenter({ state, now, busy, run, overview, live, voice, onPresent }: ControlCenterProps) {
+export function ControlCenter({ state, now, busy, run, overview, live, voice, onPresent, jury }: ControlCenterProps) {
   const ref = useScreenTall();
   return (
     <div
@@ -107,7 +111,14 @@ export function ControlCenter({ state, now, busy, run, overview, live, voice, on
         <Journey overview={overview} remindersSent={state?.reminders_sent_min != null} />
         <CallsPanel live={live} voice={voice} now={now} busy={busy} run={run} />
         <SlotsPanel overview={overview} busy={busy} run={run} now={now} state={state} />
-        <WaitlistPanel overview={overview} />
+        {jury === undefined ? (
+          <WaitlistPanel overview={overview} />
+        ) : (
+          <div className="flex min-h-0 min-w-0 flex-col gap-3 2xl:gap-4">
+            <JuryOpsPanel ops={jury} busy={busy} run={run} />
+            <WaitlistPanel overview={overview} />
+          </div>
+        )}
       </div>
     </div>
   );
