@@ -29,7 +29,7 @@
 2. `/demo` → Parámetros → **Regla de asignación: Mayor prioridad al cierre de la ventana**. Es la regla por defecto.
 3. Celular A: abrir `/pedir-cita`, tocar **Activar sonido y llamadas**, **Chatear con el asistente** y escribir ACEPTO. En **En vivo** de `/demo`, vincularlo a Julio.
 4. Celular B: abrir `/t/rosa` y tocar **Activar sonido y llamadas**. El aviso «Sonido y micrófono listos» aparece abajo.
-5. **Probar llamada** en ambos desde **En vivo**. El agente debe presentarse como asistente automatizado del Hospital de demostración. En **Voz en vivo** se ve la sesión «En llamada» y, al colgar, «Terminada».
+5. **Probar llamada** en ambos desde **En vivo**. El agente debe presentarse como asistente automatizado del Hospital Mirasur. En **Voz en vivo** se ve la sesión «En llamada» y, al colgar, «Terminada».
 
 ## Guion
 

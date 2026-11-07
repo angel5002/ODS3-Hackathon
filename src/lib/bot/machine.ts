@@ -9,7 +9,7 @@ export type Reply = { body: string; buttons?: string[] };
 export type BotState = { step: string; data: Record<string, string>; rechecked?: boolean; tries?: number };
 
 export const CONSENT =
-  "Hola. Le escribe el asistente automatizado del Hospital de demostración, un hospital ficticio de AsistIA para CientíficaHack 2026. " +
+  "Hola. Le escribe el asistente automatizado del Hospital Mirasur, un hospital ficticio de AsistIA para CientíficaHack 2026. " +
   "Este chat prepara su atención: no es una consulta médica ni atiende emergencias. " +
   "Nunca le pediremos pagos, claves, códigos ni su DNI completo, ni tampoco su número o su correo. " +
   "Use un nombre ficticio y no comparta datos reales de salud. Escriba PERSONA en cualquier momento para hablar con una persona. " +

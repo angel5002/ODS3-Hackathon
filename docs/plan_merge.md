@@ -98,7 +98,7 @@ Tiene que pasar entero, con la demo libre. Además, en `/tablero` la línea debe
    ```
    Las URL de las herramientas usan `PUBLIC_BASE_URL`, que ya es el dominio de producción.
 
-**Verificación:** con `ALLOW_DB_WRITE=1`, `node scripts/dev/prod-voice-check.mjs` debe dar 200 con URL firmada. `tests/e2e/prod_phone_voice.py` debe mostrar que la llamada conecta y que el agente se presenta como «asistente automatizado del Hospital de demostración».
+**Verificación:** con `ALLOW_DB_WRITE=1`, `node scripts/dev/prod-voice-check.mjs` debe dar 200 con URL firmada. `tests/e2e/prod_phone_voice.py` debe mostrar que la llamada conecta y que el agente se presenta como «asistente automatizado del Hospital Mirasur».
 
 **Reversión:** volver a correr `voice:sync` desde el commit anterior del JSON.
 

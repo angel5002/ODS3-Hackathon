@@ -85,7 +85,7 @@ Personas registradas sin cupo, % con atención, mediana y percentil 90 de la esp
 ### Teléfonos simulados y `/pedir-cita`
 
 - Teléfonos: mensajes con botones (Confirmo, No podré asistir, Reprogramar, Hablar con una persona; Acepto/No puedo; Sí, soy el paciente/cuidador). ![Carmen](capturas/v4/09-telefono-carmen.png) ![Julio](capturas/v4/11-telefono-julio-oferta.png)
-- Llamada entrante a pantalla completa con tono, dentro del navegador (no hay números reales): **Contestar** inicia la voz del agente, que se presenta como asistente automatizado del Hospital de demostración; **Rechazar** cuenta como un intento. ![Llamada](capturas/v4/19-llamada-entrante.png)
+- Llamada entrante a pantalla completa con tono, dentro del navegador (no hay números reales): **Contestar** inicia la voz del agente, que se presenta como asistente automatizado del Hospital Mirasur; **Rechazar** cuenta como un intento. ![Llamada](capturas/v4/19-llamada-entrante.png)
 - `/pedir-cita`: tres opciones. El chat pide **ACEPTO**, recoge los datos uno por uno, pregunta por signos de alarma y entrega un código S-XXXX. «PERSONA» crea una tarea; «SALIR» o el tacho borran la conversación. ![Inicio](capturas/v4/02-pedir-cita-inicio.png) ![Chat](capturas/v4/03-chat-resumen.png) ![Código](capturas/v4/04-chat-codigo.png)
 
 ## 4. Preparar la demo (10 minutos antes)
