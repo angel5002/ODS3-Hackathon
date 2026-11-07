@@ -112,7 +112,9 @@ Escena 1, comprobada con la cartilla impresa de Carmen y luego reiniciada:
 3. `jury_offer` → `carmenSlot.state = "ofrecido"`.
 4. `jury_rearm` → Tito vuelve a `con_cita`, con su cita, y Carmen queda lista y sin abrir.
 
-`tests/e2e/demo_panel.py` (solo lectura) pasa con el panel nuevo: Presentar en 1920×1080 y 1280×720, y Operar en 1920×1080 y 360×800.
+Después de unir `e5` hubo dos corridas más, las dos en OK. Los 6 jurados en paralelo tardaron 42.0 s y 44.8 s; el circuito más largo, 41 a 44 s, y cada acción llegó al proyector en 1.7 s o menos.
+
+`tests/e2e/demo_panel.py` (solo lectura) pasó con el panel nuevo: Presentar en 1920×1080 y 1280×720, y Operar en 1920×1080 y 360×800. Una corrida posterior falló solo en el botón «Sala ruidosa activada» de la barra superior (texto cortado), que es de las pistas D y voz. Falló porque alguien activó `sala_ruidosa = on` en la base a las 10:39 UTC; las cartillas no tienen relación con eso.
 
 ### Pendiente para la pista de voz
 
