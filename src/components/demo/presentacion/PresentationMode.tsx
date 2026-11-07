@@ -2,7 +2,9 @@
 
 // /demo PRESENTATION mode: the projected screen. One view per moment of the pitch script v7, in order
 // (PRESENTATION_ORDER). Keys: ← → (and PageUp/PageDown from a clicker) move, 1–5 jump (the current number restarts
-// the moment), F fullscreen, Space advances the scene on the two scene moments. It covers the staff header and footer
+// the moment), F fullscreen, Space advances the scene on the two scene moments. E toggles the REHEARSAL mode (operator
+// only, a tiny indicator in the footer): the scenes play back without logging steps nor reading live slot data, and R
+// restarts the current scene from the beginning. Rehearsal never writes to the database. It covers the staff header and footer
 // and keeps one footer line: the demo notice.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize, SlidersHorizontal } from "lucide-react";
@@ -38,6 +40,7 @@ type Props = {
 
 export function PresentationMode({ moment, onMoment, onExit, overview, chatQr }: Props) {
   const [runKey, setRunKey] = useState(0);
+  const [ensayo, setEnsayo] = useState(false);
   const controllerRef = useRef<SceneController | null>(null);
   const now = useNow(15000);
   // the jury read runs from the first moment (the card counter) to the jury moment
@@ -70,6 +73,11 @@ export function PresentationMode({ moment, onMoment, onExit, overview, chatQr }:
         e.preventDefault();
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         else document.documentElement.requestFullscreen().catch(() => {});
+      } else if (e.key === "e" || e.key === "E") {
+        setEnsayo((v) => !v);
+        setRunKey((k) => k + 1);
+      } else if ((e.key === "r" || e.key === "R") && ensayo) {
+        setRunKey((k) => k + 1);
       } else if (e.key === " " && controllerRef.current) {
         e.preventDefault();
         controllerRef.current.next();
@@ -77,7 +85,7 @@ export function PresentationMode({ moment, onMoment, onExit, overview, chatQr }:
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [moment, onMoment, go]);
+  }, [moment, onMoment, go, ensayo]);
 
   // nothing scrolls behind the projected screen
   useEffect(() => {
@@ -134,14 +142,19 @@ export function PresentationMode({ moment, onMoment, onExit, overview, chatQr }:
 
       <main className="min-h-0 flex-1">
         {moment === "qr" && <QrMoment key={`qr-${runKey}`} qr={chatQr} jury={jury} source={source} />}
-        {moment === "escena1" && <Scene1Moment key={`e1-${runKey}`} jury={jury} source={source} controllerRef={controllerRef} />}
+        {moment === "escena1" && <Scene1Moment key={`e1-${runKey}`} jury={jury} source={source} controllerRef={controllerRef} rehearsal={ensayo} />}
         {moment === "jurado" && <JuryMoment key={`j-${runKey}`} jury={jury} source={source} now={now} />}
-        {moment === "escena2" && <Scene2Moment key={`e2-${runKey}`} controllerRef={controllerRef} />}
+        {moment === "escena2" && <Scene2Moment key={`e2-${runKey}`} controllerRef={controllerRef} rehearsal={ensayo} />}
         {moment === "etapas" && <StagesMoment key={`et-${runKey}`} overview={overview} />}
       </main>
 
-      <footer className="shrink-0 px-[2.4em] pb-[0.7em] max-[900px]:px-[1em]">
+      <footer className="flex shrink-0 items-baseline justify-between gap-[1em] px-[2.4em] pb-[0.7em] max-[900px]:px-[1em]">
         <p className="text-[0.7em] leading-snug text-(--pr-muted)">{DISCLAIMER}</p>
+        {ensayo && (
+          <p className="shrink-0 text-[0.55em] font-semibold text-(--pr-muted)" title="Modo ensayo: no registra nada. R reinicia la escena, E sale.">
+            Ensayo · R
+          </p>
+        )}
       </footer>
     </div>
   );

@@ -157,6 +157,11 @@ async def run_base(browser, base, pin, shots):
         fails.append(f"{tag}: alarm: the interview did not stop")
     if shots:
         await p2.screenshot(path=str(Path(shots) / "preconsulta-alarma.png"), full_page=True)
+    # "Hablar con una persona ahora": once, with a confirmation of what the team will do
+    await p2.get_by_role("button", name="Hablar con una persona ahora").click()
+    await p2.get_by_text("Listo: avisamos a una persona del equipo").wait_for(timeout=10000)
+    if await p2.get_by_role("button", name="Hablar con una persona ahora").count():
+        fails.append(f"{tag}: alarm: the 'talk to a person now' button stays after use")
     lst = (await (await ctx.request.get("/api/staff/preconsulta")).json()).get("sessions", [])
     rita = next((x for x in lst if x["patient_alias"] == "Rita Prueba"), None)
     if not rita or rita["status"] != "derivada_emergencia":
@@ -168,6 +173,8 @@ async def run_base(browser, base, pin, shots):
     tasks = (await (await ctx.request.get("/api/callcenter")).json()).get("tasks", [])
     if not any(t.get("type") == "alarma" and "Preconsulta de Rita Prueba" in (t.get("note") or "") for t in tasks):
         fails.append(f"{tag}: alarm: no staff task")
+    if not any(t.get("type") == "pide_persona" and "Preconsulta de Rita Prueba" in (t.get("note") or "") for t in tasks):
+        fails.append(f"{tag}: alarm: no 'talk to a person' task")
 
     if errors:
         fails.append(f"{tag}: console errors: {errors[:2]}")

@@ -2,7 +2,7 @@
 // ({action:"consent", respondent}) or one answer ({action:"answer", text, version}). The browser never reads the
 // tables: everything goes through here. A double submit carries the same version and is applied once.
 import { NextResponse } from "next/server";
-import { answer, giveConsent, loadByToken, patientView } from "@/lib/preconsulta/server";
+import { answer, askPersonNow, giveConsent, loadByToken, patientView } from "@/lib/preconsulta/server";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +36,9 @@ export async function POST(req: Request, { params }: Ctx) {
     if (!row) return NextResponse.json(GONE, { status: 404 });
     if (body.action === "consent") {
       await giveConsent(row, body.respondent);
+    } else if (body.action === "persona") {
+      if (row.status !== "derivada_emergencia") return NextResponse.json({ error: "Escriba PERSONA en el chat." }, { status: 409 });
+      await askPersonNow(row);
     } else if (body.action === "answer") {
       const text = String(body.text ?? "").trim();
       if (!text) return NextResponse.json({ error: "Escriba su respuesta." }, { status: 400 });

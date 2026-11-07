@@ -34,6 +34,8 @@ export function scene1CallProps(c: SceneController): CallViewProps | null {
     levels: c.levels,
     scriptOptions: [],
     actions: { hangUp: noop, toggleCaptions: noop, answer: phone === "entrante" ? () => void c.next() : undefined },
+    // playback on the projector: no call controls (Respira keeps identification, time, circles and the caption)
+    scene: true,
   };
 }
 

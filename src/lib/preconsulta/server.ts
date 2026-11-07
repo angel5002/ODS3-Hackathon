@@ -11,6 +11,7 @@ import {
   currentQuestion,
   initialState,
   isYesNoStep,
+  Q,
   step,
   yesNo,
   type Gender,
@@ -129,12 +130,15 @@ async function transcript(id: string) {
 export async function patientView(row: Row) {
   const pc = row.state.pc ?? initialState(row.patient_alias);
   const done = row.status === "completa" || row.status === "derivada_emergencia" || row.status === "con_persona";
+  const messages = row.consent_at ? (await transcript(row.id)).map((m) => ({ id: m.id, who: m.who, text: m.text })) : [];
   return {
     alias: row.patient_alias,
     status: row.status,
     consent: Boolean(row.consent_at),
     intro: INTRO,
-    messages: row.consent_at ? (await transcript(row.id)).map((m) => ({ id: m.id, who: m.who, text: m.text })) : [],
+    messages,
+    /** after an alarm sign: "Hablar con una persona ahora" (once) */
+    canAskPerson: row.status === "derivada_emergencia" && !messages.some((m) => m.text === Q.persona_ahora),
     version: row.version,
     done,
     emergency: row.status === "derivada_emergencia",
@@ -178,6 +182,23 @@ export async function giveConsent(row: Row, respondent: unknown) {
   const pc = fresh.state.pc ?? initialState(fresh.patient_alias);
   await apply(fresh, pc, "en_curso", [{ step: pc.step, who: "ia", text: currentQuestion(pc)! }], null);
   return { ok: true };
+}
+
+/** "Hablar con una persona ahora" after an alarm sign: a staff task (pide_persona) and a short confirmation. */
+export async function askPersonNow(row: Row) {
+  const pc = row.state.pc ?? initialState(row.patient_alias);
+  const msgs = await transcript(row.id);
+  if (msgs.some((m) => m.text === Q.persona_ahora)) return { ok: true };
+  return apply(
+    row,
+    pc,
+    row.status,
+    [
+      { step: pc.step, who: "persona", text: "Quiero hablar con una persona ahora" },
+      { step: pc.step, who: "ia", text: Q.persona_ahora },
+    ],
+    { type: "pide_persona", note: "Pidió hablar con una persona ahora (después de un signo de alarma)" },
+  );
 }
 
 /** One answer of the patient. The rules read it; the model only reads a yes/no the rules did not understand. */

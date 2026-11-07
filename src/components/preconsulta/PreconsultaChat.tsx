@@ -5,7 +5,7 @@
 // voice when the text is one of them (the scene's lines), otherwise with the browser's speech synthesis.
 // An alarm sign ends the chat with the emergency instruction (go to the emergency room or call 106).
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PhoneCall, SendHorizontal, ShieldAlert, Volume2, VolumeX } from "lucide-react";
+import { PhoneCall, SendHorizontal, ShieldAlert, UserRound, Volume2, VolumeX } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { DISCLAIMER } from "@/lib/labels";
 import { ESCENA_2 } from "@/lib/demo/scenes";
@@ -20,6 +20,7 @@ export type PatientView = {
   version: number;
   done: boolean;
   emergency: boolean;
+  canAskPerson?: boolean;
   buttons: string[];
 };
 
@@ -194,18 +195,32 @@ export function PreconsultaChat({ token }: PreconsultaChatProps) {
                   <ShieldAlert className="size-6" aria-hidden /> No espere su cita
                 </p>
                 <p className="mt-1 text-[17px] text-ink">Acuda a la emergencia más cercana o llame al 106 (SAMU).</p>
-                <a
-                  href="tel:106"
-                  className="press mt-3 inline-flex min-h-12 items-center gap-2 rounded-md bg-risk-alto px-4 text-[17px] font-bold text-white"
-                >
-                  <PhoneCall className="size-5" aria-hidden /> Llamar al 106
-                </a>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <a
+                    href="tel:106"
+                    className="press inline-flex min-h-12 items-center gap-2 rounded-md bg-risk-alto px-4 text-[17px] font-bold text-white"
+                  >
+                    <PhoneCall className="size-5" aria-hidden /> Llamar al 106
+                  </a>
+                  {view.canAskPerson && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void send({ action: "persona" })}
+                      className="press inline-flex min-h-12 items-center gap-2 rounded-md border-2 border-risk-alto bg-surface px-4 text-[17px] font-bold text-risk-alto disabled:opacity-60"
+                    >
+                      <UserRound className="size-5" aria-hidden /> Hablar con una persona ahora
+                    </button>
+                  )}
+                </div>
+                <p className="mt-2 text-[15px] text-ink">Registramos lo que nos dijo y avisamos al equipo de la clínica: una persona revisará su caso y le escribirá por este chat.</p>
               </section>
             )}
 
             {view.done && !view.emergency && (
               <p className="mt-4 rounded-md border border-line bg-surface p-3 text-[15px] text-muted">
-                La preconsulta terminó. Su médico la verá antes de atenderle. Puede cerrar esta página.
+                La preconsulta terminó: quedó registrada y su médico la revisará antes de atenderle. Si algo cambia, le avisaremos por este chat. Si se
+                siente peor, acuda a emergencia o llame al 106.
               </p>
             )}
 

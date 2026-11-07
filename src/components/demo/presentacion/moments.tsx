@@ -101,12 +101,15 @@ export function Scene1Moment({
   jury,
   source,
   controllerRef,
+  rehearsal = false,
 }: {
   jury: JuryOverview | null;
   source: JurySource;
   controllerRef: RefObject<SceneController | null>;
+  /** rehearsal mode: playback only, no step log, no live slot data */
+  rehearsal?: boolean;
 }) {
-  const c = useSceneController("escena1", { voice: true });
+  const c = useSceneController("escena1", { voice: true, logEvents: !rehearsal });
   const next = c.next;
   useEffect(() => {
     controllerRef.current = { next };
@@ -117,7 +120,7 @@ export function Scene1Moment({
 
   // the hand-off follows the real slot when track E's view is live (the staff approval is the trigger);
   // otherwise it follows the scene: the staff approved before the phone rings, Tito accepts in the call
-  const live = source === "en_vivo" && jury?.carmenSlot ? jury.carmenSlot : null;
+  const live = !rehearsal && source === "en_vivo" && jury?.carmenSlot ? jury.carmenSlot : null;
   const stage = live ? ({ libre: 0, ofrecido: 1, asignado: 2 } as const)[live.state] : c.index >= SCENE1_STEP.ia2 ? 2 : c.index >= SCENE1_STEP.s1 ? 1 : 0;
   const slot = live ?? { specialty: "Oncología", when: "mañana 9:00", assignedTo: null };
   const to = live?.assignedTo ?? "Tito";
@@ -310,8 +313,8 @@ export function JuryMoment({ jury, source, now }: { jury: JuryOverview | null; s
 
 /** Space starts the chat (after the narrator's line); then a message every 2.4 s, and the summary fills in sync from
  *  the real pre-visit machine. Space during the chat shows the next message at once. */
-export function Scene2Moment({ controllerRef }: { controllerRef: RefObject<SceneController | null> }) {
-  const c = useSceneController("escena2");
+export function Scene2Moment({ controllerRef, rehearsal = false }: { controllerRef: RefObject<SceneController | null>; rehearsal?: boolean }) {
+  const c = useSceneController("escena2", { logEvents: !rehearsal });
   const next = c.next;
   useEffect(() => {
     controllerRef.current = { next };

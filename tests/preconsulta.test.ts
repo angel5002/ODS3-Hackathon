@@ -139,7 +139,8 @@ test("an unconfirmed medicine is flagged in the summary", () => {
 
 test("alarm signs interrupt the interview at any step, refer to emergency and create a staff task", () => {
   for (const [answers, label] of [
-    [["Me duele la rodilla desde ayer", "Ibuprofeno. Alergias, ninguna.", "sí", "Sí"], "yes to the alarm question"],
+    [["Me duele la rodilla desde ayer", "Ibuprofeno. Alergias, ninguna.", "sí", "Sí", "me arde mucho"], "yes to the alarm question, then which one"],
+    [["Me duele la cabeza desde ayer", "Ninguno. Alergias, ninguna.", "sí, me desmayé hace un rato"], "general question, with the sign"],
     [["Me duele la rodilla desde ayer", "Ibuprofeno. Alergias, ninguna.", "sí", "No, pero tengo fiebre"], "'no, pero' with a sign"],
     [["Me duele la rodilla y está muy hinchada"], "in the motive"],
     [["Me duele la rodilla desde ayer", "Paracetamol para la fiebre"], "in the medicines answer"],
@@ -160,6 +161,51 @@ test("alarm signs interrupt the interview at any step, refer to emergency and cr
     const after = step(s, "Me duele la rodilla", opts);
     assert.deepEqual(after.replies, [], label);
   }
+});
+
+test("a bare 'sí' to the alarm question asks briefly which one (no diagnosis), then refers", () => {
+  const base = run(["Me duele la cabeza desde ayer", "Ninguno. Alergias, ninguna."]).s;
+  const a = run(["Sí"], base);
+  assert.equal(a.s.step, "alarma_cual");
+  assert.match(a.replies[0][0], /^¿Qué siente\? Cuéntelo en pocas palabras/);
+  assert.match(a.replies[0][0], /106/, "the emergency number is already there");
+  const b = run(["no sé, algo raro"], a.s);
+  assert.equal(b.last.status, "derivada_emergencia");
+  assert.equal(b.last.task?.type, "alarma");
+  assert.match(b.last.replies[0], /Hablar con una persona ahora/, "a button to talk to a person now");
+  assert.match(b.last.replies[0], /una persona revisará su caso y le escribirá/, "says what the team will do");
+});
+
+test("a person without alarm signs gets ONE short general question, never a long list", () => {
+  const { replies, s } = run(["Me duele la cabeza desde ayer", "Paracetamol. Alergias, ninguna.", "sí", "no"], initialState("Ana"));
+  const all = replies.flat();
+  assert.ok(all.includes("¿Siente ahora algo que no puede esperar, como dolor fuerte en el pecho, falta de aire o desmayo?"));
+  for (const r of all) {
+    assert.ok(!/\n\s*[·•-]/.test(r), `a list in «${r}»`);
+    if (r.endsWith("?")) assert.ok(r.split(",").length <= 4 && r.length <= 120, `a long question: «${r}»`);
+  }
+  assert.ok(!all.some((r) => /embarazo|bebé/.test(r)), "no pregnancy/baby question without that context");
+  assert.equal(s.step, "fin");
+  assert.deepEqual(s.signos.map((x) => x.estado), ["no", "no", "no"]);
+});
+
+test("a pregnancy (or a baby) in the motive adds ITS question, after the general one", () => {
+  const { replies, s } = run(["Estoy embarazada de 20 semanas y me duele la cabeza desde ayer", "Ninguno. Alergias, ninguna.", "no"], initialState("Lucía", "f"));
+  assert.equal(replies[2][0], "Por el embarazo: ¿tiene ahora sangrado o dolor fuerte de barriga?");
+  assert.equal(s.step, "alarma");
+  const yes = run(["sí, tengo sangrado"], s);
+  assert.equal(yes.last.status, "derivada_emergencia");
+  const baby = run(["Mi bebé de 2 meses tiene tos desde ayer", "Ninguno. Alergias, ninguna.", "no"], initialState("Rosa", "f"));
+  assert.equal(baby.replies[2][0], "¿El bebé tiene fiebre ahora?");
+});
+
+test("every closing says what was registered, who reviews it, how we notify and what to do if worse", () => {
+  const done = run(["Me duele la rodilla derecha desde hace una semana.", "Ibuprofeno. Alergias, ninguna.", "Sí", "No."]).last.replies.join(" ");
+  for (const re of [/Registramos/, /su médico los revisará/, /le avisaremos por este chat/, /Si se siente peor/, /106/, /estimación/]) assert.match(done, re);
+  const person = run(["quiero hablar con una persona"]).last.replies.join(" ");
+  for (const re of [/le escribirá/, /registrado/, /revisará/, /Si se siente peor/]) assert.match(person, re);
+  const unclear = run(["Me duele la rodilla desde ayer", "Ninguno. Alergias, ninguna.", "un poco", "tal vez"]).last.replies.join(" ");
+  for (const re of [/No pudimos confirmar/, /106/, /Registramos/, /Si se siente peor/]) assert.match(unclear, re);
 });
 
 test("negated alarm words do not interrupt", () => {

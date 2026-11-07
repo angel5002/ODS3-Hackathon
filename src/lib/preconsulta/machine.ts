@@ -20,9 +20,17 @@ import type { ArrivalWindow } from "./arrival";
 export type FieldState = "informado" | "no_sabe" | "prefiere_consulta";
 export type Field = { estado: FieldState; valor: string | null; literal: string } | null;
 
-export type SignId = "fiebre" | "hinchazon" | "calor" | "otro";
+export type SignId = "fiebre" | "hinchazon" | "calor" | "pecho" | "aire" | "desmayo" | "emb_sangrado" | "emb_dolor" | "bebe_fiebre" | "otro";
 export type SignState = "no" | "si" | "no_evaluado" | "por_verificar";
 export type Sign = { id: SignId; label: string; estado: SignState; fuente: string | null };
+
+/**
+ * The alarm questions: ONE per context, in the second person, with 2–3 examples, never a long list.
+ *   local   — the person named a joint or limb (scene 2: "¿Tiene fiebre, o la rodilla está muy hinchada o caliente?")
+ *   general — otherwise: "¿Siente ahora algo que no puede esperar, como dolor fuerte en el pecho, falta de aire o desmayo?"
+ *   embarazo / bebe — only when the person mentioned that context.
+ */
+export type AlarmQ = "local" | "general" | "embarazo" | "bebe";
 
 export type PcStep =
   | "motivo"
@@ -33,6 +41,7 @@ export type PcStep =
   | "corregir_med"
   | "alergias"
   | "alarma"
+  | "alarma_cual"
   | "fin"
   | "emergencia"
   | "persona";
@@ -54,6 +63,9 @@ export type PcState = {
   alergias: Field;
   alarma: { preguntada: boolean; positiva: boolean; detalle: string | null; literal: string | null };
   signos: Sign[];
+  /** the alarm questions planned after the motive, and the one being asked */
+  alarmPlan: AlarmQ[];
+  alarmIdx: number;
   /** contradictory, not understood or pending data (shown to the doctor) */
   pendientes: string[];
   tries: number;
@@ -116,12 +128,39 @@ export function clearNo(t: string) {
 
 // ---------------------------------------------------------------- alarm signs
 
-/** The pre-visit's own alarm words (scene 2) with the sign they belong to. */
+/** The pre-visit's own alarm words with the sign they belong to (the chat bot's list is added by the server). */
 export const PRECONSULTA_ALARM: { sign: SignId; label: string; words: string[] }[] = [
   { sign: "fiebre", label: "Fiebre", words: ["fiebre", "calentura", "temperatura alta", "afiebrad"] },
   { sign: "hinchazon", label: "Muy hinchada", words: ["muy hinchad", "bien hinchad", "hinchadisim", "demasiado hinchad", "muy inflamad", "bien inflamad"] },
   { sign: "calor", label: "Caliente", words: ["caliente", "calor en la", "calor en el", "quema al tocar"] },
+  { sign: "pecho", label: "Dolor fuerte en el pecho", words: ["dolor en el pecho", "dolor fuerte en el pecho", "me duele el pecho", "opresion en el pecho"] },
+  { sign: "aire", label: "Falta de aire", words: ["falta de aire", "no puedo respirar", "me ahogo", "ahogo"] },
+  { sign: "desmayo", label: "Desmayo", words: ["desmay", "perdi el conocimiento"] },
+  { sign: "emb_sangrado", label: "Sangrado", words: ["sangrado", "sangro", "estoy sangrando"] },
+  { sign: "emb_dolor", label: "Dolor fuerte de barriga", words: ["dolor fuerte de barriga", "dolor fuerte en la barriga", "dolor fuerte de vientre", "contracciones"] },
 ];
+
+/** The signs each question asks about (the summary lists them; the ones never asked stay "no evaluado"). */
+export const ALARM_SIGNS: Record<AlarmQ, { id: SignId; label: string }[]> = {
+  local: [
+    { id: "fiebre", label: "Fiebre" },
+    { id: "hinchazon", label: "Muy hinchada" },
+    { id: "calor", label: "Caliente" },
+  ],
+  general: [
+    { id: "pecho", label: "Dolor fuerte en el pecho" },
+    { id: "aire", label: "Falta de aire" },
+    { id: "desmayo", label: "Desmayo" },
+  ],
+  embarazo: [
+    { id: "emb_sangrado", label: "Sangrado en el embarazo" },
+    { id: "emb_dolor", label: "Dolor fuerte de barriga en el embarazo" },
+  ],
+  bebe: [{ id: "bebe_fiebre", label: "Fiebre en el bebé" }],
+};
+
+const PREGNANCY = /\b(embaraz|gestante|gestacion|estoy esperando (un|una) bebe|semanas de embarazo)/;
+const BABY = /\b(bebe|recien nacid|lactante|mi hij[oa] (tiene|de) \d+ (mes|meses|dias))/;
 
 const NEGATORS = /\b(no|ni|sin|tampoco|nunca|nada de)\b/;
 
@@ -257,10 +296,30 @@ export function parseMedsAndAllergies(text: string): MedsAnswer {
 
 // ---------------------------------------------------------------- questions
 
+/** The context-specific question when the person named a joint or limb (the script's question for Tito's knee). */
 export function alarmQuestion(part: PcState["part"]) {
-  if (!part) return "¿Tiene fiebre, o la zona que le molesta está muy hinchada o caliente?";
+  if (!part) return GENERAL_ALARM_QUESTION;
   return `¿Tiene fiebre, o ${part.fem ? "la" : "el"} ${part.word} está muy ${part.fem ? "hinchada" : "hinchado"} o caliente?`;
 }
+
+export const GENERAL_ALARM_QUESTION = "¿Siente ahora algo que no puede esperar, como dolor fuerte en el pecho, falta de aire o desmayo?";
+export const PREGNANCY_ALARM_QUESTION = "Por el embarazo: ¿tiene ahora sangrado o dolor fuerte de barriga?";
+export const BABY_ALARM_QUESTION = "¿El bebé tiene fiebre ahora?";
+
+export function questionFor(q: AlarmQ, part: PcState["part"]) {
+  return q === "local" ? alarmQuestion(part) : q === "general" ? GENERAL_ALARM_QUESTION : q === "embarazo" ? PREGNANCY_ALARM_QUESTION : BABY_ALARM_QUESTION;
+}
+
+/** The plan of alarm questions from what the person said in the motive (one general or local + the contexts named). */
+export function alarmPlan(motive: string, part: PcState["part"]): AlarmQ[] {
+  const t = norm(motive);
+  const plan: AlarmQ[] = [part ? "local" : "general"];
+  if (PREGNANCY.test(t)) plan.push("embarazo");
+  if (BABY.test(t)) plan.push("bebe");
+  return plan;
+}
+
+const WORSE = "Si se siente peor antes de la cita, no espere: acuda a emergencia o llame al 106.";
 
 export const Q = {
   motivo: (name: string) => `Hola, ${name}. Antes de su cita, ¿qué molestia quiere consultar?`,
@@ -270,11 +329,21 @@ export const Q = {
   confirmar_med: (med: string) => `Anoté: ${med}. ¿Es correcto? Responda SÍ o NO.`,
   corregir_med: "Escriba el nombre correcto del medicamento, o NINGUNO si no tomó otro.",
   alergias: "¿Tiene alguna alergia, por ejemplo a algún medicamento?",
+  alarma_cual: "¿Qué siente? Cuéntelo en pocas palabras. Si es muy fuerte, no espere: acuda a emergencia o llame al 106.",
   emergencia:
-    "Por lo que nos cuenta, no espere su cita: acuda a la emergencia más cercana o llame al 106 (SAMU). Avisamos a una persona del equipo.",
-  persona: "Una persona del equipo le escribirá pronto. Lo que respondió hasta ahora queda guardado para su médico.",
+    "Por lo que nos cuenta, no espere su cita: acuda a la emergencia más cercana o llame al 106 (SAMU). " +
+    "Registramos lo que nos dijo y avisamos al equipo de la clínica: una persona revisará su caso y le escribirá por este chat. " +
+    "Si quiere hablar con alguien ahora, toque «Hablar con una persona ahora».",
+  persona:
+    "Una persona del equipo le escribirá pronto por este chat. Lo que respondió queda registrado para su médico, que lo revisará antes de atenderle. " +
+    WORSE,
+  persona_ahora: "Listo: avisamos a una persona del equipo y le escribirá por este chat lo antes posible. Mientras tanto, si empeora, acuda a emergencia o llame al 106.",
 };
 
+/**
+ * The closing. The first line is the script's (scene 2); the second says what was registered, who reviews it, how we
+ * will notify and what to do if the person feels worse; the arrival time is always an estimate.
+ */
 export function closingLines(name: string, gender: Gender, window: ArrivalWindow | null | undefined): string[] {
   const first =
     gender === "m"
@@ -282,23 +351,22 @@ export function closingLines(name: string, gender: Gender, window: ArrivalWindow
       : gender === "f"
         ? `Gracias, ${name}. Su médico la recibirá con este resumen.`
         : `Gracias, ${name}. Su médico tendrá este resumen al atenderle.`;
-  if (!window) return [first];
+  const registered = "Registramos su molestia, sus medicamentos y sus respuestas: su médico los revisará antes de atenderle.";
+  if (!window) return [first, `${registered} ${WORSE}`];
   const w =
     window.atrasoMin > 0
       ? `Su consultorio va con ${window.atrasoMin} min de atraso: llegue entre ${window.desde} y ${window.hasta}.`
       : `Su consultorio va a tiempo: llegue entre ${window.desde} y ${window.hasta}.`;
-  return [`${first} ${w}`, ARRIVAL_DISCLAIMER];
+  return [`${first} ${w}`, `${registered} ${ARRIVAL_DISCLAIMER} Si cambia, le avisaremos por este chat. ${WORSE}`];
 }
 
-export const ARRIVAL_DISCLAIMER = "La hora de llegada es una estimación con los tiempos de hoy y puede cambiar: no es una hora garantizada.";
+export const ARRIVAL_DISCLAIMER = "La hora de llegada es una estimación con los tiempos de hoy, no una hora garantizada.";
 
 // ---------------------------------------------------------------- the machine
 
-const BASE_SIGNS: Sign[] = [
-  { id: "fiebre", label: "Fiebre", estado: "no_evaluado", fuente: null },
-  { id: "hinchazon", label: "Muy hinchada", estado: "no_evaluado", fuente: null },
-  { id: "calor", label: "Caliente", estado: "no_evaluado", fuente: null },
-];
+function plannedSigns(plan: AlarmQ[]): Sign[] {
+  return plan.flatMap((q) => ALARM_SIGNS[q].map((x) => ({ ...x, estado: "no_evaluado" as SignState, fuente: null })));
+}
 
 export function initialState(name: string, gender: Gender = null): PcState {
   return {
@@ -313,7 +381,9 @@ export function initialState(name: string, gender: Gender = null): PcState {
     medIndex: 0,
     alergias: null,
     alarma: { preguntada: false, positiva: false, detalle: null, literal: null },
-    signos: BASE_SIGNS.map((s) => ({ ...s })),
+    signos: [],
+    alarmPlan: [],
+    alarmIdx: 0,
     pendientes: [],
     tries: 0,
   };
@@ -337,7 +407,9 @@ export function currentQuestion(s: PcState): string | null {
     case "alergias":
       return Q.alergias;
     case "alarma":
-      return alarmQuestion(s.part);
+      return questionFor(s.alarmPlan?.[s.alarmIdx] ?? (s.part ? "local" : "general"), s.part);
+    case "alarma_cual":
+      return Q.alarma_cual;
     default:
       return null;
   }
@@ -375,6 +447,9 @@ function afterMeds(s: PcState): PcStep {
 /** Advances the interview one answer. Never throws; unknown or finished states answer nothing. */
 export function step(state: PcState, text: string, opts: StepOptions = {}): StepResult {
   const s: PcState = structuredClone(state);
+  s.alarmPlan ??= [];
+  s.alarmIdx ??= 0;
+  s.signos ??= [];
   const t = text.trim().slice(0, 500);
   const turns: Turn[] = [{ step: s.step, who: "persona", text: t }];
   const out = (status: StepResult["status"], replies: string[], task: StepResult["task"] = null): StepResult => {
@@ -391,26 +466,37 @@ export function step(state: PcState, text: string, opts: StepOptions = {}): Step
     return out("con_persona", [Q.persona], { type: "pide_persona", note: "Pidió hablar con una persona durante la preconsulta" });
   }
 
-  // 2) alarm signs, at any step: interrupt, refer to emergency, task for the staff
+  // the alarm questions depend on what the person said in the motive (a joint or limb, a pregnancy, a baby)
+  if (s.step === "motivo") {
+    s.part = bodyPart(t);
+    s.alarmPlan = alarmPlan(t, s.part);
+    s.alarmIdx = 0;
+    s.signos = plannedSigns(s.alarmPlan);
+  }
+
+  // 2) alarm signs, at any step: interrupt, refer to emergency, task for the staff. A bare "sí" to an alarm question
+  //    first asks briefly which one (for the staff task; never to diagnose); any answer to that refers.
   const mention = alarmMentions(t, opts.extraAlarmWords);
   const yn = yesNo(t) ?? (isYesNoStep(s) ? opts.interpreted ?? null : null);
-  const alarmYes = s.step === "alarma" && yn === "si";
-  if (mention.positive.length > 0 || alarmYes) {
-    s.alarma = {
-      preguntada: s.alarma.preguntada || s.step === "alarma",
-      positiva: true,
-      detalle: mention.positive.length ? mention.positive.join(", ") : "Respondió que sí a la pregunta de signos de alarma",
-      literal: t,
-    };
+  if (s.step === "alarma" && yn === "si" && mention.positive.length === 0) {
+    s.alarma = { preguntada: true, positiva: true, detalle: "Respondió que sí a la pregunta de signos de alarma", literal: t };
+    const q = s.alarmPlan[s.alarmIdx];
+    if (q) for (const x of ALARM_SIGNS[q]) setSign(s, x.id, "por_verificar", "respondió que sí a la pregunta");
+    s.step = "alarma_cual";
+    turns[0].interpreted = { alarma: "si" };
+    return out("en_curso", [Q.alarma_cual]);
+  }
+  if (mention.positive.length > 0 || s.step === "alarma_cual") {
+    const detail = mention.positive.length ? mention.positive.join(", ") : `refirió: «${t.slice(0, 80)}»`;
+    s.alarma = { preguntada: s.alarma.preguntada || s.step === "alarma" || s.step === "alarma_cual", positiva: true, detalle: detail, literal: t };
     for (const l of mention.positive) {
       const id = labelToSign(l);
-      if (id !== "otro") setSign(s, id, "si", "referido por el paciente");
-      else if (!s.signos.some((x) => x.label === l)) s.signos.push({ id: "otro", label: capitalize(l), estado: "si", fuente: "referido por el paciente" });
+      if (id !== "otro" && s.signos.some((x) => x.id === id)) setSign(s, id, "si", "referido por el paciente");
+      else if (!s.signos.some((x) => x.label.toLowerCase() === l.toLowerCase())) s.signos.push({ id: "otro", label: capitalize(l), estado: "si", fuente: "referido por el paciente" });
     }
-    if (s.step === "alarma" && yn === "si" && mention.positive.length === 0) s.signos = s.signos.map((x) => (x.id === "otro" ? x : { ...x, estado: "si", fuente: "respondió que sí (pregunta conjunta)" }));
     s.step = "emergencia";
     turns[0].interpreted = { alarma: s.alarma.detalle };
-    return out("derivada_emergencia", [Q.emergencia], { type: "alarma", note: `Refirió un signo de alarma (${s.alarma.detalle}). Se le indicó acudir a emergencia o llamar al 106.` });
+    return out("derivada_emergencia", [Q.emergencia], { type: "alarma", note: `Refirió un signo de alarma (${detail}). Se le indicó acudir a emergencia o llamar al 106.` });
   }
   // negations found in a free answer are only "por verificar" until the direct question
   for (const l of mention.negated) {
@@ -422,7 +508,6 @@ export function step(state: PcState, text: string, opts: StepOptions = {}): Step
     case "motivo": {
       const { motivo, inicio } = splitOnset(t);
       s.motivo = field(t, motivo);
-      s.part = bodyPart(t);
       if (inicio) s.inicio = { estado: "informado", valor: inicio, literal: t };
       turns[0].interpreted = { motivo: s.motivo?.valor ?? s.motivo?.estado, inicio: s.inicio?.valor ?? null };
       s.step = s.inicio || s.motivo?.estado !== "informado" ? "medicamentos" : "inicio";
@@ -538,25 +623,32 @@ export function step(state: PcState, text: string, opts: StepOptions = {}): Step
     case "alarma": {
       s.alarma.preguntada = true;
       s.alarma.literal = t;
+      const q = s.alarmPlan[s.alarmIdx] ?? (s.part ? "local" : "general");
       if (clearNo(t) || (yn === "no" && mention.positive.length === 0 && !/\b(pero|aunque|un poco|algo|a veces)\b/.test(norm(t)))) {
-        // verified negation: a clear "no" to the direct, closed question that named each sign
-        for (const x of s.signos) if (x.id !== "otro") setSign(s, x.id, "no", "negó en respuesta directa a pregunta cerrada");
+        // verified negation: a clear "no" to the direct, closed question that named those signs
+        for (const x of ALARM_SIGNS[q]) setSign(s, x.id, "no", "negó en respuesta directa a pregunta cerrada");
         s.alarma.positiva = false;
         s.alarma.detalle = null;
-        turns[0].interpreted = { negacion_verificada: true };
+        s.tries = 0;
+        turns[0].interpreted = { negacion_verificada: q };
+        if (s.alarmIdx + 1 < s.alarmPlan.length) {
+          s.alarmIdx += 1;
+          return out("en_curso", [currentQuestion(s)!]);
+        }
         s.step = "fin";
         return out("completa", closingLines(s.name, s.gender, opts.window));
       }
       s.tries += 1;
-      if (s.tries < 2) return out("en_curso", ["Para estar seguros, responda SÍ o NO.", alarmQuestion(s.part)]);
+      if (s.tries < 2) return out("en_curso", ["Para estar seguros, responda SÍ o NO.", questionFor(q, s.part)]);
       // still unclear: never written as "sin signos de alarma"; a person follows up
       s.alarma.detalle = "No confirmó la respuesta";
       s.pendientes.push("Signos de alarma: la respuesta no fue clara");
       s.step = "fin";
+      const examples = ALARM_SIGNS[q].map((x) => x.label.toLowerCase()).join(" o ");
       return out(
         "completa",
         [
-          `Si tiene fiebre, o ${s.part ? `${s.part.fem ? "la" : "el"} ${s.part.word}` : "la zona que le molesta"} se pone muy ${s.part && !s.part.fem ? "hinchado" : "hinchada"} o caliente, no espere su cita: acuda a emergencia o llame al 106. Una persona del equipo le escribirá.`,
+          `No pudimos confirmar su respuesta. Si tiene ${examples}, no espere su cita: acuda a emergencia o llame al 106. Avisamos al equipo: una persona le escribirá por este chat.`,
           ...closingLines(s.name, s.gender, opts.window),
         ],
         { type: "alarma", note: "No pudo confirmar los signos de alarma en la preconsulta" },
