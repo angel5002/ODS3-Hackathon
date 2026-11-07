@@ -1,3 +1,5 @@
+> Documento histórico: describe una versión anterior de AsistIA. La propuesta vigente es la v5.1 (ver `CLAUDE.md`).
+
 # Informe de la ejecución 1 (núcleo del prototipo)
 
 Fecha: 2 de noviembre de 2026. Demo pública: https://ods3-hackathon.vercel.app

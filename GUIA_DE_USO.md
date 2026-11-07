@@ -1,4 +1,4 @@
-# Guía de uso de AsistIA (versión 4)
+# Guía de uso de AsistIA (versión 4, textos alineados con la propuesta v5.1)
 
 Para alguien que nunca vio el sistema. Dirección pública: **https://ods3-hackathon.vercel.app** (use siempre este dominio).
 
@@ -39,7 +39,7 @@ Las 1,473 citas reales del jueves 19 de octubre de 2023 («en 3 días»), con su
 
 ### Lista de espera (Admisión)
 
-Toda la demanda, aunque no haya cupo. Orden: categoría y luego índice `0.75·R + 0.15·N + 0.10·E`, con la razón en una línea (por ejemplo, «P2 · 69 % de su plazo · primera consulta · adulta mayor»).
+Toda la demanda, aunque no haya cupo. Orden (propuesta v5.1): primero la categoría clínica y, dentro de ella, la fracción del plazo ya consumida desde el primer intento, sin bonos; con la razón en una línea (por ejemplo, «P2 · 69 % de su plazo»). Pendiente en el código: la pantalla todavía suma los bonos de la v4 por primera consulta y atención preferente.
 
 - **Registrar solicitud:** formulario de ventanilla (nombre ficticio, edad y especialidad bastan; el documento puede ser «sin documento»). Entra como *pendiente de regulación*.
 - **Ojo (ver):** fechas acumuladas (indicación, recepción, regulación, fecha límite, ofertas, confirmación) y **Ver como FHIR**.
@@ -59,7 +59,7 @@ Cada cupo libre muestra su **zona** (cercana 2–3 días: P1–P2 y poco aviso; 
 
 1. **Aprobar y enviar oferta a k:** sin su aprobación no sale nada; queda registrado quién aprobó.
 2. Las respuestas aparecen en vivo. **Acepta / No** al lado de cada candidato es el botón **Usar simulado** (plan B si un celular falla).
-3. **Cerrar oferta y asignar:** gana el de mayor prioridad entre quienes aceptaron, aunque otro haya respondido primero. Se ve el mensaje «Asignado a Ana G. (prioridad 0.77…) aunque Julio respondió primero (0.48)».
+3. **Cerrar oferta y asignar:** con la regla «mayor prioridad al cierre de la ventana», gana el de mayor prioridad entre quienes aceptaron, aunque otro haya respondido primero. Se ve el mensaje «Asignado a Ana G. (P2, 69 % de su plazo) aunque Julio respondió primero (P2, 44 %)» (hoy, con los bonos de la v4, todavía dice 0.77 y 0.48). La v5.1 compara esta regla con «primero que acepta».
 4. Si el ganador tenía una cita más lejana, al validar se libera y aparece aquí como **efecto dominó**.
 
 ![Por reasignar](capturas/v4/10-por-reasignar.png) ![Oferta abierta](capturas/v4/12-oferta-abierta.png) ![Asignado](capturas/v4/13-asignado-a-ana.png) ![Dominó](capturas/v4/15-domino.png)
@@ -78,14 +78,14 @@ Tareas por tipo, cada una con un guion breve, y botones de resultado: confirmó,
 
 ### Tablero
 
-Personas registradas sin cupo, % con atención, mediana y percentil 90 de la espera, % fuera de plazo, cupos liberados que se llenan, ofertas, validaciones, retiros sin atención, carga del personal e inasistencia; **equidad** por categoría (60+, menores de 12, sin seguro; «Grupo pequeño» si hay menos de 5); escenario **r ≈ s + c·f** editable con la línea de beneficio en 5.3 %; y **Ver qué pasó** ese día real.
+Personas registradas sin cupo, % con atención, mediana y percentil 90 de la espera, % fuera de plazo, cupos liberados que se llenan, ofertas, validaciones, retiros sin atención, carga del personal e inasistencia; **equidad** por categoría (60+, menores de 12, sin seguro; «Grupo pequeño» si hay menos de 5); escenario **r ≈ s + c·f** editable (supuesto) con la línea de referencia del costo (la v5.1 la fija en 5.2 %; el parámetro todavía dice 5.3 %); y **Ver qué pasó** ese día real.
 
 ![Tablero](capturas/v4/17-tablero.png)
 
 ### Teléfonos simulados y `/pedir-cita`
 
 - Teléfonos: mensajes con botones (Confirmo, No podré asistir, Reprogramar, Hablar con una persona; Acepto/No puedo; Sí, soy el paciente/cuidador). ![Carmen](capturas/v4/09-telefono-carmen.png) ![Julio](capturas/v4/11-telefono-julio-oferta.png)
-- Llamada entrante a pantalla completa con tono: **Contestar** inicia la voz del agente; **Rechazar** cuenta como un intento. ![Llamada](capturas/v4/19-llamada-entrante.png)
+- Llamada entrante a pantalla completa con tono, dentro del navegador (no hay números reales): **Contestar** inicia la voz del agente, que se presenta como asistente automatizado del Hospital de demostración; **Rechazar** cuenta como un intento. ![Llamada](capturas/v4/19-llamada-entrante.png)
 - `/pedir-cita`: tres opciones. El chat pide **ACEPTO**, recoge los datos uno por uno, pregunta por signos de alarma y entrega un código S-XXXX. «PERSONA» crea una tarea; «SALIR» o el tacho borran la conversación. ![Inicio](capturas/v4/02-pedir-cita-inicio.png) ![Chat](capturas/v4/03-chat-resumen.png) ![Código](capturas/v4/04-chat-codigo.png)
 
 ## 4. Preparar la demo (10 minutos antes)

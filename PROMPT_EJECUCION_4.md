@@ -1,3 +1,5 @@
+> Documento histórico: describe una versión anterior de AsistIA. La propuesta vigente es la v5.1 (ver `CLAUDE.md`).
+
 # Prompt — Ejecución 4: AsistIA completo, con chat web y voz en vivo
 
 > Copia todo lo que está debajo de la línea y pégalo en Claude Code, abierto en la raíz del repositorio.

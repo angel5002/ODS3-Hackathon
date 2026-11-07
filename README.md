@@ -2,11 +2,13 @@
 
 Prototipo del grupo Algorritmia para CientíficaHack 2026 (Universidad Científica del Sur), Desafío 4 "IA para la experiencia del paciente" (ODS 3).
 
+> La propuesta vigente es `insumos/AsistIA_Propuesta_Final_Algorritmia_v5.1.pdf`; el contexto del producto está en `CLAUDE.md` y los requisitos en `docs/requisitos_v4.md`. Este README describe la base técnica y algunas secciones vienen de la primera ejecución.
+
 En 2023, en el Hospital María Auxiliadora (MINSA, Lima), 1 de cada 4 citas de consulta externa programadas no se atendió: 106,100 citas, unas 347 por día de atención. Este prototipo:
 
 1. Estima el riesgo de que cada cita de mañana no se atienda y lo explica en lenguaje simple.
 2. Envía un recordatorio por mensaje a todas las citas (simulado: los mensajes solo llegan a un teléfono simulado en el navegador).
-3. Llama con un asistente automático a quienes no responden (hoy con guion fijo; la voz con IA llega en la ejecución 2).
+3. Llama, con un asistente automatizado en el navegador, a quienes no usan mensajería o eligieron llamada, y a quienes no responden y están en el 10 % de mayor riesgo (ElevenLabs, con Gemini Live y un guion fijo como respaldo).
 4. Cuando se libera un cupo, propone pacientes de la lista de espera; **una persona decide** a quién se le ofrece.
 5. Muestra todo en vivo en el panel, el tablero y los celulares.
 
@@ -28,7 +30,7 @@ En 2023, en el Hospital María Auxiliadora (MINSA, Lima), 1 de cada 4 citas de c
 - **Web:** Next.js 16 (App Router) + TypeScript + Tailwind 4, desplegado en Vercel desde `main`.
 - **Datos y tiempo real:** Supabase (Postgres + Realtime). El navegador solo lee (clave publicable, RLS de solo lectura). Toda escritura pasa por las rutas `/api/*` del servidor, que llaman a funciones de Postgres con la clave secreta. Cada acción emite un aviso pequeño por Realtime (difusión en el tema `demo`) y cada pantalla vuelve a leer lo que muestra.
 - **Modelo:** Python en `ml/`, fuera de la app. Se entrena una vez y sus resultados se cargan en Supabase.
-- **Canales detrás de interfaces:** `MessagingChannel` y `VoiceChannel` en `src/lib/channels.ts`, y `VoiceAgent` en `src/lib/voice/agent.ts`. Hoy están simulados; en un piloto se reemplazan por WhatsApp Business o telefonía real.
+- **Canales detrás de interfaces:** `MessagingChannel` y `VoiceChannel` en `src/lib/channels.ts`, y `VoiceAgent` en `src/lib/voice/agent.ts`. En el prototipo, la mensajería es el chat web y los teléfonos simulados, y la voz es una llamada en el navegador: no hay telefonía ni números reales. En un piloto, la mensajería y la llamada saldrían del número del propio establecimiento, con las mismas interfaces.
 
 ```
 ml/                 pipeline del modelo y datos (pipeline.py, features.py, fake.py) y salidas en ml/out/
