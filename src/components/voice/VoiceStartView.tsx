@@ -1,16 +1,16 @@
 "use client";
 
-// Presentational start screen of the voice registration in /pedir-cita (E5 estilo). Same tokens and language as
-// the call screen: the identification, the resting wave, one title, two short lines, one button and the safety
-// line. No demo notice here (the page footer carries it). Flat: no wash, no gradient. It receives
-// only these props: no SDK, no server calls. The controller (PedirCita › VoiceRegister) mounts it while the
-// voice state is "idle" and passes `ready` (the anonymous chat session exists) and `onStart`.
-// Like CallView it is rendered as `absolute inset-0` inside a relative container (the <main> of the voice view,
-// whatever its padding), so it always takes the full available height.
-import { Mic, ShieldCheck } from "lucide-react";
+// Presentational start screen of the voice registration in /pedir-cita (E5 stoic). The same skeleton as the
+// "Respira" call screen, so starting the call changes only the word in the disc: the identification line, the
+// still circles around the dark disc, one title, one supporting line and one action. No demo notice here (the
+// page footer carries it). It receives only these props: no SDK, no server calls. The controller
+// (PedirCita › VoiceRegister) mounts it while the voice state is "idle" and passes `ready` (the anonymous chat
+// session exists) and `onStart`. Rendered as `absolute inset-0` inside a relative container.
+import { useRef } from "react";
+import { Mic } from "lucide-react";
 import { DEFAULT_VOICE_THEME, type VoiceTheme } from "@/lib/voice/theme";
-import { CALL_SAFETY_LINE, callIdentification } from "./CallView";
-import { VoiceWave } from "./VoiceWave";
+import { callIdentification } from "./CallView";
+import { Respira } from "./Respira";
 
 export type VoiceStartViewProps = {
   /** the session can start; false shows "Preparando…" on a disabled button */
@@ -24,44 +24,42 @@ export type VoiceStartViewProps = {
 };
 
 export function VoiceStartView({ ready, onStart, theme = DEFAULT_VOICE_THEME, establishment = "Hospital Mirasur", className = "" }: VoiceStartViewProps) {
+  const disc = useRef<HTMLDivElement>(null);
   return (
     <section
       aria-label="Hablar con el asistente"
       data-voice-theme={theme}
-      className={`@container absolute inset-0 z-20 flex flex-col overflow-hidden bg-vc-bg text-vc-text ${className}`}
+      className={`absolute inset-0 z-20 flex flex-col overflow-hidden bg-vc-bg text-vc-text [container-type:size] ${className}`}
     >
-      <header className="relative w-full shrink-0 border-b border-vc-line">
-        <p className="mx-auto w-full max-w-[600px] px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] text-center text-[14px] leading-snug text-vc-text-2">
-          {callIdentification(establishment)}
-        </p>
-      </header>
+      <p className="w-full shrink-0 px-5 pb-2 pt-[calc(0.875rem+env(safe-area-inset-top,0px))] text-[13px] leading-snug text-vc-text-2 @[400px]:text-[14px]">
+        {callIdentification(establishment)}
+      </p>
 
-      <div className="vc-enter relative mx-auto flex w-full max-w-[600px] flex-1 flex-col items-center justify-center px-6 py-4 text-center">
-        <div className="h-32 w-[calc(100%+3rem)] max-w-none @lg:h-44">
-          <VoiceWave levels={null} active={false} speaker={null} theme={theme} />
+      <div className="relative min-h-0 w-full flex-1">
+        <div className="absolute inset-0">
+          <Respira mode="rest" levels={null} discRef={disc} />
         </div>
-        <h2 className="mt-4 text-balance text-[26px] font-bold leading-tight @lg:text-[30px]">Hablar con el asistente</h2>
-        <p className="mt-2 max-w-[32ch] text-pretty text-[17px] leading-snug text-vc-text-2">
-          Le hará las mismas preguntas que el chat, una a la vez. Use un nombre ficticio. No se graba la llamada.
-        </p>
-        <div className="mt-7 w-full max-w-[320px]">
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={!ready}
-            className="vc-pill flex min-h-14 w-full items-center justify-center gap-2 rounded-md bg-vc-primary px-5 text-[17px] font-semibold text-vc-on-primary active:bg-vc-primary-press disabled:opacity-60"
-          >
-            <Mic className="size-5" aria-hidden />
-            {ready ? "Empezar la llamada" : "Preparando…"}
-          </button>
-          <p className="mt-2 text-[14px] text-vc-text-3">Se pedirá permiso para usar el micrófono.</p>
+        <div className="absolute inset-0 grid place-items-center">
+          <div ref={disc} className="grid aspect-square w-[clamp(120px,30cqmin,200px)] place-items-center rounded-full bg-vc-text text-vc-on-primary">
+            <Mic className="size-9" aria-hidden />
+          </div>
         </div>
       </div>
 
-      <p className="relative shrink-0 text-balance px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-2 text-center text-[13px] leading-snug text-vc-text-3 @md:text-[14px]">
-        <ShieldCheck className="mr-1 inline size-4 align-[-3px] text-vc-icon" aria-hidden />
-        {CALL_SAFETY_LINE}
-      </p>
+      <div className="vc-enter mx-auto w-full max-w-[440px] shrink-0 px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-2 text-center">
+        <h2 className="text-balance font-display text-[30px] leading-tight">Hablar con el asistente</h2>
+        <p className="mx-auto mt-2 max-w-[32ch] text-pretty text-[16px] leading-snug text-vc-text-2">
+          Use un nombre ficticio. Nunca le pediremos pagos ni su DNI completo.
+        </p>
+        <button
+          type="button"
+          onClick={onStart}
+          disabled={!ready}
+          className="vc-pill press mt-6 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-vc-primary px-5 text-[17px] font-semibold text-vc-on-primary active:bg-vc-primary-press disabled:opacity-60"
+        >
+          {ready ? "Empezar la llamada" : "Preparando…"}
+        </button>
+      </div>
     </section>
   );
 }

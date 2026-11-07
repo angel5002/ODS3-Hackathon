@@ -77,7 +77,7 @@ const PAIRS = [
 const APP_PAIRS = [
   ["vc-text-2", "vc-surface", "texto", "texto secundario sobre superficies neutras (app)"],
   ["vc-text-3", "vc-bg", "texto", "aviso «Demostración…» al pie de /pedir-cita y del teléfono (E5 estilo)"],
-  ["vc-text", "vc-bg", "texto", "botón «Activar sonido y llamadas» (E5 estilo)"],
+  ["vc-text", "vc-surface", "texto", "botón «Activar sonido» (E5 stoic)"],
   ["vc-icon", "vc-surface", "icono", "icono del edificio en la cabecera del teléfono (app)"],
   ["vc-text-3", "vc-surface", "texto", "pista «Responda con los botones del mensaje»; botón Enviar desactivado (app)"],
   ["vc-text", "vc-surface", "texto", "«Respondió: …» en la burbuja (app)"],
@@ -109,6 +109,27 @@ const APP_PAIRS = [
 ];
 PAIRS.push(...APP_PAIRS);
 
+// E5 stoic: the "Respira" call screen and the near-white app surfaces (cards, accent, the dark disc).
+const STOIC_PAIRS = [
+  ["vc-on-primary", "vc-text", "texto", "palabra de estado dentro del disco (Respira)"],
+  ["vc-on-primary", "vc-text-2", "texto", "palabra del disco al terminar o sin conexión (Respira)"],
+  ["vc-text", "vc-bg", "control", "borde del disco contra el fondo (Respira)"],
+  ["vc-agent", "vc-bg", "control", "ondas laterales y anillo del asistente (Respira)"],
+  ["vc-person", "vc-bg", "control", "anillos que laten con la voz de la persona (Respira)"],
+  ["vc-icon", "vc-surface", "icono", "iconos de Silenciar, Chat, Mantener para hablar (Respira)"],
+  ["vc-text-2", "vc-bg", "texto", "rótulos bajo los botones, identificación (Respira)"],
+  ["vc-on-toggle", "vc-toggle", "icono", "Silenciar activado, Mantener para hablar pulsado (Respira)"],
+  ["vc-text", "vc-card", "texto", "burbuja del asistente, tarjetas de /pedir-cita"],
+  ["vc-text-2", "vc-card", "texto", "texto secundario en tarjetas"],
+  ["vc-icon", "vc-card", "icono", "iconos de las tarjetas de /pedir-cita"],
+  ["vc-accent", "vc-card", "texto", "«Oferta de cupo» (acento)"],
+  ["vc-accent", "vc-card", "control", "borde de la burbuja de oferta (acento)"],
+  ["vc-accent", "vc-accent-soft", "texto", "acento sobre su tinte"],
+  ["vc-edge", "vc-card", "control", "borde del campo de texto y de las respuestas rápidas"],
+  ["vc-danger-press", "vc-bg", "icono", "icono del aviso de emergencia en /pedir-cita"],
+];
+PAIRS.push(...STOIC_PAIRS);
+
 // E5 estilo: the app tokens of the first @theme block (staff screens, landing, footer, /acceso). A literal hex
 // stands for a value that lives in a CSS rule instead of a token (the agenda figure of the landing).
 function appTokens() {
@@ -125,8 +146,15 @@ const BASE_PAIRS = [
     ["faint", bg, "texto", "texto terciario («Sin estimar»)"],
     ["brand", bg, "texto", "enlaces, cifras destacadas, pestaña activa"],
     ["line-strong", bg, "control", "borde de campos, selects y botones secundarios"],
-    ["brand", bg, "control", "foco (contorno de 3 px), borde del rol elegido"],
+    ["brand", bg, "control", "botón principal, borde del rol elegido"],
+    ["accent", bg, "texto", "acento: pestaña activa, cifra clave, enlace en contexto (E5 stoic)"],
+    ["accent", bg, "control", "foco (contorno de 3 px), marca de la pestaña activa (E5 stoic)"],
   ]),
+  ["white", "accent", "texto", "texto sobre el acento (E5 stoic)"],
+  ["accent", "accent-soft", "texto", "acento sobre su tinte (E5 stoic)"],
+  ["white", "night", "control", "borde claro sobre recuadro oscuro (E5 stoic)"],
+  ["ink", "surface", "control", "celda «Atendida» de la figura de la portada (E5 stoic)"],
+  ["accent", "surface", "control", "celda «Recuperable» de la figura (E5 stoic)"],
   ["white", "brand", "texto", "texto en botón principal"],
   ["white", "brand-hover", "texto", "texto en botón principal (cursor encima)"],
   ["brand", "brand-soft", "texto", "pestaña activa de la cabecera del personal"],
@@ -145,9 +173,9 @@ const BASE_PAIRS = [
   ["st-done", "st-done-soft", "texto", "estado Reasignada"],
   ["white", "night", "texto", "texto en recuadros oscuros (regulador, call center)"],
   ["mint", "night", "texto", "acento menta sobre recuadros oscuros"],
-  ["#7f938f", "surface", "control", "celda «Atendida» de la figura de la portada"],
+
   ["line-strong", "surface", "control", "contorno de la celda «No atendida» de la figura"],
-  ["brand", "surface", "control", "celda «Recuperable» de la figura"],
+
 ];
 
 // E5 demo: the /demo control center (projected to the jury) and its operator tools use their own local tokens

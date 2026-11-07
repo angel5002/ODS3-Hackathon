@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+// /demo: two modes over the same data. PRESENTAR is the projected screen of the pitch (presentacion/*); OPERAR is the
+// control board for the operator and the questions (ControlCenter and the tools below it). The switch is always in view
+// and the mode lives in the URL (?modo=presentar&momento=qr), so the projector laptop can bookmark it.
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ExternalLink, Smartphone, Wrench } from "lucide-react";
 import { post } from "@/lib/post";
-import { num, pct, years } from "@/lib/labels";
+import { DISCLAIMER, num, pct, years } from "@/lib/labels";
 import { useDemoState, useNow, useStaffTick } from "@/lib/realtime";
 import type { DemoState } from "@/lib/types";
 import type { DemoOverview } from "@/lib/demo-overview";
+import { PRESENTATION_ORDER, type PresentationMoment } from "@/lib/demo/contract";
 import { useServerView } from "@/components/panel/useStaffView";
 import { LiveSection, type LiveData } from "./LiveSection";
 import { VoiceSessionsView, type VoiceOverview } from "./VoiceSessionsCard";
@@ -15,6 +19,9 @@ import { ParamsCard } from "./ParamsCard";
 import { ControlCenter } from "./ControlCenter";
 import { DemoTheme } from "./DemoTheme";
 import { DemoButton, DemoCard, demoField } from "./DemoUi";
+import { PresentationMode, isMoment } from "./presentacion/PresentationMode";
+
+export type DemoMode = "presentar" | "operar";
 
 export type QrCard = {
   id: string;
@@ -29,41 +36,91 @@ export type QrCard = {
   detail: string;
 };
 type Assumptions = Record<string, number> | null;
+type Qr = { url: string; svg: string };
+export type Run = (action: string, body?: Record<string, unknown>, success?: string) => Promise<boolean>;
 
-export function DemoControls({ cards, assumptions, publicQr }: { cards: QrCard[]; assumptions: Assumptions; publicQr?: { url: string; svg: string } }) {
+function writeUrl(mode: DemoMode, moment: PresentationMoment) {
+  const u = new URL(window.location.href);
+  if (mode === "presentar") {
+    u.searchParams.set("modo", "presentar");
+    u.searchParams.set("momento", moment);
+  } else {
+    u.searchParams.delete("modo");
+    u.searchParams.delete("momento");
+  }
+  window.history.replaceState(window.history.state, "", u);
+}
+
+export function DemoControls({
+  cards,
+  assumptions,
+  publicQr,
+  chatQr,
+  initialMode = "operar",
+  initialMoment = null,
+}: {
+  cards: QrCard[];
+  assumptions: Assumptions;
+  publicQr?: Qr;
+  chatQr?: Qr;
+  initialMode?: DemoMode;
+  initialMoment?: string | null;
+}) {
   const state = useDemoState();
   const now = useNow(1000);
   const [busy, setBusy] = useState("");
+  const [mode, setMode] = useState<DemoMode>(initialMode);
+  const [moment, setMoment] = useState<PresentationMoment>(isMoment(initialMoment) ? initialMoment : PRESENTATION_ORDER[0]);
   useStaffTick(Boolean(state?.clock_started_at));
-  // one read per view for the whole page: the control center and the tools below share them
+  // one read per view for the whole page: both modes and the tools share them
   const overview = useServerView<DemoOverview>("/api/staff/data?view=overview", ["full", "bulk", "req", "slot", "offer", "live", "call"]);
   const live = useServerView<LiveData>("/api/staff/data?view=live", ["full", "live", "call", "chat", "slot", "bulk"]);
   const voice = useServerView<VoiceOverview>("/api/staff/data?view=voice", ["full", "live", "call", "bulk"]);
-  // voice sessions and call states change without a database hint (heartbeats): refresh every 5 s while visible
+  // voice sessions and call states change without a database hint (heartbeats): refresh every 5 s while operating
   const { reload: reloadVoice } = voice;
   const { reload: reloadLive } = live;
   useEffect(() => {
+    if (mode !== "operar") return;
     const id = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       reloadVoice();
       reloadLive();
     }, 5000);
     return () => clearInterval(id);
-  }, [reloadVoice, reloadLive]);
+  }, [reloadVoice, reloadLive, mode]);
+
+  const switchMode = useCallback(
+    (m: DemoMode) => {
+      setMode(m);
+      writeUrl(m, moment);
+      window.scrollTo(0, 0);
+    },
+    [moment],
+  );
+  const changeMoment = useCallback((m: PresentationMoment) => {
+    setMoment(m);
+    writeUrl("presentar", m);
+  }, []);
 
   const { reload: reloadOverview } = overview;
-  async function run(action: string, body: Record<string, unknown> = {}, success?: string) {
+  const run: Run = async (action, body = {}, success) => {
     setBusy(action);
     try {
       const res = await post<{ sent?: number }>("/api/staff", { action, ...body });
       if (success) toast.success(success.replace("{n}", num(res.sent ?? 0)));
       reloadOverview(); // do not wait for the Realtime hint
       if (action === "end_call") reloadLive();
+      return true;
     } catch (e) {
       toast.error((e as Error).message);
+      return false;
     } finally {
       setBusy("");
     }
+  };
+
+  if (mode === "presentar") {
+    return <PresentationMode moment={moment} onMoment={changeMoment} onExit={() => switchMode("operar")} overview={overview.data} chatQr={chatQr ?? null} />;
   }
 
   return (
@@ -81,6 +138,7 @@ export function DemoControls({ cards, assumptions, publicQr }: { cards: QrCard[]
       live={<LiveSection data={live.data} />}
       voice={<VoiceSessionsView data={voice.data} />}
       params={<ParamsCard />}
+      onPresent={() => switchMode("presentar")}
     />
   );
 }
@@ -88,11 +146,11 @@ export function DemoControls({ cards, assumptions, publicQr }: { cards: QrCard[]
 type DemoControlsViewProps = {
   cards: QrCard[];
   assumptions: Assumptions;
-  publicQr?: { url: string; svg: string };
+  publicQr?: Qr;
   state: DemoState | null;
   now: number;
   busy: string;
-  run: (action: string, body?: Record<string, unknown>, success?: string) => void;
+  run: Run | ((action: string, body?: Record<string, unknown>, success?: string) => void);
   live: ReactNode;
   voice: ReactNode;
   params: ReactNode;
@@ -100,24 +158,41 @@ type DemoControlsViewProps = {
   overview?: DemoOverview | null;
   liveData?: LiveData | null;
   voiceData?: VoiceOverview | null;
+  /** switches to the projected mode (absent in /dev/pantallas) */
+  onPresent?: () => void;
 };
 
-/** /demo, props only (DemoControls owns the hooks and the server calls). Also rendered by /dev/pantallas.
- *  First screen: the control center projected to the jury. Below it: preparation and every operator tool. */
-export function DemoControlsView({ cards, assumptions, publicQr, state, now, busy, run, live, voice, params, overview = null, liveData = null, voiceData = null }: DemoControlsViewProps) {
+/** /demo OPERAR, props only (DemoControls owns the hooks and the server calls). Also rendered by /dev/pantallas.
+ *  First screen: the control board. Below it: preparation and every operator tool. Last: the one notice line. */
+export function DemoControlsView({
+  cards,
+  assumptions,
+  publicQr,
+  state,
+  now,
+  busy,
+  run,
+  live,
+  voice,
+  params,
+  overview = null,
+  liveData = null,
+  voiceData = null,
+  onPresent,
+}: DemoControlsViewProps) {
+  const runP: Run = async (a, b, s) => (await run(a, b, s)) !== false;
   return (
     <div className="cc-root min-w-0">
       <DemoTheme />
-      <ControlCenter state={state} now={now} busy={busy} run={run} overview={overview} live={liveData} voice={voiceData} publicQr={publicQr} />
+      <ControlCenter state={state} now={now} busy={busy} run={runP} overview={overview} live={liveData} voice={voiceData} onPresent={onPresent} />
 
-      <main id="herramientas" className="mx-auto max-w-[1300px] scroll-mt-4 space-y-5 border-t border-(--cc-border) px-4 py-7 sm:px-6">
+      <main id="herramientas" className="mx-auto max-w-[1300px] scroll-mt-4 space-y-5 border-t border-(--cc-border) px-4 py-8 sm:px-6">
         <div>
           <h2 className="flex items-center gap-2 text-[24px] font-bold leading-tight">
-            <Wrench className="size-6 text-(--cc-accent)" aria-hidden /> Preparación y herramientas del operador
+            <Wrench className="size-6 text-(--cc-accent)" aria-hidden /> Preparación y herramientas
           </h2>
-          <p className="mt-1 max-w-[80ch] text-[15px] text-(--cc-text-2)">
-            Paso 0 del guion: vincular el chat a Julio, probar mensajes y llamadas, abrir los teléfonos simulados y ajustar los supuestos. Escanee un
-            código con un celular: abre el teléfono simulado de ese paciente.
+          <p className="mt-1 max-w-[70ch] text-[15px] text-(--cc-text-2)">
+            Vincule el chat a Julio, pruebe mensajes y llamadas, abra los teléfonos simulados y ajuste los supuestos.
           </p>
         </div>
 
@@ -134,7 +209,7 @@ export function DemoControlsView({ cards, assumptions, publicQr, state, now, bus
 
         {publicQr && (
           <p className="text-[14px] text-(--cc-text-2)">
-            Enlace del jurado:{" "}
+            Enlace público para pedir una cita:{" "}
             <a href={publicQr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 break-all font-semibold text-(--cc-accent) underline underline-offset-4">
               {publicQr.url}
               <ExternalLink className="size-3.5 shrink-0" aria-hidden />
@@ -160,6 +235,13 @@ export function DemoControlsView({ cards, assumptions, publicQr, state, now, bus
           </DemoCard>
         )}
       </main>
+
+      {/* the one notice line of the screen (the site footer is hidden on /demo, see DemoTheme) */}
+      <footer className="cc-footer border-t border-(--cc-border) bg-(--cc-surface) px-4 py-1.5 sm:px-6 xl:sticky xl:bottom-0 xl:z-10">
+        <p className="text-[13px] leading-snug text-(--cc-text-2) 2xl:text-[14px]">
+          {DISCLAIMER} Fuente: Plataforma Nacional de Datos Abiertos del Perú (ODC-BY).
+        </p>
+      </footer>
     </div>
   );
 }
@@ -179,7 +261,7 @@ function PhoneQrCard({ c }: { c: QrCard }) {
       <p className="mt-0.5 text-[12px] leading-snug text-(--cc-text-2)">{c.detail}</p>
       <div className="mt-auto pt-3.5">
         <div
-          className="mx-auto w-full max-w-[180px] rounded-[4px] border border-(--cc-border) bg-(--cc-surface) p-1.5 [&_svg]:h-auto [&_svg]:w-full"
+          className="mx-auto w-full max-w-[180px] rounded-md border border-(--cc-border) bg-(--cc-surface) p-1.5 [&_svg]:h-auto [&_svg]:w-full"
           dangerouslySetInnerHTML={{ __html: c.svg }}
           role="img"
           aria-label={`Código QR del teléfono de ${c.full_name}`}
@@ -189,7 +271,7 @@ function PhoneQrCard({ c }: { c: QrCard }) {
         href={c.url}
         target="_blank"
         rel="noreferrer"
-        className="mt-2.5 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-[4px] border border-(--cc-control) text-[13px] font-semibold text-(--cc-text) hover:bg-(--cc-subtle) active:bg-(--cc-subtle)"
+        className="mt-2.5 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-md border border-(--cc-control) text-[13px] font-semibold text-(--cc-text) hover:bg-(--cc-subtle) active:bg-(--cc-subtle)"
       >
         <Smartphone className="size-4" aria-hidden /> Abrir aquí
       </a>

@@ -67,11 +67,17 @@ export type CallViewProps = {
   actions: CallActions;
   /**
    * Noisy-room mode ("modo sala ruidosa", final day): present only when the call must use push-to-talk. The
-   * view then draws a "Mantener para hablar" button: onPointerDown → start(), onPointerUp / onPointerCancel /
-   * onPointerLeave → end(); `talking` is true while it is held. The microphone is muted otherwise.
-   * The controller sends it only when PUSH_TO_TALK_BUTTON_READY is true (see below). Optional, additive.
+   * view then draws a "Mantener para hablar" button in place of "Silenciar": pointer down (or Space/Enter down)
+   * → start(); pointer up / cancel / lost capture, key up or the window losing focus → end(); `talking` is true
+   * while it is held (the button turns ink and the rings follow the microphone). The microphone is muted
+   * otherwise. Optional, additive.
    */
   pushToTalk?: PushToTalk;
+  /**
+   * OPTIONAL (E5 stoic). Scene playback on the projector: the call controls (and the options menu) are hidden;
+   * the identification, the time, the circles and the last caption stay. Default false.
+   */
+  scene?: boolean;
 };
 
 export type PushToTalk = { talking: boolean; start: () => void; end: () => void };
@@ -80,8 +86,9 @@ export type PushToTalk = { talking: boolean; start: () => void; end: () => void 
  * Set to true by the UI track in the same change that draws the "Mantener para hablar" button from
  * CallViewProps.pushToTalk. While false, the controllers never mute the microphone for push-to-talk (a muted
  * microphone with no button would leave the person unable to speak), even if the noisy-room mode is on.
+ * E5 stoic: the "Respira" CallView draws it (src/components/voice/CallView.tsx › HoldToTalk).
  */
-export const PUSH_TO_TALK_BUTTON_READY = false;
+export const PUSH_TO_TALK_BUTTON_READY = true;
 
 export type VoiceWaveProps = {
   levels: AudioLevels | null;

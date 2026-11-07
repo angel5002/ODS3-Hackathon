@@ -87,6 +87,19 @@ type LiveSectionViewProps = {
 
 /** "En vivo", props only (LiveSection owns the data and the actions). */
 export function LiveSectionView({ data, busy, online, personas, act }: LiveSectionViewProps) {
+  // test calls ("prueba") stay hidden unless asked for; a ringing or ongoing one always shows, so it can be ended
+  const [showTests, setShowTests] = useState(false);
+  const allCalls = data?.calls ?? [];
+  const tests = allCalls.filter((c) => c.purpose === "prueba").length;
+  const calls = allCalls.filter((c) => showTests || c.purpose !== "prueba" || c.status === "sonando" || c.status === "en_curso");
+  // chat sessions: the connected or linked ones first, newest first; the rest behind "Mostrar todas"
+  const [allSessions, setAllSessions] = useState(false);
+  const sessions = [...(data?.sessions ?? [])].sort(
+    (x, y) =>
+      Number(online(y.last_seen_at) || !!y.linked_patient) - Number(online(x.last_seen_at) || !!x.linked_patient) ||
+      Date.parse(y.last_seen_at) - Date.parse(x.last_seen_at),
+  );
+  const shownSessions = allSessions ? sessions : sessions.slice(0, 6);
   return (
     <DemoCard className="p-4 sm:p-5">
       <h2 className="flex items-center gap-2 text-[20px] font-bold">
@@ -103,11 +116,11 @@ export function LiveSectionView({ data, busy, online, personas, act }: LiveSecti
             <MessageCircle className="size-4 text-(--cc-accent)" aria-hidden /> Sesiones de chat ({data?.sessions.length ?? 0})
           </h3>
           {!data?.sessions.length && (
-            <p className="mt-2 border-l-[3px] border-(--cc-border) bg-(--cc-subtle) px-3 py-2.5 text-[14px] text-(--cc-text-2)">Ninguna todavía. Abra /pedir-cita en un celular.</p>
+            <p className="mt-2 rounded-lg bg-(--cc-subtle) px-3 py-2.5 text-[14px] text-(--cc-text-2)">Ninguna todavía. Abra /pedir-cita en un celular.</p>
           )}
           <ul className="mt-2 space-y-2">
-            {data?.sessions.map((s) => (
-              <li key={s.id} className="min-w-0 rounded-[4px] border border-(--cc-border) p-3">
+            {shownSessions.map((s) => (
+              <li key={s.id} className="min-w-0 rounded-md border border-(--cc-border) p-3">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="font-bold">{s.alias}</span>
                   {s.request_code && <Status tone="info">{s.request_code}</Status>}
@@ -149,17 +162,22 @@ export function LiveSectionView({ data, busy, online, personas, act }: LiveSecti
               </li>
             ))}
           </ul>
+          {sessions.length > 6 && (
+            <button type="button" onClick={() => setAllSessions((v) => !v)} className="mt-2 min-h-11 text-[14px] font-semibold text-(--cc-accent) underline underline-offset-4">
+              {allSessions ? "Mostrar solo las recientes" : `Mostrar todas (${sessions.length})`}
+            </button>
+          )}
         </section>
 
         <section className="min-w-0">
           <h3 className="flex items-center gap-1.5 text-[15px] font-bold">
             <Smartphone className="size-4 text-(--cc-accent)" aria-hidden /> Teléfonos simulados
           </h3>
-          <ul className="mt-2 divide-y divide-(--cc-border) rounded-[4px] border border-(--cc-border)">
+          <ul className="mt-2 divide-y divide-(--cc-border) rounded-md border border-(--cc-border)">
             {data?.phones.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[14px]">
                 <span className="font-bold">{p.name.split(" ")[0]}</span>
-                <span className="min-w-0 flex-1 truncate text-[13px] text-(--cc-text-2)">{p.label}</span>
+                <span className="min-w-[10rem] flex-1 text-[13px] text-(--cc-text-2)">{p.label}</span>
                 {online(p.last_seen_at) ? <Status tone="ok">Abierto</Status> : <Status>Cerrado</Status>}
                 {p.sound_ready && <Status tone="info">Sonido</Status>}
                 <button
@@ -168,7 +186,7 @@ export function LiveSectionView({ data, busy, online, personas, act }: LiveSecti
                   title="Probar llamada en este teléfono"
                   aria-label={`Probar llamada en el teléfono de ${p.name}`}
                   onClick={() => act(`p${p.id}`, { action: "test_call", patientId: p.id }, "Llamada de prueba enviada")}
-                  className="grid size-10 place-items-center rounded-[4px] border border-(--cc-control) text-(--cc-accent) hover:bg-(--cc-subtle) disabled:opacity-50"
+                  className="grid size-10 place-items-center rounded-md border border-(--cc-control) text-(--cc-accent) hover:bg-(--cc-subtle) disabled:opacity-50"
                 >
                   <Phone className="size-4" aria-hidden />
                 </button>
@@ -179,11 +197,19 @@ export function LiveSectionView({ data, busy, online, personas, act }: LiveSecti
       </div>
 
       <section className="mt-5 min-w-0">
-        <h3 className="text-[15px] font-bold">Llamadas recientes del asistente</h3>
-        {!data?.calls.length && <p className="mt-2 border-l-[3px] border-(--cc-border) bg-(--cc-subtle) px-3 py-2.5 text-[14px] text-(--cc-text-2)">Ninguna llamada en vivo todavía.</p>}
+        <div className="flex flex-wrap items-center justify-between gap-x-4">
+          <h3 className="text-[15px] font-bold">Llamadas recientes del asistente</h3>
+          {tests > 0 && (
+            <label className="flex min-h-11 items-center gap-2 text-[14px] text-(--cc-text-2)">
+              <input type="checkbox" checked={showTests} onChange={(e) => setShowTests(e.target.checked)} />
+              Mostrar llamadas de prueba ({tests})
+            </label>
+          )}
+        </div>
+        {!calls.length && <p className="mt-2 rounded-lg bg-(--cc-subtle) px-3 py-2.5 text-[14px] text-(--cc-text-2)">Ninguna llamada en vivo todavía.</p>}
         <ul className="mt-2 space-y-2">
-          {data?.calls.map((c) => (
-            <li key={c.id} className="min-w-0 rounded-[4px] border border-(--cc-border) p-3 text-[14px]">
+          {calls.map((c) => (
+            <li key={c.id} className="min-w-0 rounded-md border border-(--cc-border) p-3 text-[14px]">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="font-bold">{c.name ?? "—"}</span>
                 <span className="text-[13px] text-(--cc-text-2)">{c.agent}</span>
