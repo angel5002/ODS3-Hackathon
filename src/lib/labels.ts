@@ -1,6 +1,6 @@
 import type { Channel, DemoState, Status } from "./types";
 
-export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Prototipo";
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "AsistIA";
 
 export const DISCLAIMER =
   "Demostración. Pacientes ficticios. Citas y modelo basados en datos abiertos reales del Hospital María Auxiliadora (2023).";
