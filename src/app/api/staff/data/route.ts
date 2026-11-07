@@ -111,7 +111,9 @@ export async function GET(req: Request) {
         // + the final day's voice settings: noisy-room mode and the lines reserved for the jury cards
         const [overview, salaRuidosa] = await Promise.all([rpc<Record<string, unknown>>("voice_overview"), noisyRoom().catch(() => true)]);
         const max = maxConcurrent();
-        return NextResponse.json({ ...overview, salaRuidosa, lineasReservadasTarjetas: reservedForCards(process.env.VOICE_RESERVED_FOR_CARDS, max) });
+        // scene playbacks (kind "escena.*", /api/staff/scene-event) are not calls: never shown nor counted here
+        const events = ((overview.events as { kind?: string }[] | undefined) ?? []).filter((e) => !String(e.kind ?? "").startsWith("escena"));
+        return NextResponse.json({ ...overview, events, salaRuidosa, lineasReservadasTarjetas: reservedForCards(process.env.VOICE_RESERVED_FOR_CARDS, max) });
       }
       case "overview":
         // /demo control center: stages, waiting list, slots and the assignment rule in one read

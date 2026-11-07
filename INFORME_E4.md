@@ -82,6 +82,7 @@ ElevenLabs (versión Markdown de cada página, más el paquete `@elevenlabs/reac
 - https://elevenlabs.io/docs/eleven-agents/api-reference/workspace/secrets/create
 - https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get-signed-url
 - https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get-webrtc-token
+- https://elevenlabs.io/docs/api-reference/text-to-speech/convert (E5 final: audio de las escenas, `docs/escenas.md`)
 - https://elevenlabs.io/docs/eleven-agents/customization/authentication
 - https://elevenlabs.io/docs/eleven-agents/customization/personalization/dynamic-variables
 - https://elevenlabs.io/docs/eleven-agents/customization/personalization/overrides

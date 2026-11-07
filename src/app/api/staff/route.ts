@@ -111,6 +111,45 @@ export async function POST(req: Request) {
       }
       case "close_offer":
         return ok({ assignmentId: await rpc<number | null>("close_offer_v51", { p_offer: Number(body.offerId), p_actor: actor }) });
+
+      // ---------------------------------------------------------------- pitch scene 1 (docs/escenas.md)
+      case "escena1_preparar":
+        // Tito: P1 assigned by a professional, appointment in 5 weeks (idempotent; needed again after a reset)
+        return ok({ tito: await rpc("seed_escena1", { p_specialty: "Oncología Médica" }) });
+      case "escena1_aprobar": {
+        // the STAFF approves the offer of the released Oncología Médica slot (jury card "Carmen"); Tito's "sí" on
+        // the call is his answer. Refused unless Tito is the first candidate of that slot.
+        let slotId = Number(body.slotId) || null;
+        if (!slotId) {
+          const { data } = await serverDb().from("slots").select("id").eq("specialty", "Oncología Médica").eq("state", "libre").order("date").order("time");
+          for (const s of data ?? []) {
+            const p = await rpc<{ candidates?: { name?: string }[] }>("propose_candidates_v51", { p_slot: s.id });
+            if (p?.candidates?.[0]?.name === "Tito Quispe Rojas") {
+              slotId = s.id;
+              break;
+            }
+          }
+        }
+        if (!slotId) return fail("escena1: no free slot where Tito is first", 409);
+        // then "close_offer" with the returned offer_id assigns it (highest priority among those who accepted)
+        const result = await rpc<{ offer_id: number }>("escena1_offer_to_tito", { p_slot: slotId, p_actor: actor, p_close: false });
+        await broadcast("bulk");
+        return ok({ result });
+      }
+      case "escena1_cerrar": {
+        // the staff closes the open Oncología Médica offer now (close_offer_v51: highest priority among acceptors)
+        const { data: open } = await serverDb()
+          .from("slot_offers")
+          .select("id,slot:slots!inner(specialty)")
+          .eq("state", "enviada")
+          .eq("slot.specialty", "Oncología Médica")
+          .order("id", { ascending: false })
+          .limit(1);
+        if (!open?.length) return fail("escena1: no open offer", 409);
+        const assignmentId = await rpc<number | null>("close_offer_v51", { p_offer: open[0].id, p_actor: actor });
+        await broadcast("bulk");
+        return ok({ assignmentId });
+      }
       case "simulate_response":
         // "Usar simulado": the same flow without the live channel
         return ok({

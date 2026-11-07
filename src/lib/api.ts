@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 /** Turns database errors into short messages staff and patients can understand. */
 const FRIENDLY: [RegExp, string][] = [
+  // pitch scene 1 (docs/escenas.md)
+  [/tito not seeded/, "Primero prepare a Tito: «Escena 1: preparar a Tito»."],
+  [/tito is not first|no free slot where Tito/, "Todavía no hay un cupo de Oncología Médica libre con Tito primero: Carmen debe avisar que no podrá ir."],
+  [/escena1: no open offer/, "No hay una oferta abierta de Oncología Médica para cerrar."],
   [/slot is not free/, "Ese cupo ya no está libre."],
   [/already reassigned/, "Ese cupo ya fue reasignado."],
   [/open offer/, "Ya hay una oferta abierta para este cupo. Espere la respuesta o que venza el plazo."],
