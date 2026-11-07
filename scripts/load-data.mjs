@@ -2,6 +2,8 @@
 // Usage: npm run db:load            upsert by id (keeps the database, updates every row)
 //        npm run db:load -- --wipe  empty the tables first (only for a brand-new project)
 // Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.
+import { requireDbWrite } from "./dev/db-write-guard.mjs";
+requireDbWrite("load-data.mjs");
 import { readFileSync } from "node:fs";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";

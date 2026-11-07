@@ -1,4 +1,6 @@
 // Times a few chat round trips on a fresh session (diagnostics).
+import { requireDbWrite } from "./db-write-guard.mjs";
+requireDbWrite("chat-time.mjs");
 const BASE = process.argv[2] ?? "http://localhost:3000";
 let cookie = "";
 async function call(path, body) {

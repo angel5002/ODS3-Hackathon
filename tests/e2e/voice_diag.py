@@ -9,6 +9,12 @@ Records, per page: the app's "[voz …]" diagnostics, console errors, page error
 and the ElevenLabs WebSocket open/close (host only: the signed URL query is never stored).
 No personal data: the phones are the demo's fictitious characters.
 """
+import os as _os
+import sys as _sys
+
+if _os.environ.get("ALLOW_DB_WRITE") != "1":
+    print("voice_diag.py: escribe en la base compartida con la demo desplegada (o la reinicia). No se ejecuta sin ALLOW_DB_WRITE=1.")
+    _sys.exit(3)
 import argparse
 import asyncio
 import json

@@ -2,6 +2,12 @@
 screen that stays in "Conectando…" after closing the tab mid-call. Usage:
   ml/.venv/Scripts/python tests/e2e/voice_capturas.py --pin <local test PIN> --audio <wav> --out capturas/e5 --prefix antes
 """
+import os as _os
+import sys as _sys
+
+if _os.environ.get("ALLOW_DB_WRITE") != "1":
+    print("voice_capturas.py: escribe en la base compartida con la demo desplegada (o la reinicia). No se ejecuta sin ALLOW_DB_WRITE=1.")
+    _sys.exit(3)
 import argparse
 import asyncio
 from pathlib import Path

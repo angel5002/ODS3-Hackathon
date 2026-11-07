@@ -7,6 +7,12 @@ offer a slot) are done with the same database functions the panel calls,
 using the server key from .env.local. Resets the demo before and after.
 For the staff screens on production, run demo_flow.py with --base and --pin.
 """
+import os as _os
+import sys as _sys
+
+if _os.environ.get("ALLOW_DB_WRITE") != "1":
+    print("prod_check.py: escribe en la base compartida con la demo desplegada (o la reinicia). No se ejecuta sin ALLOW_DB_WRITE=1.")
+    _sys.exit(3)
 import argparse
 import json
 import time

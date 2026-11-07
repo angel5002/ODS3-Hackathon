@@ -6,6 +6,12 @@ Staff uses a desktop browser; five patients use phone-sized browsers (simulated 
 step checks that the change shows up on the other screens within 2 seconds.
 Ends with "Reiniciar demo", so it leaves the demo in its initial state.
 """
+import os as _os
+import sys as _sys
+
+if _os.environ.get("ALLOW_DB_WRITE") != "1":
+    print("demo_flow.py: escribe en la base compartida con la demo desplegada (o la reinicia). No se ejecuta sin ALLOW_DB_WRITE=1.")
+    _sys.exit(3)
 import argparse
 import os
 import sys

@@ -1,6 +1,8 @@
 // Voice checks (RF-15) against a running server: signed URL only for the owner of the call, and the
 // tool endpoint rejects a missing secret, another call's token and a finished call.
 // Usage: node scripts/dev/voice-v4.mjs [baseUrl] [pin]
+import { requireDbWrite } from "./db-write-guard.mjs";
+requireDbWrite("voice-v4.mjs");
 import { createHmac } from "node:crypto";
 import { config } from "dotenv";
 config({ path: ".env.local", quiet: true });

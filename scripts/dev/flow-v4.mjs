@@ -1,5 +1,7 @@
 // End-to-end walk of the v4 script (requisitos_v4 §6) through the HTTP API, with the simulated channels.
 // Usage: node scripts/dev/flow-v4.mjs [baseUrl] [pin]   (defaults: local dev server + local test PIN)
+import { requireDbWrite } from "./db-write-guard.mjs";
+requireDbWrite("flow-v4.mjs");
 const BASE = process.argv[2] ?? "http://localhost:3000";
 const PIN = process.argv[3] ?? process.env.LOCAL_TEST_PIN ?? "246810";
 let cookie = "";

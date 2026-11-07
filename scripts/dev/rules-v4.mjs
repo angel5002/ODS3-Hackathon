@@ -3,6 +3,8 @@
 //   - domino: only to an earlier date, at most once a week
 //   - not answering never changes an appointment
 //   - k: smallest k reaching the target, capped at 8 or the candidates available
+import { requireDbWrite } from "./db-write-guard.mjs";
+requireDbWrite("rules-v4.mjs");
 import { config } from "dotenv"; config({ path: ".env.local", quiet: true });
 import { createClient } from "@supabase/supabase-js";
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });

@@ -1,6 +1,8 @@
 // Live web chat walk (RF-13/RF-14) through the HTTP API: consent, full registration by the bot,
 // session isolation (foreign or tampered cookie -> 401), offer and validation answered in the chat.
 // Usage: node scripts/dev/chat-v4.mjs [baseUrl] [pin]
+import { requireDbWrite } from "./db-write-guard.mjs";
+requireDbWrite("chat-v4.mjs");
 const BASE = process.argv[2] ?? "http://localhost:3000";
 const PIN = process.argv[3] ?? process.env.LOCAL_TEST_PIN ?? "246810";
 const t0 = Date.now();

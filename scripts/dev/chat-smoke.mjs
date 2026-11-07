@@ -1,4 +1,6 @@
 // Production smoke test of the live chat: new session, consent, status, then SALIR (deletes the session).
+import { requireDbWrite } from "./db-write-guard.mjs";
+requireDbWrite("chat-smoke.mjs");
 const BASE = process.argv[2] ?? "https://ods3-hackathon.vercel.app";
 let cookie = "";
 async function call(path, body) {
