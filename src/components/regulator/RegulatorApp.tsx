@@ -50,25 +50,18 @@ export function RegulatorApp() {
   return (
     <main className="mx-auto max-w-[1200px] space-y-4 px-4 py-6 sm:px-6">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Regulación clínica</h1>
-        <p className="mt-1 text-sm text-muted">Asigne una categoría P1 a P4. El plazo máximo fija la fecha límite y el orden en la lista.</p>
+        <h1 className="font-display text-[40px] leading-tight">Asignar prioridad</h1>
+        <p className="mt-1 flex items-start gap-2 text-muted"><EyeOff className="mt-1 size-4 shrink-0 text-accent" aria-hidden />Sin nombre, documento, seguro ni distrito: solo cuenta la necesidad clínica.</p>
       </div>
-      <aside className="flex items-start gap-3 rounded-2xl bg-night p-4 text-white" role="note">
-        <EyeOff className="mt-0.5 size-5 shrink-0 text-mint" aria-hidden />
-        <p className="text-sm leading-relaxed">
-          <strong>No se muestran nombre, documento, seguro ni distrito para que la prioridad dependa solo de la necesidad clínica.</strong>{" "}
-          El servidor no envía esos datos a esta pantalla por ninguna vía.
-        </p>
-      </aside>
 
-      <div role="tablist" className="flex gap-1 rounded-md bg-sunken p-1 sm:inline-flex">
+      <div role="tablist" className="flex gap-1 rounded-full bg-sunken p-1 sm:inline-flex">
         {(
           [
-            ["pendientes", `Pendientes de regulación (${num(pending.length)})`],
-            ["reguladas", `Reguladas (${num(done.length)})`],
+            ["pendientes", `Pendientes (${num(pending.length)})`],
+            ["reguladas", `Asignadas (${num(done.length)})`],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`rounded-md px-4 py-1.5 text-sm font-semibold ${tab === id ? "bg-surface shadow-sm" : "text-muted"}`}>
+          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`min-h-10 rounded-full px-4 py-1.5 text-sm font-semibold ${tab === id ? "bg-surface shadow-sm" : "text-muted"}`}>
             {label}
           </button>
         ))}
@@ -84,16 +77,16 @@ export function RegulatorApp() {
             const late = r.hours_waiting > DUE_HOURS;
             const pct = Math.min(100, Math.round((r.hours_waiting / DUE_HOURS) * 100));
             return (
-              <li key={r.request_id} className="rise rounded-2xl bg-surface p-4 ring-1 ring-line">
+              <li key={r.request_id} className="rise rounded-3xl bg-surface p-5 ring-1 ring-line">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-lg font-bold tabular-nums">{r.code}</span>
+                  <span className="font-display text-[22px] tabular-nums">{r.code}</span>
                   <RequestBadge state={r.state} />
                   <span className={`ml-auto text-xs font-semibold ${late ? "text-risk-alto" : "text-muted"}`}>
-                    {r.hours_waiting} h de {DUE_HOURS} h para regular
+                    {r.hours_waiting} h de {DUE_HOURS} h
                   </span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-md bg-sunken" role="img" aria-label={`${pct} % del plazo de regulación`}>
-                  <div className={`h-full ${late ? "bg-risk-alto" : pct > 66 ? "bg-risk-medio" : "bg-brand"}`} style={{ width: `${pct}%` }} />
+                  <div className={`h-full ${late ? "bg-risk-alto" : pct > 66 ? "bg-risk-medio" : "bg-accent"}`} style={{ width: `${pct}%` }} />
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
                   <Info k="Especialidad" v={r.specialty} />
@@ -125,7 +118,7 @@ export function RegulatorApp() {
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button
-                    className="min-h-9 text-xs"
+                    className="min-h-11 rounded-full text-sm"
                     disabled={busy === `${r.request_id}`}
                     onClick={() => {
                       const q = window.prompt("¿Qué información necesita? (se le envía al paciente; su fecha no cambia)", "¿Desde cuándo tiene las molestias?");
@@ -136,15 +129,15 @@ export function RegulatorApp() {
                   </Button>
                   <Button
                     variant="danger"
-                    className="min-h-9 text-xs"
+                    className="min-h-11 rounded-full text-sm"
                     disabled={busy === `${r.request_id}`}
                     onClick={() => {
-                      if (window.confirm(`¿Derivar ${r.code} a emergencia? Se le indicará acudir a emergencia o llamar al 106 y se avisará al call center.`)) {
+                      if (window.confirm(`¿Derivar ${r.code} a emergencia? Se le indicará acudir a emergencia o llamar al 106 y se avisará a la central de llamadas.`)) {
                         act(r, { action: "emergency" }, `${r.code} derivada a emergencia`);
                       }
                     }}
                   >
-                    <Siren className="size-3.5" aria-hidden /> Signos de alarma: derivar a emergencia
+                    <Siren className="size-3.5" aria-hidden /> Derivar a emergencia
                   </Button>
                 </div>
               </li>
@@ -176,7 +169,7 @@ export function RegulatorApp() {
                     <span className={`rounded px-1.5 text-xs font-bold ${CAT_TONE[r.category ?? "P3"]}`}>{r.category ?? "—"}</span>
                   </td>
                   <td className="px-3 py-2">{REQUEST_STATE[r.state]?.label}</td>
-                  <td className="max-w-[24rem] truncate px-3 py-2 text-muted">{r.reason_text ?? ""}</td>
+                  <td className="max-w-[24rem] px-3 py-2 text-muted">{r.reason_text ?? ""}</td>
                 </tr>
               ))}
             </tbody>

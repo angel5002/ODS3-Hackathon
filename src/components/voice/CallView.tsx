@@ -7,11 +7,13 @@
 //
 // One skeleton for every phase, so connecting, talking and hanging up flow into each other:
 //   1. one line: "Hospital Mirasur · asistente automatizado" and the time;
-//   2. the circles (Respira canvas) around a dark disc that holds the state in one or two words;
+//   2. the wave (Respira canvas): several horizontal lines, Siri-like, centred, that follow the real audio —
+//      almost flat and breathing while it listens, wide when the assistant speaks (teal), graphite when the
+//      person speaks — and the state in small text under it ("Conectando", "Escuchando", "Hablando"…);
 //   3. the LAST sentence said (the end, whole: src/lib/voice/captions.ts), or the title and one line of a
 //      message phase (busy, no connection, finished…);
 //   4. three controls: Silenciar (or "Mantener para hablar" with `pushToTalk`), Colgar, Chat.
-// Everything else appears on tap: tapping the disc shows "Hablar con una persona" and the captions switch.
+// Everything else appears on tap: tapping the wave shows "Hablar con una persona" and the captions switch.
 // No demo notice, no safety paragraph (the assistant says it aloud). `scene` hides the controls (projector).
 // The round call buttons are the phone convention people recognise; everything else is pill-shaped.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -45,8 +47,8 @@ const TALK: CallPhase[] = ["conectando", "activa", "guion", "finalizando"];
 
 type Look = {
   mode: RespiraMode;
-  /** one or two words inside the disc */
-  word: ReactNode;
+  /** the state in one or two words, small, under the wave */
+  word: string;
   /** what a screen reader hears */
   spoken: string;
   /** message phases: one title and one supporting line under the circles */
@@ -76,18 +78,10 @@ function look(p: CallViewProps): Look {
         return { mode: "rest", word: "En otro equipo", spoken: "La llamada está abierta en otro dispositivo", title: "La llamada está abierta en otro dispositivo" };
       return {
         mode: "connect",
-        word:
-          p.busy?.position != null && p.busy.position > 0 ? (
-            <span className="flex flex-col items-center">
-              <span className="font-display text-[2.4em] leading-none tabular-nums">{p.busy.position}</span>
-              <span className="mt-1 font-sans text-[13px] font-semibold tracking-normal">en la fila</span>
-            </span>
-          ) : (
-            "En espera"
-          ),
+        word: "En espera",
         spoken: p.busy?.position ? `Líneas ocupadas. Su lugar en la fila: ${p.busy.position}` : "Líneas ocupadas",
         title: "Líneas ocupadas",
-        line: "Seguimos intentando.",
+        line: p.busy?.position != null && p.busy.position > 0 ? `Su lugar en la fila: ${p.busy.position}. Seguimos intentando.` : "Seguimos intentando.",
       };
     case "sin_conexion":
       return {
@@ -117,11 +111,10 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
   const talk = TALK.includes(phase);
   const live = phase === "activa" || phase === "guion" || phase === "finalizando";
   const l = look(props);
-  const discRef = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState(false);
 
-  // muted: the circles must not follow the microphone, whatever the controller still feeds
-  const ringLevels = useMemo<AudioLevels | null>(() => {
+  // muted: the wave must not follow the microphone, whatever the controller still feeds
+  const waveLevels = useMemo<AudioLevels | null>(() => {
     if (!levels) return null;
     if (!muted) return levels;
     return { input: () => null, output: levels.output };
@@ -144,8 +137,6 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
     last && revealed && captionsVisible && talk && phase !== "conectando" ? (guion ? tailSentences(revealed, 150) : tailCaption(revealed, 110)) : null;
   const options = guion && props.scriptOptions.length > 0 && !scene;
   const canMenu = talk && !scene;
-  // a finished or failed call: the disc goes graphite (calmer than ink), the word stays white
-  const discTone = phase === "finalizada" || phase === "sin_conexion" ? "bg-vc-text-2" : "bg-vc-text";
 
   return (
     <div
@@ -167,39 +158,31 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
         </div>
       </header>
 
-      {/* 2. the circles and the state */}
+      {/* 2. the wave, centred, and the state in small text under it */}
       <main className="relative min-h-0 w-full flex-1">
         <div className="absolute inset-0">
-          <Respira mode={l.mode} levels={ringLevels} discRef={discRef} />
+          <Respira mode={l.mode} levels={waveLevels} />
         </div>
-        <div className="absolute inset-0 grid place-items-center">
-          <div
-            ref={discRef}
-            className={`relative grid aspect-square place-items-center rounded-full text-vc-on-primary transition-[width,background-color] duration-300 ease-[var(--ease-out)] motion-reduce:transition-none ${discTone} ${
-              guion ? "w-[clamp(88px,22cqmin,150px)]" : "w-[clamp(132px,34cqmin,220px)]"
-            }`}
-          >
-            <p role="status" aria-live="polite" aria-atomic="true" className="px-3 text-center">
-              <span
-                key={typeof l.word === "string" ? l.word : "n"}
-                aria-hidden
-                className={`vc-swap block font-display leading-[1.05] text-balance ${guion ? "text-[clamp(17px,4cqmin,24px)]" : "text-[clamp(20px,5cqmin,32px)]"}`}
-              >
-                {l.word}
-              </span>
-              <span className="sr-only">{l.spoken}</span>
-            </p>
-            {canMenu && (
-              <button
-                type="button"
-                aria-label="Más opciones de la llamada"
-                aria-expanded={menuOpen}
-                onClick={() => setMenu((m) => !m)}
-                className="absolute inset-0 rounded-full"
-              />
-            )}
-          </div>
-        </div>
+        {canMenu && (
+          <button
+            type="button"
+            aria-label="Más opciones de la llamada"
+            aria-expanded={menuOpen}
+            onClick={() => setMenu((m) => !m)}
+            className="absolute inset-x-0 top-[22%] bottom-[22%]"
+          />
+        )}
+        <p
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="pointer-events-none absolute inset-x-0 bottom-[14%] text-center text-[15px] font-medium text-vc-text-2 @[900px]:text-[18px]"
+        >
+          <span key={l.word} aria-hidden className="vc-swap inline-block">
+            {l.word}
+          </span>
+          <span className="sr-only">{l.spoken}</span>
+        </p>
       </main>
 
       {/* 3. the last sentence, a message, or the options of the disc */}

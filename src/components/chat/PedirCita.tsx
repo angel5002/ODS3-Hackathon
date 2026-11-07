@@ -4,7 +4,7 @@
 // browser, or the front-desk form as a fallback. No third-party logos, no phone number, no e-mail.
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ClipboardList, MessageCircle, Mic, SendHorizontal, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ClipboardList, MessageCircle, Mic, SendHorizontal, Trash2, TriangleAlert, UserRound } from "lucide-react";
 import { Bubble, DemoNotice, QuickReplies, SoundButton, ThreadList, TypingBubble } from "./ChatParts";
 import { toast } from "sonner";
 import { Brand } from "@/components/Brand";
@@ -20,7 +20,7 @@ import { RegisterForm } from "@/components/panel/WaitlistTab";
 import type { LiveVoiceControl, VoiceSession } from "@/components/voice/LiveVoice";
 import { bindDiag, newDiagId, voiceDiag } from "@/lib/voice/diag";
 import { initialVoiceState, isBusy, voiceReducer } from "@/lib/voice/machine";
-import type { AudioLevels, CallPhase } from "@/lib/voice/contract";
+import { PUSH_TO_TALK_BUTTON_READY, type AudioLevels, type CallPhase } from "@/lib/voice/contract";
 import { CallView } from "@/components/voice/CallView";
 import { VoiceStartView } from "@/components/voice/VoiceStartView";
 
@@ -189,8 +189,8 @@ export function PedirCitaFrame({ children }: { children: ReactNode }) {
   );
 }
 
-/** One quiet bar: the brand (home) or Volver + the view's name; who the person appears as, in small text that
- *  wraps instead of being cut. */
+/** One quiet bar: the brand (home) or Volver + the view's name. The alias ("Usted aparece como «…»") is NOT shown
+ *  (user test on Android): it stays only for screen readers and the end-to-end checks that wait for it. */
 export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View; subtitle: string; onBack: () => void; onWipe: () => void }) {
   return (
     <header className="flex shrink-0 items-center gap-2 bg-vc-bg px-3 pb-1.5 pt-[calc(0.5rem+env(safe-area-inset-top))]">
@@ -210,7 +210,7 @@ export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View
       )}
       <div className={`min-w-0 flex-1 leading-tight ${view === "inicio" ? "text-right" : ""}`}>
         {view !== "inicio" && <p className="text-[17px] font-semibold text-vc-text">{VIEW_TITLE[view]}</p>}
-        <p className="text-pretty text-[13px] text-vc-text-3">{subtitle}</p>
+        <p className="sr-only">{subtitle}</p>
       </div>
       {view === "chat" && (
         <button
@@ -421,11 +421,19 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
         }}
         className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 bg-vc-bg px-3 pb-2 pt-2"
       >
-        {/* the PERSONA hint lives above the field: as a placeholder it was cut on a 360 px phone */}
+        {/* "Hablar con una persona" is a button now: it sends the existing PERSONA command (src/lib/chat/router.ts) */}
         {consent && (
-          <p id="msg-hint" className="w-full px-2 text-[13px] text-vc-text-3">
-            Para hablar con una persona, escriba PERSONA.
-          </p>
+          <div className="w-full">
+            <button
+              type="button"
+              disabled={typing}
+              onClick={() => onSend("PERSONA")}
+              className="vc-pill press inline-flex min-h-11 items-center gap-2 rounded-full bg-vc-surface px-4 text-[15px] font-semibold text-vc-text active:bg-vc-surface-press disabled:opacity-50"
+            >
+              <UserRound className="size-[18px] text-vc-icon" aria-hidden />
+              Hablar con una persona
+            </button>
+          </div>
         )}
         <label className="sr-only" htmlFor="msg">
           Mensaje
@@ -435,7 +443,6 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
           value={text}
           onChange={(e) => onText(e.target.value)}
           placeholder={consent ? "Escriba aquí…" : "Escriba ACEPTO para continuar"}
-          aria-describedby={consent ? "msg-hint" : undefined}
           autoComplete="off"
           enterKeyHint="send"
           className="min-h-12 min-w-0 flex-1 rounded-full border border-vc-edge bg-vc-card px-4 text-[16px] text-vc-text placeholder:text-vc-text-3 focus:border-vc-focus"
@@ -458,7 +465,8 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
  *  idempotent start, busy and queue states) and retries once if the session was not ready yet. */
 function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }) {
   const [vs, dispatch] = useReducer(voiceReducer, initialVoiceState);
-  const [live, setLive] = useState<{ session: VoiceSession; voiceSessionId: string } | null>(null);
+  const [live, setLive] = useState<{ session: VoiceSession; voiceSessionId: string; pushToTalk?: boolean } | null>(null);
+  const [talking, setTalking] = useState(false);
   const [callId, setCallId] = useState<number | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [speaking, setSpeaking] = useState(false);
@@ -486,6 +494,8 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
     queueId?: string | null;
     position?: number | null;
     reason?: string;
+    /** noisy-room mode (push-to-talk), from settings_v51 'sala_ruidosa' */
+    pushToTalk?: boolean;
   };
 
   async function request(id: string): Promise<R> {
@@ -527,7 +537,7 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
         bindDiag(id, r.voiceSessionId, r.callId);
         queueId.current = null;
         dispatch({ type: "SESSION_GRANTED", sessionId: r.voiceSessionId });
-        setLive({ session: r.session, voiceSessionId: r.voiceSessionId });
+        setLive({ session: r.session, voiceSessionId: r.voiceSessionId, pushToTalk: !!r.pushToTalk });
         return;
       }
       if (r.busy) {
@@ -596,6 +606,8 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
               : vs.name === "finalizada"
                 ? "finalizada"
                 : "conectando";
+  // noisy-room mode: the same rule as CallScreen — only while the view draws "Mantener para hablar" (contract.ts)
+  const pushToTalk = !!live?.pushToTalk && PUSH_TO_TALK_BUTTON_READY && viewPhase === "activa";
 
   function continueByChat() {
     if (callRef.current && vs.name === "error") {
@@ -628,6 +640,21 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
           errorMessage={vs.name === "error" ? reason || vs.message : null}
           levels={live ? levels : null}
           scriptOptions={[]}
+          pushToTalk={
+            pushToTalk
+              ? {
+                  talking,
+                  start: () => {
+                    setTalking(true);
+                    control.current?.talkStart();
+                  },
+                  end: () => {
+                    setTalking(false);
+                    control.current?.talkEnd();
+                  },
+                }
+              : undefined
+          }
           actions={{
             hangUp,
             toggleMute: live
@@ -651,6 +678,7 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
           callId={callId ?? 0}
           voiceSessionId={live.voiceSessionId}
           session={live.session}
+          pushToTalk={pushToTalk}
           dispatch={dispatch}
           controlRef={control}
           onTurn={(t) => setTurns((x) => [...x, t])}

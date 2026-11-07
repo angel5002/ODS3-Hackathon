@@ -49,7 +49,7 @@ type Feed = { id: number; kind: string; detail: string; actor: string; demo_min:
 
 const ORIGIN: Record<string, string> = {
   liberado: "Liberado por el paciente",
-  domino: "Liberado por efecto dominó",
+  domino: "Liberado en cadena",
   agenda_libre: "Cupo libre de la agenda",
   cupo_del_dia: "Cupo del día",
 };
@@ -86,11 +86,9 @@ export function ReassignTab() {
     <div className="mx-auto max-w-[1500px] space-y-4 px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Por reasignar</h1>
-          <p className="mt-1 max-w-[85ch] text-sm text-muted">
-            Cada cupo libre se ofrece a la vez a varios pacientes de la zona que le corresponde. <strong>Sin su aprobación no sale
-            ninguna oferta.</strong> Al cerrar la oferta, el cupo se asigna con la regla elegida en Demo: al de mayor prioridad entre
-            quienes aceptaron (primero la categoría y luego la parte del plazo consumida) o al primero que aceptó.
+          <h1 className="font-display text-[40px] leading-tight">Por reasignar</h1>
+          <p className="mt-1 max-w-[70ch] text-muted" title="Cada cupo libre se ofrece a la vez a varios pacientes de su zona. Al cerrar, se asigna con la regla elegida en Demo.">
+            Sin su aprobación no sale ninguna oferta.
           </p>
         </div>
         <Button
