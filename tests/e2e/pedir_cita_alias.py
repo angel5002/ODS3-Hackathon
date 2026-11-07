@@ -43,7 +43,7 @@ def watch(page, stats):
     # real reloads only: Next.js also fires a same-document "framenavigated" (history update) without reloading
     page.on("load", lambda: stats.__setitem__("nav", stats["nav"] + 1))
     page.on("request", lambda r: stats.__setitem__("session_posts", stats["session_posts"] + 1) if r.method == "POST" and r.url.endswith("/api/chat/session") else None)
-    page.on("request", lambda r: stats.__setitem__("vercel_live", stats["vercel_live"] + 1) if "vercel.live" in r.url else None)
+    page.on("request", lambda r: stats.__setitem__("toolbar_requests", stats["toolbar_requests"] + 1) if "vercel.live" in r.url else None)
     page.on("pageerror", lambda e: stats["errors"].append(str(e)[:160]))
 
 
@@ -59,14 +59,14 @@ async def idle(page, seconds):
 
 async def scenario_fresh(pw, b, base):
     ctx, page = await throttled(pw, b)
-    stats = {"nav": 0, "session_posts": 0, "vercel_live": 0, "errors": []}
+    stats = {"nav": 0, "session_posts": 0, "toolbar_requests": 0, "errors": []}
     watch(page, stats)
     await page.goto(f"{base}/pedir-cita")
     expired = await idle(page, 30)
     check(not expired, "nuevo visitante: nunca aparece «La conversación se cerró o venció» en 30 s")
     check(stats["nav"] == 1, f"nuevo visitante: la página no se recarga sola (navegaciones: {stats['nav']})")
     check(stats["session_posts"] == 1, f"nuevo visitante: una sola creación de sesión (POST /api/chat/session: {stats['session_posts']})")
-    check(stats["vercel_live"] == 0, f"sin la barra de Vercel (peticiones a vercel.live: {stats['vercel_live']})")
+    check(stats["toolbar_requests"] == 0, f"sin la barra de Vercel (peticiones a vercel.live: {stats['toolbar_requests']})")
     check(not stats["errors"], f"sin errores de página {stats['errors'][:2]}")
     header = await page.evaluate("document.body.innerText")
     check("Usted aparece como" in header and "Conectando" not in header[:200], "la cabecera muestra el alias (no queda en «Conectando…»)")
@@ -88,7 +88,7 @@ async def scenario_stale(pw, b, base):
     ctx, page = await throttled(pw, b)
     host = base.split("//")[1]
     await ctx.add_cookies([{"name": "asistia_chat", "value": cookie, "domain": host, "path": "/", "secure": True, "httpOnly": True, "sameSite": "Lax"}])
-    stats = {"nav": 0, "session_posts": 0, "vercel_live": 0, "errors": []}
+    stats = {"nav": 0, "session_posts": 0, "toolbar_requests": 0, "errors": []}
     watch(page, stats)
     await page.goto(f"{base}/pedir-cita")
     expired = await idle(page, 20)
