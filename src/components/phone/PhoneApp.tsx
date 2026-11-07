@@ -236,7 +236,7 @@ export function PhoneHeader({ clock, owner }: { clock: string; owner?: string })
         <Building2 className="size-5" aria-hidden />
       </div>
       <div className="min-w-0 flex-1 leading-tight">
-        <p className="truncate text-[16px] font-bold text-vc-text">Citas · Hospital María Auxiliadora</p>
+        <p className="truncate text-[16px] font-bold text-vc-text">Citas · Hospital Mirasur</p>
         <p className="truncate text-[13px] text-vc-text-2">{owner ? `Teléfono simulado de ${owner}` : "Mensajes automáticos"}</p>
       </div>
       {clock && (
