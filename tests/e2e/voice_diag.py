@@ -103,6 +103,13 @@ class Demo:
         r = await staff.request.get("/api/staff/data?view=live")
         return [{k: c.get(k) for k in ("id", "status", "purpose", "provider")} for c in (await r.json())["calls"]]
 
+    async def voice(self, staff):
+        r = await staff.request.get("/api/staff/data?view=voice")
+        if not r.ok:
+            return {"error": r.status}
+        d = await r.json()
+        return {"activas": d.get("active"), "en_fila": d.get("queued"), "sesiones": [{k: x.get(k) for k in ("id", "call_id", "state", "ended_reason")} for x in d.get("sessions", [])[:6]]}
+
     async def test_call(self, staff, patient_id):
         r = await staff.request.post("/api/staff", data={"action": "test_call", "patientId": patient_id})
         d = await r.json()
@@ -399,6 +406,7 @@ async def main():
             except Exception as e:
                 rec.add("harness", "excepción", text=str(e)[:300])
             rec.add("staff", "llamadas_al_final", calls=(await d.calls(staff))[:12])
+            rec.add("staff", "voz_al_final", **(await d.voice(staff)))
             await d.end_all(staff)
             await staff.close()
             (out / f"{key}.json").write_text(json.dumps(rec.events, ensure_ascii=False, indent=1), encoding="utf-8")

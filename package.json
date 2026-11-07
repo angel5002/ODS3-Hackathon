@@ -20,7 +20,10 @@
     "test:voice": "node scripts/dev/voice-v4.mjs",
     "test:rules": "node scripts/dev/rules-v4.mjs",
     "test:phones": "node scripts/dev/check-phones.mjs",
-    "test:reset": "node scripts/dev/reset3.mjs"
+    "test:reset": "node scripts/dev/reset3.mjs",
+    "test:unit": "node --test tests/voice-machine.test.ts",
+    "test:race": "node scripts/dev/race-v5.mjs",
+    "check:secrets": "node scripts/dev/check-secrets.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",

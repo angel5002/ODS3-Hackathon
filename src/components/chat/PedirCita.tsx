@@ -2,7 +2,7 @@
 
 // /pedir-cita (v4 §3): public and mobile. Three ways in: chat with the assistant, a voice call in the
 // browser, or the front-desk form as a fallback. No third-party logos, no phone number, no e-mail.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { ArrowLeft, ClipboardList, Info, MessageCircle, Mic, PhoneOff, SendHorizontal, Trash2, Volume2 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,10 +15,11 @@ import type { Call } from "@/lib/types";
 import type { Turn } from "@/lib/voice/agent";
 import { CallScreen } from "@/components/phone/CallScreen";
 import { RegisterForm } from "@/components/panel/WaitlistTab";
-import type { VoiceSession } from "@/components/phone/ElevenLabsCall";
-import { newDiagId, voiceDiag } from "@/lib/voice/diag";
+import type { LiveVoiceControl, VoiceSession } from "@/components/voice/LiveVoice";
+import { bindDiag, newDiagId, voiceDiag } from "@/lib/voice/diag";
+import { initialVoiceState, isBusy, voiceReducer, voiceStateText } from "@/lib/voice/machine";
 
-const ElevenLabsCall = dynamic(() => import("@/components/phone/ElevenLabsCall").then((m) => m.ElevenLabsCall), { ssr: false });
+const LiveVoice = dynamic(() => import("@/components/voice/LiveVoice").then((m) => m.LiveVoice), { ssr: false });
 
 type Msg = { id: number; direction: "saliente" | "entrante"; kind: string; body: string; buttons: string[] | null; answered_with: string | null; created_at: string };
 type ChatData = { alias: string; topic: string; consent: boolean; linkedName: string | null; messages: Msg[]; call: Call | null };
@@ -136,7 +137,7 @@ export function PedirCita() {
 
         {!expired && view === "inicio" && <Home onPick={setView} />}
         {!expired && view === "chat" && data && <ChatView data={data} reload={load} />}
-        {!expired && view === "voz" && <VoiceRegister onDone={() => setView("chat")} />}
+        {!expired && view === "voz" && <VoiceRegister ready={!!data} onDone={() => setView("chat")} />}
         {!expired && view === "formulario" && (
           <div className="flex-1 overflow-y-auto p-4">
             <p className="mb-3 text-sm text-muted">El mismo formulario de ventanilla. Su respuesta y las ofertas llegarán al chat de esta página.</p>
@@ -283,66 +284,167 @@ function ChatView({ data, reload }: { data: ChatData; reload: () => Promise<void
   );
 }
 
-/** Registration by voice in the browser with the asistia-registro agent (fallback: chat or form). */
-function VoiceRegister({ onDone }: { onDone: () => void }) {
-  const [state, setState] = useState<"idle" | "connecting" | "live" | "unavailable" | "ended">("idle");
-  const [session, setSession] = useState<VoiceSession | null>(null);
+/** Registration by voice in the browser with the asistia-registro agent (fallback: chat or form).
+ *  E5: waits until the anonymous chat session exists (`ready`), follows the voice state machine (one session,
+ *  idempotent start, busy and queue states) and retries once if the session was not ready yet. */
+function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }) {
+  const [vs, dispatch] = useReducer(voiceReducer, initialVoiceState);
+  const [live, setLive] = useState<{ session: VoiceSession; voiceSessionId: string } | null>(null);
   const [callId, setCallId] = useState<number | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [speaking, setSpeaking] = useState(false);
   const [reason, setReason] = useState("");
-  const hangUp = useRef<(() => void) | null>(null);
+  const control = useRef<LiveVoiceControl | null>(null);
   const [sid, setSid] = useState("");
   const clicks = useRef(0);
+  const requesting = useRef(false);
+  const queueId = useRef<string | null>(null);
+  const callRef = useRef<number | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+    },
+    [],
+  );
+
+  type R = {
+    session: VoiceSession | null;
+    callId: number;
+    voiceSessionId?: string;
+    busy?: "otro_dispositivo" | "capacidad";
+    queueId?: string | null;
+    position?: number | null;
+    reason?: string;
+  };
+
+  async function request(id: string): Promise<R> {
+    const body = { mode: "registro", diag: id, callId: callRef.current ?? undefined, queueId: queueId.current };
+    try {
+      return await post<R>("/api/voice/session", body);
+    } catch (e) {
+      // the chat session may still be on its way: create it (idempotent) and retry once
+      voiceDiag(id, "session.reintento", { message: (e as Error).message.slice(0, 120) });
+      await post("/api/chat/session", {}).catch(() => {});
+      return post<R>("/api/voice/session", body);
+    }
+  }
 
   async function start() {
     clicks.current += 1;
-    const id = newDiagId();
-    setSid(id);
+    if (requesting.current || isBusy(vs) || !ready) return; // idempotent
+    requesting.current = true;
+    const id = sid || newDiagId();
+    if (!sid) setSid(id);
     voiceDiag(id, "ui.start", { clicks: clicks.current, mode: "registro" });
-    setState("connecting");
+    dispatch({ type: "START" });
     const mic = await unlockAudio({ microphone: true });
     voiceDiag(id, "mic.unlock", { ok: mic });
     if (!mic) {
+      dispatch({ type: "SESSION_FAILED", message: "micrófono" });
       setReason("No se pudo usar el micrófono. Revise el permiso del navegador o use el chat.");
-      setState("unavailable");
+      requesting.current = false;
       return;
     }
     try {
-      const r = await post<{ session: VoiceSession | null; callId: number; reason?: string }>("/api/voice/session", { mode: "registro", diag: id });
-      voiceDiag(id, "session.response", { callId: r.callId ?? null, ok: !!r.session, reason: r.reason ?? null });
-      setCallId(r.callId);
-      if (!r.session) throw new Error(r.reason ?? "La llamada no está disponible ahora.");
-      setSession(r.session);
-      setState("live");
+      const r = await request(id);
+      voiceDiag(id, "session.response", { callId: r.callId ?? null, ok: !!r.session, busy: r.busy ?? null, reason: r.reason ?? null });
+      if (r.callId) {
+        callRef.current = r.callId;
+        setCallId(r.callId);
+      }
+      if (r.session && r.voiceSessionId) {
+        bindDiag(id, r.voiceSessionId, r.callId);
+        queueId.current = null;
+        dispatch({ type: "SESSION_GRANTED", sessionId: r.voiceSessionId });
+        setLive({ session: r.session, voiceSessionId: r.voiceSessionId });
+        return;
+      }
+      if (r.busy) {
+        dispatch({ type: "SESSION_BUSY", kind: r.busy, position: r.position ?? null, queueId: r.queueId ?? null });
+        if (r.busy === "capacidad") {
+          queueId.current = r.queueId ?? null;
+          retryTimer.current = setTimeout(() => {
+            requesting.current = false;
+            void start();
+          }, 10_000);
+        }
+        return;
+      }
+      throw new Error(r.reason ?? "La llamada no está disponible ahora.");
     } catch (e) {
       voiceDiag(id, "session.error", { message: (e as Error).message.slice(0, 140) });
+      dispatch({ type: "SESSION_FAILED", message: (e as Error).message });
       setReason((e as Error).message);
-      setState("unavailable");
+    } finally {
+      requesting.current = false;
     }
   }
 
-  async function end(result: string) {
+  async function end(result: string, closeCall = true) {
     voiceDiag(sid, "finish", { callId, result });
-    setState("ended");
-    if (callId) await post("/api/voice/status", { callId, status: "finalizada", result }).catch(() => {});
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    setLive(null);
+    if (closeCall && callRef.current) await post("/api/voice/status", { callId: callRef.current, status: "finalizada", result }).catch(() => {});
   }
+
+  function hangUp() {
+    if (live && control.current) {
+      control.current.hangUp();
+      return;
+    }
+    dispatch({ type: "HANGUP" });
+    void end("Colgó mientras esperaba");
+  }
+
+  const busy = vs.name === "ocupado" ? vs : null;
+  const connectingOnly = vs.name === "solicitando" || (vs.name === "conectando" && !turns.length);
+  const showLog = !connectingOnly && (live !== null || vs.name === "finalizada" || vs.name === "finalizando" || vs.name === "activa");
 
   return (
     <main className="flex flex-1 flex-col bg-[#10302f] p-4 text-white">
-      {state === "idle" && (
+      {vs.name === "idle" && (
         <div className="m-auto max-w-xs text-center">
           <p className="text-lg font-semibold">Hablar con el asistente</p>
           <p className="mt-2 text-sm text-white/75">Le hará las mismas preguntas que el chat, una a la vez. Use un nombre ficticio. No se graba la llamada.</p>
-          <button onClick={start} className="press mt-5 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#17b26a] px-6 font-semibold">
-            <Mic className="size-5" aria-hidden /> Empezar la llamada
+          <button
+            onClick={start}
+            disabled={!ready}
+            className="press mt-5 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#17b26a] px-6 font-semibold disabled:opacity-60"
+          >
+            <Mic className="size-5" aria-hidden /> {ready ? "Empezar la llamada" : "Preparando…"}
           </button>
         </div>
       )}
-      {state === "connecting" && <p className="m-auto text-white/75">Conectando…</p>}
-      {(state === "live" || state === "ended") && (
+      {connectingOnly && (
+        <p className="m-auto text-white/75" aria-live="polite">
+          Conectando…
+        </p>
+      )}
+      {busy && (
+        <div className="m-auto max-w-xs text-center" role="status">
+          <p className="font-semibold">{voiceStateText(busy)}</p>
+          <p className="mt-1 text-sm text-white/75">
+            {busy.kind === "capacidad" ? "Volvemos a intentar cada 10 segundos. Mientras tanto puede seguir por el chat." : "Ya hay una llamada abierta en otra pestaña."}
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button onClick={onDone} className="press min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]">
+              Continuar por chat
+            </button>
+            {busy.kind === "capacidad" && (
+              <button onClick={hangUp} className="press min-h-11 rounded-full bg-white/15 px-5 font-semibold">
+                Dejar de esperar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {showLog && (
         <>
-          <p className="text-center text-sm text-white/70">{state === "live" ? (speaking ? "Habla el asistente" : "Le escucha: hable con normalidad") : "Llamada terminada"}</p>
+          <p className="text-center text-sm text-white/70" aria-live="polite">
+            {voiceStateText(vs, speaking)}
+          </p>
           <ol className="mt-3 flex-1 space-y-2 overflow-y-auto rounded-2xl bg-black/20 p-3" aria-live="polite">
             {turns.map((t, i) => (
               <li key={i} className={`flex ${t.who === "paciente" ? "justify-end" : ""}`}>
@@ -350,8 +452,8 @@ function VoiceRegister({ onDone }: { onDone: () => void }) {
               </li>
             ))}
           </ol>
-          {state === "live" ? (
-            <button onClick={() => hangUp.current?.()} className="press mx-auto mt-4 grid size-16 place-items-center rounded-full bg-[#d92d20]" aria-label="Colgar">
+          {live ? (
+            <button onClick={hangUp} className="press mx-auto mt-4 grid size-16 place-items-center rounded-full bg-[#d92d20]" aria-label="Colgar">
               <PhoneOff className="size-7" />
             </button>
           ) : (
@@ -361,29 +463,42 @@ function VoiceRegister({ onDone }: { onDone: () => void }) {
           )}
         </>
       )}
-      {state === "unavailable" && (
+      {vs.name === "error" && (
         <div className="m-auto max-w-xs text-center">
           <p className="font-semibold">La llamada no está disponible</p>
-          <p className="mt-1 text-sm text-white/75">{reason}</p>
-          <button onClick={onDone} className="press mt-4 min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]">
-            Usar el chat
-          </button>
+          <p className="mt-1 text-sm text-white/75">{reason || vs.message}</p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button onClick={onDone} className="press min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]">
+              Usar el chat
+            </button>
+            <button onClick={start} className="press min-h-11 rounded-full bg-white/15 px-5 font-semibold">
+              Reintentar
+            </button>
+          </div>
         </div>
       )}
-      {session && state === "live" && (
-        <ElevenLabsCall
+      {live && (
+        <LiveVoice
           sid={sid}
-          session={session}
-          hangUpRef={hangUp}
+          callId={callId ?? 0}
+          voiceSessionId={live.voiceSessionId}
+          session={live.session}
+          dispatch={dispatch}
+          controlRef={control}
           onTurn={(t) => setTurns((x) => [...x, t])}
           onSpeaking={setSpeaking}
-          onConnected={(ms) => callId && post("/api/voice/status", { callId, status: "en_curso", first_turn_ms: ms, provider: "elevenlabs" }).catch(() => {})}
-          onEnd={(r) => end(r)}
-          onFail={(err) => {
-            voiceDiag(sid, "fail", { callId, message: err.slice(0, 140) });
-            setReason(`La voz falló (${err}). Puede seguir por el chat o el formulario.`);
-            setState("unavailable");
-            if (callId) post("/api/voice/status", { callId, status: "fallo", result: err.slice(0, 120) }).catch(() => {});
+          onConnected={(ms) => {
+            if (callRef.current) post("/api/voice/status", { callId: callRef.current, status: "en_curso", first_turn_ms: ms, provider: "elevenlabs" }).catch(() => {});
+          }}
+          onEnd={(kind, r) => {
+            if (kind === "error") {
+              voiceDiag(sid, "fail", { callId, message: r.slice(0, 140) });
+              setReason(`La voz falló (${r}). Puede seguir por el chat o el formulario.`);
+              setLive(null);
+              if (callRef.current) post("/api/voice/status", { callId: callRef.current, status: "fallo", result: r.slice(0, 120) }).catch(() => {});
+              return;
+            }
+            void end(r, kind !== "remoto");
           }}
         />
       )}

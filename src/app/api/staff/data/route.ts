@@ -102,6 +102,8 @@ export async function GET(req: Request) {
         ]);
         return NextResponse.json({ board, statuses: lite.data ?? [], calls: calls.count ?? 0, metrics: metrics.data ?? [] });
       }
+      case "voice":
+        return NextResponse.json(await rpc("voice_overview"));
       case "live":
         return NextResponse.json(await rpc("live_overview"));
       case "params": {

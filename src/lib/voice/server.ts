@@ -44,7 +44,7 @@ export async function signedUrl(key: AgentKey, diag = "-") {
   if (!res.ok) {
     const detail = (await res.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 200);
     console.warn(`[voz ${diag}] servidor elevenlabs.signed_url_error http=${res.status} ${detail}`);
-    throw new Error(`ElevenLabs ${res.status}`);
+    throw Object.assign(new Error(`ElevenLabs ${res.status}`), { status: res.status, detail });
   }
   const data = (await res.json()) as { signed_url?: string };
   return data.signed_url ?? null;

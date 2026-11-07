@@ -65,6 +65,12 @@ export async function callContext(call: CallRow) {
     ctx.specialty = a?.specialty ?? "";
     ctx.slot_text = a ? `el ${dateEs(a.date)} a las ${timeEs(a.time)}${a.remote ? ", por teleconsulta" : ""}` : "";
   }
+  if (!ctx.patient_name && call.patient_id) {
+    // test calls and calls without an appointment: the character's first name (fictitious)
+    const { data: p } = await db.from("patients").select("first_name,caregiver_name").eq("id", call.patient_id).maybeSingle();
+    ctx.patient_name = p?.first_name ?? "";
+    if (p?.caregiver_name) ctx.role = "cuidador";
+  }
   if (call.request_id) {
     const detail = await rpc<{ request: { specialty: string } | null; person: { name: string } | null }>("staff_request_detail", { p_request: call.request_id });
     ctx.patient_name = detail.person?.name.split(" ")[0] ?? ctx.patient_name;

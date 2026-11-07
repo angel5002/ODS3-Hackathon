@@ -35,6 +35,11 @@ export async function POST(req: Request) {
       provider: "elevenlabs",
     })
     .eq("id", callId);
+  // E5: definitive close of the voice session of this conversation (if the browser never said goodbye)
+  if (d.conversation_id) {
+    const reason = (d as { metadata?: { termination_reason?: string } }).metadata?.termination_reason ?? "webhook de fin de llamada";
+    await rpc("voice_end_by_conversation", { p_conversation: d.conversation_id, p_reason: String(reason).slice(0, 160) }).catch(() => {});
+  }
   await rpc("hint", { p_kind: "call" });
   return NextResponse.json({ received: true });
 }

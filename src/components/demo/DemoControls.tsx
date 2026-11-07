@@ -9,6 +9,7 @@ import { demoNowMin, fmtMin, num, pct, years } from "@/lib/labels";
 import { useDemoState, useNow, useStaffTick } from "@/lib/realtime";
 import type { DemoState } from "@/lib/types";
 import { LiveSection } from "./LiveSection";
+import { VoiceSessionsCard } from "./VoiceSessionsCard";
 import { ParamsCard } from "./ParamsCard";
 
 type QrCard = {
@@ -131,6 +132,7 @@ export function DemoControls({ cards, assumptions, publicQr }: { cards: QrCard[]
       </div>
 
       <LiveSection />
+      <VoiceSessionsCard />
       <ParamsCard />
 
       {assumptions && (

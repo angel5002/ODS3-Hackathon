@@ -1,7 +1,8 @@
 // Call status from the call screen (answered, rejected, ended), for both the live voice and the script.
+// E5: transitions are conditional (voice_call_status): "en_curso" only from "sonando", and a call that
+// already ended is never reopened or overwritten by a late request from another tab.
 import { fail, ok } from "@/lib/api";
-import { voice } from "@/lib/channels";
-import { serverDb } from "@/lib/supabase/server";
+import { rpc, serverDb } from "@/lib/supabase/server";
 import { ownsCall } from "@/lib/voice/auth";
 import { loadCall } from "@/lib/voice/tools";
 
@@ -28,8 +29,12 @@ export async function POST(req: Request) {
     }
     if (Object.keys(patch).length) await serverDb().from("calls").update(patch).eq("id", call.id);
     // the transcript is kept only on screen; we store the result line, never the full conversation
-    await voice.updateCall(call.id, body.status, typeof body.result === "string" ? body.result.slice(0, 200) : undefined);
-    return ok();
+    const applied = await rpc<boolean>("voice_call_status", {
+      p_call: call.id,
+      p_to: body.status,
+      p_result: typeof body.result === "string" ? body.result.slice(0, 200) : null,
+    });
+    return ok({ applied });
   } catch (e) {
     return fail(e);
   }
