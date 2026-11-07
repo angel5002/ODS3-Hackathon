@@ -4,6 +4,14 @@
 - **https://asistia-e5.vercel.app** mientras `e5` no esté en `main`. Es la vista previa con la versión E5 y abre sin cuenta de Vercel.
 - **https://ods3-hackathon.vercel.app** después del merge. Hoy esa dirección todavía muestra la E4.
 
+**Final (pitch v7):** `/demo` tiene dos modos:
+- **Presentar** (`/demo?modo=presentar`) es lo que se proyecta:
+  - un momento por vista: 1 QR y cartillas, 2 Escena 1, 3 Jurado en vivo, 4 Escena 2 y 5 Etapas;
+  - teclas: ← →, 1–5, F para pantalla completa y Espacio para adelantar una escena.
+- **Operar** es el tablero de control.
+
+Detalle y ranuras en `docs/demo_presentacion.md`.
+
 **Pantallas nuevas de la E5:**
 - todo en la paleta clara;
 - la llamada con la onda de voz en el centro, el estado en dos o tres palabras («Hablando», «Te escucho», «Pensando») y los subtítulos de la última frase;
