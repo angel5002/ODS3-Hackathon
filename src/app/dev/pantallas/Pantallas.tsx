@@ -201,6 +201,8 @@ export function Pantallas({ screen, origin, qrs }: { screen: Pantalla; origin: s
             now={0}
             busy=""
             run={noop}
+            liveData={LIVE}
+            voiceData={{ active: 0, queued: 0, sessions: [], events: [] }}
             live={<LiveSectionView data={LIVE} busy="" online={(iso) => Boolean(iso)} personas={LIVE.phones} act={noop} />}
             voice={<VoiceSessionsView data={{ active: 0, queued: 0, sessions: [], events: [] }} />}
             params={<ParamsView params={PARAMS} rule="ventana_prioridad" onRule={noop} edit={{}} setEdit={noop} busy={false} show={(p) => (PCT.has(p.key) ? String(p.value * 100) : String(p.value))} onSubmit={blockSubmit} />}

@@ -106,13 +106,53 @@ const APP_PAIRS = [
 ];
 PAIRS.push(...APP_PAIRS);
 
+// E5 demo: the /demo control center (projected to the jury) and its operator tools use their own local tokens
+// (DEMO_TOKENS in src/components/demo/DemoTheme.tsx, sober NHS/USWDS-like palette). Every pair the screen uses.
+function demoTokens() {
+  const src = readFileSync(join(root, "src", "components", "demo", "DemoTheme.tsx"), "utf8");
+  const out = {};
+  for (const [, name, value] of src.matchAll(/"(cc-[a-z0-9-]+)":\s*"(#[0-9a-fA-F]{6})"/g)) out[name] = value;
+  if (!Object.keys(out).length) throw new Error("No DEMO_TOKENS in DemoTheme.tsx");
+  return out;
+}
+const DEMO_PAIRS = [
+  ["cc-text", "cc-surface", "texto", "títulos, cifras y nombres de /demo"],
+  ["cc-text", "cc-subtle", "texto", "«Último: …», fila nueva de la lista (demo)"],
+  ["cc-text", "cc-page", "texto", "fondo de la página /demo"],
+  ["cc-text-2", "cc-surface", "texto", "texto secundario de los paneles (demo)"],
+  ["cc-text-2", "cc-subtle", "texto", "texto secundario sobre gris (demo)"],
+  ["cc-text-2", "cc-page", "texto", "línea de aviso «Demostración…» al pie (demo)"],
+  ["cc-accent", "cc-surface", "texto", "enlaces de los pasos, «Sonando», «Oferta a …» (demo)"],
+  ["cc-accent", "cc-subtle", "texto", "«Nueva» en la fila resaltada (demo)"],
+  ["cc-ok", "cc-surface", "texto", "«En llamada», «Asignado a …», paso hecho (demo)"],
+  ["cc-warn", "cc-surface", "texto", "«No contestó», «Sin ACEPTO» (demo)"],
+  ["cc-danger", "cc-surface", "texto", "botón «Reiniciar demo» (demo)"],
+  ["cc-danger", "cc-danger-subtle", "texto", "botón «Reiniciar demo» con el puntero encima (demo)"],
+  ["cc-on-primary", "cc-primary", "texto", "paso principal, regla activa, código QR del jurado (demo)"],
+  ["cc-on-primary", "cc-primary-press", "texto", "paso principal pulsado (demo)"],
+  ["cc-on-primary-2", "cc-primary", "texto", "«Para el jurado» (demo)"],
+  ["cc-on-danger", "cc-danger", "texto", "«Sí, reiniciar» (demo)"],
+  ["cc-control", "cc-surface", "control", "borde de botones secundarios, selectores y campos (demo)"],
+  ["cc-control", "cc-subtle", "control", "borde de botones sobre gris (demo)"],
+  ["cc-primary", "cc-surface", "control", "botón principal y etapa con movimiento (demo)"],
+  ["cc-danger", "cc-surface", "control", "borde de «Reiniciar demo»; borde P1 de la lista (demo)"],
+  ["cc-warn", "cc-surface", "control", "borde P2 y de llamada sin respuesta (demo)"],
+  ["cc-accent", "cc-surface", "control", "borde P3, de «Sonando» y de «Último» (demo)"],
+  ["cc-ok", "cc-surface", "control", "borde de «En llamada» y de cupo asignado (demo)"],
+  ["cc-accent", "cc-subtle", "control", "barra del % del plazo y borde de «Último» (demo)"],
+  ["cc-focus", "cc-surface", "control", "anillo de foco (demo)"],
+  ["cc-focus", "cc-page", "control", "anillo de foco sobre el fondo (demo)"],
+  ["cc-accent", "cc-surface", "icono", "iconos de los paneles (demo)"],
+];
+PAIRS.push(...DEMO_PAIRS);
+
 const MIN = { texto: 4.5, icono: 3, control: 3 };
 let failures = 0;
 const lines = [];
 const out = (s) => lines.push(s);
 
 for (const theme of ["claro"]) {
-  const t = tokens(theme);
+  const t = { ...tokens(theme), ...demoTokens() };
   if (md) {
     out(`\n**Variante ${theme}**\n`);
     out("| Primer plano | Fondo | Tipo | Mínimo | Contraste | Resultado | Uso |");
