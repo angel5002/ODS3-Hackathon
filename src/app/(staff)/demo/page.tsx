@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
-import { DemoControls } from "@/components/demo/DemoControls";
+import { DemoControls, type DemoMode } from "@/components/demo/DemoControls";
+import { JURY_CHAT_PATH } from "@/components/demo/presentacion/config";
 import { serverDb } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Demo y códigos QR" };
@@ -21,7 +22,11 @@ type DemoPatient = {
 
 const qr = (url: string) => QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#16212c", light: "#ffffff" } });
 
-export default async function DemoPage() {
+export default async function DemoPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams;
+  // ?modo=presentar opens the projected mode (bookmark it on the projector laptop); ?momento=<id> picks the moment
+  const mode: DemoMode = sp.modo === "presentar" ? "presentar" : "operar";
+  const moment = typeof sp.momento === "string" ? sp.momento : null;
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
@@ -53,6 +58,17 @@ export default async function DemoPage() {
     }),
   );
   const publicUrl = `${origin}/pedir-cita`;
+  // the projected QR opens the chat only (moment 1)
+  const chatUrl = `${origin}${JURY_CHAT_PATH}`;
 
-  return <DemoControls cards={cards} assumptions={card?.value?.simulation_assumptions ?? null} publicQr={{ url: publicUrl, svg: await qr(publicUrl) }} />;
+  return (
+    <DemoControls
+      cards={cards}
+      assumptions={card?.value?.simulation_assumptions ?? null}
+      publicQr={{ url: publicUrl, svg: await qr(publicUrl) }}
+      chatQr={{ url: chatUrl, svg: await qr(chatUrl) }}
+      initialMode={mode}
+      initialMoment={moment}
+    />
+  );
 }
