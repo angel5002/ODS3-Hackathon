@@ -1,0 +1,473 @@
+[
+ {
+  "t": 77.9,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "H"
+ },
+ {
+  "t": 79.09,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P1126",
+  "status": 200,
+  "callId": 4527
+ },
+ {
+  "t": 79.47,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] screen.mount {callId: 4527, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 79.92,
+  "who": "carmen",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 79.97,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] ui.answer {callId: 4527, clicks: 1}"
+ },
+ {
+  "t": 79.99,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "Conectando\nConectando la llamada"
+ },
+ {
+  "t": 80.34,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] session.request {callId: 4527, queued: false}"
+ },
+ {
+  "t": 80.34,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 81.31,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] session.response {callId: 4527, ok: true, busy: null, reason: null}"
+ },
+ {
+  "t": 81.32,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4527, \"voiceSessionId\": \"0cdce21b-52f4-42b0-afbf-100a3026b967\", \"session\": true}"
+ },
+ {
+  "t": 81.62,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] sdk.start_session {callId: 4527, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 81.62,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] sdk.status {callId: 4527, status: connecting}"
+ },
+ {
+  "t": 81.74,
+  "who": "carmen",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 81.74,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 81.76,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 81.82,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 82.15,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] sdk.status {callId: 4527, status: connected}"
+ },
+ {
+  "t": 82.15,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] sdk.connect {callId: 4527}"
+ },
+ {
+  "t": 82.29,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 82.29,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 82.29,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/heartbeat",
+  "status": 200,
+  "body": "{\"alive\": true, \"state\": \"activa\", \"accepted\": true, \"call_status\": \"en_curso\"}"
+ },
+ {
+  "t": 82.36,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] sdk.first_agent_turn {callId: 4527, ms: 207}"
+ },
+ {
+  "t": 82.5,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 82.85,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 83.01,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "Hablando\nEl asistente está hablando"
+ },
+ {
+  "t": 86.02,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "Hablando\nEl asistente está hablando"
+ },
+ {
+  "t": 89.04,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] fallback {callId: 4527, reason: La persona eligió seguir por chat durante la llamada, ended: false, provider: elevenlabs}"
+ },
+ {
+  "t": 89.05,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] effect.desmontaje {callId: 4527}"
+ },
+ {
+  "t": 89.06,
+  "who": "carmen",
+  "kind": "ui",
+  "action": "chat"
+ },
+ {
+  "t": 89.07,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": "Hablando\nEl asistente está hablando"
+ },
+ {
+  "t": 89.22,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 89.22,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 89.23,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/end",
+  "status": 200,
+  "body": "{\"ended\": true, \"call_id\": 4527}"
+ },
+ {
+  "t": 89.27,
+  "who": "carmen",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 89.73,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 90.09,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] finish {callId: 4527, result: Llamada de prueba, alreadyEnded: false, closeCall: true}"
+ },
+ {
+  "t": 90.23,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 90.46,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 90.83,
+  "who": "carmen",
+  "kind": "console.info",
+  "text": "[voz 4bcd6f11] screen.unmount {callId: 4527, ended: true}"
+ },
+ {
+  "t": 90.95,
+  "who": "carmen",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 92.08,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 95.1,
+  "who": "carmen",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 98.11,
+  "who": "carmen",
+  "kind": "opciones",
+  "opciones": []
+ },
+ {
+  "t": 98.3,
+  "who": "staff",
+  "kind": "llamadas",
+  "calls": [
+   {
+    "id": 4527,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 98.45,
+  "who": "staff",
+  "kind": "voz",
+  "activas": 0,
+  "en_fila": 0,
+  "sesiones": [
+   {
+    "id": "0cdce21b",
+    "call_id": 4527,
+    "state": "finalizada",
+    "ended_reason": "pantalla cerrada"
+   },
+   {
+    "id": "85f1820d",
+    "call_id": 4526,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   },
+   {
+    "id": "6a070b17",
+    "call_id": 4525,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "c6a89e6f",
+    "call_id": 4524,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "a64e6358",
+    "call_id": 4523,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   },
+   {
+    "id": "25d2d870",
+    "call_id": 4522,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   }
+  ]
+ },
+ {
+  "t": 101.46,
+  "who": "carmen",
+  "kind": "ui",
+  "action": "colgar (no disponible)",
+  "text": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"b"
+ },
+ {
+  "t": 104.46,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "H"
+ },
+ {
+  "t": 104.63,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 4527,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4526,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4525,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4524,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4523,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4522,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4521,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4520,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4519,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 104.78,
+  "who": "staff",
+  "kind": "voz_al_final",
+  "activas": 0,
+  "en_fila": 0,
+  "sesiones": [
+   {
+    "id": "0cdce21b",
+    "call_id": 4527,
+    "state": "finalizada",
+    "ended_reason": "pantalla cerrada"
+   },
+   {
+    "id": "85f1820d",
+    "call_id": 4526,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   },
+   {
+    "id": "6a070b17",
+    "call_id": 4525,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "c6a89e6f",
+    "call_id": 4524,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "a64e6358",
+    "call_id": 4523,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   },
+   {
+    "id": "25d2d870",
+    "call_id": 4522,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   }
+  ]
+ }
+]
