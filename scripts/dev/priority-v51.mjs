@@ -188,8 +188,11 @@ try {
   const prop51 = await rpc("propose_candidates_v51", { p_slot: slotId });
   assert(prop51.available === prop4.available && prop51.zone === prop4.zone, `mismo filtro de elegibles (${prop51.available}, zona ${prop51.zone})`);
   const c51 = prop51.candidates;
-  const ai = c51.findIndex((c) => c.request_id === a.id);
-  const ji = c51.findIndex((c) => c.request_id === j.id);
+  // the overdue block above re-seeds the demo (reset_demo): look Ana and Julio up again, their ids changed
+  const fresh = await rpc("staff_requests_v51");
+  const [aNow, jNow] = ["Ana Gutiérrez", "Julio Gonzales"].map((n) => byName(fresh, n));
+  const ai = c51.findIndex((c) => c.request_id === aNow.id);
+  const ji = c51.findIndex((c) => c.request_id === jNow.id);
   assert(ai >= 0 && ji > ai, `candidatos v5.1: ${c51.map((c) => `${c.short_name} ${c.category} ${two(c.index)}`).join(", ")}`);
 
   // ---- the two assignment variants on the same contested case
