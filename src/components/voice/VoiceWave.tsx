@@ -115,13 +115,14 @@ export function VoiceWave({ levels, active, speaker, reducedMotion = false, clas
 
     function stroke(t: number, gain: number, flip: number, offset: number, alpha: number, lineWidth: number, floor: number) {
       const mid = height / 2;
-      const amp = height * 0.44;
+      const amp = height * 0.46;
       ctx!.beginPath();
       for (let x = 0; x <= width + STEP_PX; x += STEP_PX) {
         const px = Math.min(x, width);
         const u = px / width;
         const win = Math.sin(Math.PI * u) ** 2; // the ends rest on the centre line
-        const e = Math.min(1, floor + energyAt(u) * 1.6);
+        // square root: quiet speech still moves the line, loud speech does not clip at once
+        const e = Math.min(1, floor + Math.sqrt(energyAt(u)) * 1.35);
         const shape =
           Math.sin(2 * Math.PI * 1.4 * u + t * 1.3 + offset) * 0.62 +
           Math.sin(2 * Math.PI * 3.1 * u - t * 2.2 + offset * 2) * 0.28 +

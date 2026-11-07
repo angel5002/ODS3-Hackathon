@@ -54,7 +54,7 @@ function statusCopy(p: CallViewProps): { title: string; detail: string | null } 
     case "guion":
       return p.agentSpeaking
         ? { title: "El asistente está hablando", detail: null }
-        : { title: "Responda tocando una opción", detail: "Puede leer cada pregunta en los subtítulos." };
+        : { title: "Responda tocando una opción", detail: null };
     case "finalizando":
       return { title: "Terminando la llamada…", detail: null };
     case "finalizada":
@@ -88,7 +88,7 @@ export function CallView(props: CallViewProps) {
     phase === "activa" ? (agentSpeaking || thinking ? "agente" : "persona") : phase === "guion" ? (agentSpeaking ? "agente" : null) : null;
   const waveActive =
     phase === "conectando" || (phase === "activa" && !(muted && !agentSpeaking && !thinking)) || (phase === "guion" && agentSpeaking);
-  const glow = live && speaker ? speaker : null;
+  const glow = live && waveActive && speaker ? speaker : null;
 
   const showPerson = !!actions.talkToPerson && PERSON_OK.includes(phase) && !(phase === "ocupado" && busy?.kind === "otro_dispositivo");
 
@@ -96,7 +96,7 @@ export function CallView(props: CallViewProps) {
     <div
       role="dialog"
       aria-label="Llamada del asistente automatizado"
-      className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-[#10302f] text-white [&_:focus-visible]:outline-[#7ee0c9]"
+      className="@container absolute inset-0 z-20 flex flex-col overflow-hidden bg-[#10302f] text-white [&_:focus-visible]:outline-[#7ee0c9]"
     >
       {/* speaker glow: two fixed layers, only their opacity changes */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -119,7 +119,7 @@ export function CallView(props: CallViewProps) {
       />
 
       <main className="relative mx-auto flex min-h-0 w-full max-w-[600px] flex-1 flex-col px-5">
-        <div role="status" aria-live="polite" aria-atomic="true" className={`text-center ${talk ? "pt-4" : "pt-6"}`}>
+        <div role="status" aria-live="polite" aria-atomic="true" className={`text-center ${phase === "guion" ? "pt-3" : talk ? "pt-4" : "pt-6"}`}>
           {phase === "activa" && (
             <span
               aria-hidden
@@ -127,35 +127,40 @@ export function CallView(props: CallViewProps) {
               style={{ background: muted && !agentSpeaking && !thinking ? "#ffffff55" : WAVE_COLOR[speaker ?? "agente"] }}
             />
           )}
-          <p className="text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em] sm:text-3xl">{title}</p>
+          <p className="text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em] @lg:text-3xl">{title}</p>
           {detail && <p className="mx-auto mt-1.5 max-w-[34ch] text-pretty text-[15px] leading-snug text-white/75">{detail}</p>}
         </div>
 
         {talk && (
-          <div className={`relative -mx-5 shrink-0 sm:mx-0 ${phase === "guion" ? "mt-2 h-16" : "mt-4 h-28 sm:h-32"}`}>
+          <div className={`relative -mx-5 shrink-0 @3xl:-mx-24 ${phase === "guion" ? "mt-1 h-14" : "mt-4 h-28 @lg:h-32 @3xl:h-40"}`}>
             <VoiceWave levels={waveLevels} active={waveActive} speaker={speaker} />
           </div>
         )}
 
-        {(phase === "entrante" || phase === "reconectar") && <Avatar ringing={phase === "entrante"} />}
-        {phase === "ocupado" && <BusyStage kind={busy?.kind ?? "capacidad"} position={busy?.position ?? null} />}
-        {phase === "sin_conexion" && <Emblem icon={<WifiOff className="size-9" aria-hidden />} />}
-
-        {talk && phase !== "conectando" ? (
-          <CaptionsPanel captions={captions} visible={captionsVisible} onToggle={actions.toggleCaptions} live={live} />
+        {talk ? (
+          phase === "conectando" ? (
+            <div className="flex-1" />
+          ) : (
+            <CaptionsPanel captions={captions} visible={captionsVisible} onToggle={actions.toggleCaptions} live={live} />
+          )
         ) : (
-          <div className="flex-1" />
+          // incoming, reconnect, busy and no connection: the emblem sits in the optical centre of the free space
+          <div className="flex flex-1 flex-col items-center justify-center pb-6">
+            {(phase === "entrante" || phase === "reconectar") && <Avatar ringing={phase === "entrante"} />}
+            {phase === "ocupado" && <BusyStage kind={busy?.kind ?? "capacidad"} position={busy?.position ?? null} />}
+            {phase === "sin_conexion" && <Emblem icon={<WifiOff className="size-9" aria-hidden />} />}
+          </div>
         )}
 
         {phase === "guion" && props.scriptOptions.length > 0 && (
-          <div role="group" aria-label="Opciones de respuesta" className="grid shrink-0 gap-2 pt-3">
+          <div role="group" aria-label="Opciones de respuesta" className="grid shrink-0 gap-2 pt-2">
             {props.scriptOptions.map((o) => (
               <button
                 key={o.id}
                 type="button"
                 disabled={!props.onScriptOption}
                 onClick={() => props.onScriptOption?.(o.id)}
-                className={`press min-h-14 rounded-2xl px-4 text-[17px] font-semibold leading-tight disabled:opacity-50 ${
+                className={`press min-h-[52px] rounded-2xl px-4 py-2 text-[17px] font-semibold leading-tight disabled:opacity-50 ${
                   o.tone === "primary" ? "bg-[#7ee0c9] text-[#0b2b2a] active:bg-[#9be9d6]" : SOFT
                 }`}
               >
@@ -181,14 +186,14 @@ export function CallView(props: CallViewProps) {
         )}
         <Controls {...props} />
         {phase !== "finalizada" && (
-          <ul className="mx-auto mt-4 max-w-[40ch] space-y-0.5 text-center text-[13px] leading-snug text-white/70">
-            {SAFETY_LINES.map((l, i) => (
-              <li key={l} className="flex items-start justify-center gap-1.5">
-                {i === 0 && <ShieldCheck className="mt-px size-4 shrink-0 text-[#7ee0c9]" aria-hidden />}
-                <span>{l}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="mx-auto mt-4 flex w-fit max-w-full items-start gap-2 text-[13px] leading-snug text-white/75">
+            <ShieldCheck className="mt-px size-4 shrink-0 text-[#7ee0c9]" aria-hidden />
+            <ul className="space-y-0.5">
+              {SAFETY_LINES.map((l) => (
+                <li key={l}>{l}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </footer>
     </div>
@@ -241,7 +246,7 @@ function Header({
 
 function Avatar({ ringing }: { ringing: boolean }) {
   return (
-    <div className="flex justify-center pt-10">
+    <div className="flex justify-center">
       <div className={`relative grid size-28 place-items-center rounded-full bg-white/10 text-[#7ee0c9] ${ringing ? "ring-pulse" : ""}`}>
         <Bot className="size-12" aria-hidden />
       </div>
@@ -251,7 +256,7 @@ function Avatar({ ringing }: { ringing: boolean }) {
 
 function Emblem({ icon, tone = "#7ee0c9" }: { icon: ReactNode; tone?: string }) {
   return (
-    <div className="flex justify-center pt-8">
+    <div className="flex justify-center">
       <div className="grid size-20 place-items-center rounded-3xl bg-white/10" style={{ color: tone }}>
         {icon}
       </div>
@@ -262,7 +267,7 @@ function Emblem({ icon, tone = "#7ee0c9" }: { icon: ReactNode; tone?: string }) 
 function BusyStage({ kind, position }: { kind: "otro_dispositivo" | "capacidad"; position: number | null }) {
   if (kind === "otro_dispositivo") return <Emblem icon={<MonitorSmartphone className="size-9" aria-hidden />} />;
   return (
-    <div className="flex flex-col items-center pt-8">
+    <div className="flex flex-col items-center">
       <Emblem icon={<Hourglass className="size-9" aria-hidden />} tone="#f6c177" />
       {position != null && position > 0 && (
         <p className="mt-5 flex flex-col items-center">
@@ -294,12 +299,11 @@ function CaptionsPanel({
   }, [captions.length, last?.text, visible]);
 
   return (
-    <section aria-label="Subtítulos" className="mt-3 flex min-h-0 flex-1 flex-col">
+    <section aria-label="Subtítulos" className={`flex flex-1 flex-col ${visible ? "min-h-[104px]" : "min-h-0"}`}>
       <div className="flex shrink-0 justify-end">
         <button
           type="button"
           onClick={onToggle}
-          aria-pressed={visible}
           className="press inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-white/85 active:bg-white/10"
         >
           {visible ? <CaptionsOff className="size-4" aria-hidden /> : <Captions className="size-4" aria-hidden />}
@@ -311,7 +315,7 @@ function CaptionsPanel({
           ref={listRef}
           role="log"
           aria-live="polite"
-          className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-1 [mask-image:linear-gradient(to_bottom,transparent,black_28px)] pt-6"
+          className="min-h-0 flex-1 basis-0 space-y-3 overflow-y-auto overscroll-contain pb-1 pt-5 [mask-image:linear-gradient(to_bottom,transparent,black_24px)]"
         >
           {captions.length === 0 && live && (
             <li className="text-center text-[15px] text-white/65">Aquí aparecerá lo que digan usted y el asistente.</li>
@@ -336,21 +340,18 @@ function RoundButton({
   className,
   children,
   big,
-  pressed,
 }: {
   label: string;
   onClick: () => void;
   className: string;
   children: ReactNode;
   big?: boolean;
-  pressed?: boolean;
 }) {
   return (
-    <div className="flex w-[84px] flex-col items-center gap-1.5">
+    <div className="flex w-[100px] flex-col items-center gap-1.5">
       <button
         type="button"
         aria-label={label}
-        aria-pressed={pressed}
         onClick={onClick}
         className={`press grid place-items-center rounded-full ${big ? "size-[72px]" : "size-16"} ${className}`}
       >
@@ -477,7 +478,7 @@ function Controls(p: CallViewProps) {
 }
 
 function Row({ children }: { children: ReactNode }) {
-  return <div className="flex items-start justify-center gap-6 sm:gap-10">{children}</div>;
+  return <div className="flex items-start justify-center gap-2 @lg:gap-8">{children}</div>;
 }
 
 function Stack({ children }: { children: ReactNode }) {

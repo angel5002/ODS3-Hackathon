@@ -19,7 +19,7 @@ const TAU = Math.PI * 2;
 function fillVoice(buf: Uint8Array, t: number, seed: number, gain: number) {
   const syll = Math.max(0, Math.sin(t * TAU * 4.1 + seed) * 0.6 + Math.sin(t * TAU * 2.6 + seed * 2.3) * 0.4 + 0.15);
   const phrase = 0.55 + 0.45 * Math.sin(t * TAU * 0.37 + seed);
-  const env = Math.min(1, syll * phrase * gain);
+  const env = Math.min(1, syll * phrase * gain * 1.6);
   for (let i = 0; i < BINS; i++) {
     const shape = Math.exp(-i / (12 + seed * 3)) * (0.78 + 0.22 * Math.sin(i * 1.7 + t * 9));
     const noise = 0.5 + 0.5 * Math.sin(i * 0.9 + t * 11.3 + seed) * Math.sin(i * 0.37 - t * 6.1);
