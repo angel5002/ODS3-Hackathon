@@ -113,8 +113,10 @@ export function CallPlayground({
     voice.current = phase === "activa" ? (agentSpeaking ? "agente" : thinking ? "silencio" : "persona") : "silencio";
   }, [phase, agentSpeaking, thinking]);
 
-  // simulated push-to-talk: while held, the microphone carries the person's voice
+  // simulated push-to-talk (noisy-room mode): while held, the microphone carries the person's voice
+  const [talking, setTalking] = useState(false);
   function hold(down: boolean) {
+    setTalking(down);
     voice.current = down ? "persona" : phase === "activa" && agentSpeaking ? "agente" : "silencio";
   }
 
@@ -191,7 +193,7 @@ export function CallPlayground({
     errorMessage: state === "sin_conexion" ? "La conexión a internet es inestable o el micrófono no está disponible." : null,
     levels,
     scriptOptions: SCRIPT_OPTIONS,
-    pushToTalk: ptt,
+    pushToTalk: ptt && phase === "activa" ? { talking, start: () => hold(true), end: () => hold(false) } : undefined,
     scene,
     onScriptOption: (id) => {
       const o = SCRIPT_OPTIONS.find((x) => x.id === id);
@@ -220,7 +222,6 @@ export function CallPlayground({
       continueByChat: () => toast("Seguir por chat", { description: "Aquí se abriría el chat con la misma conversación." }),
       talkToPerson: () => toast("Hablar con una persona", { description: "Aquí se avisaría al personal del hospital." }),
       leave: () => toast("Cerrar", { description: "Aquí se cerraría esta pantalla sin tocar la llamada." }),
-      holdToTalk: hold,
     },
   };
 

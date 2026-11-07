@@ -16,8 +16,8 @@
 // The round call buttons are the phone convention people recognise; everything else is pill-shaped.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Captions, CaptionsOff, Hand, MessageSquareText, Mic, MicOff, Phone, PhoneOff, RotateCcw, UserRound } from "lucide-react";
-import type { AudioLevels, CallPhase, CallViewProps } from "@/lib/voice/contract";
-import { lastSentence as lastSentenceOf, tailCaption, tailSentences } from "@/lib/voice/captions";
+import type { AudioLevels, CallPhase, CallViewProps, PushToTalk } from "@/lib/voice/contract";
+import { lastSentence as lastSentenceOf, tailCaption, tailSentences, useRevealedCaption } from "@/lib/voice/captions";
 import { DEFAULT_VOICE_THEME, type VoiceTheme } from "@/lib/voice/theme";
 import { Respira, type RespiraMode } from "./Respira";
 
@@ -104,6 +104,8 @@ function look(p: CallViewProps): Look {
     default:
       if (p.thinking) return { mode: "think", word: "Pensando", spoken: "El asistente está pensando" };
       if (p.agentSpeaking) return { mode: "speak", word: "Hablando", spoken: "El asistente está hablando" };
+      if (p.pushToTalk && !p.pushToTalk.talking)
+        return { mode: "muted", word: "Su turno", spoken: "Mantenga presionado el botón para hablar" };
       if (p.muted) return { mode: "muted", word: "Silenciado", spoken: "Micrófono silenciado. El asistente no le escucha." };
       return { mode: "listen", word: "Escuchando", spoken: "El asistente le escucha" };
   }
@@ -135,10 +137,11 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
 
   const last = captions.length ? captions[captions.length - 1] : null;
   const guion = phase === "guion";
-  // the end of what was said, whole: the last sentence (the fixed script keeps the sentences that give the
-  // question its context)
+  // the agent's words appear at the pace of its voice (voice track helper), then the end of what was said,
+  // whole: the last sentence (the fixed script keeps the sentences that give the question its context)
+  const revealed = useRevealedCaption(last, props.agentSpeaking);
   const caption =
-    last && captionsVisible && talk && phase !== "conectando" ? (guion ? tailSentences(last.text, 150) : tailCaption(last.text, 110)) : null;
+    last && revealed && captionsVisible && talk && phase !== "conectando" ? (guion ? tailSentences(revealed, 150) : tailCaption(revealed, 110)) : null;
   const options = guion && props.scriptOptions.length > 0 && !scene;
   const canMenu = talk && !scene;
   // a finished or failed call: the disc goes graphite (calmer than ink), the word stays white
@@ -362,17 +365,20 @@ function RoundButton({
   );
 }
 
-/** "Mantener para hablar": round, ink while held. Local pressed state only on press/release (never per frame). */
-function HoldToTalk({ hold }: { hold: (down: boolean) => void }) {
-  const [down, setDown] = useState(false);
+/** "Mantener para hablar" (noisy-room mode, CallViewProps.pushToTalk): round, ink while held. Calls start() on
+ *  press and end() on release; the local state only gives instant feedback (set on press/release, never per frame). */
+function HoldToTalk({ ptt }: { ptt: PushToTalk }) {
+  const [held, setHeld] = useState(false);
+  const down = held || ptt.talking;
   return (
     <RoundButton
       label="Mantener para hablar"
       tone={down ? "on" : "soft"}
       pressed={down}
       hold={(d) => {
-        setDown(d);
-        hold(d);
+        setHeld(d);
+        if (d) ptt.start();
+        else ptt.end();
       }}
     >
       {down ? <Mic className="size-7" aria-hidden /> : <Hand className="size-7" aria-hidden />}
@@ -435,8 +441,8 @@ function Controls(p: CallViewProps) {
       return (
         <Row>
           {p.phase !== "conectando" &&
-            (p.pushToTalk && a.holdToTalk ? (
-              <HoldToTalk hold={a.holdToTalk} />
+            (p.pushToTalk ? (
+              <HoldToTalk ptt={p.pushToTalk} />
             ) : (
               a.toggleMute && (
                 <RoundButton label="Silenciar" onClick={a.toggleMute} tone={p.muted ? "on" : "soft"} pressed={p.muted}>

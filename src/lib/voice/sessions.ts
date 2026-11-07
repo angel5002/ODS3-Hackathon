@@ -1,7 +1,8 @@
 // Voice sessions on the server (E5, hito 2). One live session per call, claimed atomically in Postgres
 // (voice_claim), kept alive by a heartbeat every 10 s and expired after 30 s without one. Every decision is
 // written to voice_events (no personal data).
-import { rpc } from "@/lib/supabase/server";
+import { rpc, serverDb } from "@/lib/supabase/server";
+import { isCardToken, noisyRoomOn } from "./capacity";
 import type { CallRow } from "./tools";
 
 export const HEARTBEAT_MS = 10_000;
@@ -20,8 +21,46 @@ export type Claim =
   | { ok: false; reason: "terminada" }
   | { ok: false; reason: "ocupado"; queue_id: string; position: number; active: number; max: number };
 
-export function claimSession(callId: number, ownerKind: "telefono" | "chat", queueId: string | null) {
-  return rpc<Claim>("voice_claim", { p_call: callId, p_owner_kind: ownerKind, p_max: maxConcurrent(), p_queue: queueId });
+export function claimSession(callId: number, ownerKind: "telefono" | "chat", queueId: string | null, max = maxConcurrent()) {
+  return rpc<Claim>("voice_claim", { p_call: callId, p_owner_kind: ownerKind, p_max: max, p_queue: queueId });
+}
+
+// ---------------------------------------------------------------- final day: jury cards and noisy room
+
+/** Is this call for a printed jury card? Its patient's token starts with "j-", directly or through the chat
+ *  session linked to that patient. */
+export async function isCardCall(call: Pick<CallRow, "patient_id" | "chat_session_id">) {
+  const db = serverDb();
+  let patient = call.patient_id;
+  if (!patient && call.chat_session_id) {
+    const { data } = await db.from("chat_sessions").select("linked_patient_id").eq("id", call.chat_session_id).maybeSingle();
+    patient = (data?.linked_patient_id as string | null) ?? null;
+  }
+  if (!patient) return false;
+  const { data } = await db.from("patients").select("token").eq("id", patient).maybeSingle();
+  return isCardToken((data?.token as string | null) ?? null);
+}
+
+/** Voice sessions holding a line now (the same states voice_claim counts). */
+export async function liveSessionCount(exceptCall?: number) {
+  let q = serverDb().from("voice_sessions").select("id", { count: "exact", head: true }).in("state", ["solicitando", "conectando", "activa"]);
+  if (exceptCall !== undefined) q = q.neq("call_id", exceptCall);
+  const { count } = await q;
+  return count ?? 0;
+}
+
+/** Noisy-room mode (settings_v51 'sala_ruidosa'): push-to-talk on the phones. ON when the key is missing. */
+export async function noisyRoom() {
+  const { data, error } = await serverDb().from("settings_v51").select("value").eq("key", "sala_ruidosa").maybeSingle();
+  return noisyRoomOn(error ? null : ((data?.value as string | null) ?? null));
+}
+
+export async function setNoisyRoom(on: boolean) {
+  const { error } = await serverDb()
+    .from("settings_v51")
+    .upsert({ key: "sala_ruidosa", value: on ? "on" : "off", updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) throw new Error(error.message);
+  return on;
 }
 
 export function updateSession(sessionId: string, state: string | null, extra: { conversation?: string | null; reason?: string | null; agent?: string | null } = {}) {
