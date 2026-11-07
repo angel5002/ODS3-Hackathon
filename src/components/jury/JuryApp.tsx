@@ -6,7 +6,7 @@
 //   there is a free voice line); pide_cita -> /pedir-cita tied to this card (voice and/or chat).
 // When every voice line is busy the page simply offers messages or chat: no error on the card page.
 import { EvidenceLink } from "@/components/Evidence";
-import { HowItWorksButton } from "@/components/HowItWorks";
+import { VideoButton } from "@/components/VideoButton";
 import { useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { MessageCircle, Mic, Phone, QrCode, Smartphone } from "lucide-react";
 import { BrandMark, Wordmark } from "@/components/Brand";
@@ -134,10 +134,8 @@ export function JuryCardIntro({ card, actions, voiceBusy, ready }: { card: Publi
         <ul className="mt-5 space-y-2.5" data-jury-ready={ready ? "1" : undefined}>
           {actions}
         </ul>
-        <div className="mt-4 flex flex-wrap gap-x-5">
-          <HowItWorksButton />
-          <EvidenceLink />
-        </div>
+        <VideoButton className="mt-4" />
+        <EvidenceLink className="mt-2" />
       </main>
       <DemoNotice>{DISCLAIMER}</DemoNotice>
     </>
