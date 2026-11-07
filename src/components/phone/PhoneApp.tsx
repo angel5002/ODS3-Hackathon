@@ -53,16 +53,18 @@ export function PhoneApp({ token }: { token: string }) {
 
   const patientId = data?.patient.id;
   useHints((h) => {
+    if (missing) return; // unknown link: stop asking (it would only answer 404)
     if (isBroad(h) || (patientId && h.patients.includes(patientId)) || h.kind === "slot" || h.kind === "call") load();
   });
 
-  // presence for the operator ("En vivo" in /demo), every 20 s while open
+  // presence for the operator ("En vivo" in /demo), every 20 s while open — not for an unknown link
   useEffect(() => {
+    if (missing) return;
     const ping = () => post("/api/patient", { token, action: "presence", soundReady }).catch(() => {});
     ping();
     const id = setInterval(ping, 20000);
     return () => clearInterval(id);
-  }, [token, soundReady]);
+  }, [token, soundReady, missing]);
 
   const count = data?.messages.length ?? 0;
   useEffect(() => {
