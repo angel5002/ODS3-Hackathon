@@ -31,20 +31,20 @@ function Shell() {
   return (
     <div>
       <div className="mx-auto max-w-[1500px] px-4 pt-4 sm:px-6">
-        <nav aria-label="Pestañas del panel" className="flex max-w-full gap-1 overflow-x-auto rounded-md border border-line bg-surface p-1 [scrollbar-width:none]">
+        <nav aria-label="Pestañas del panel" className="flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1 [scrollbar-width:none]">
           {SECTIONS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => go(id)}
               aria-current={section === id ? "page" : undefined}
-              className={`flex min-h-11 shrink-0 items-center gap-2 rounded-md px-4 text-[15px] font-semibold transition-[background-color,color] duration-200 ${
+              className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-[15px] font-semibold transition-[background-color,color] duration-200 ${
                 section === id ? "bg-brand text-white" : "text-muted hover:bg-sunken hover:text-ink"
               }`}
             >
               <Icon className="size-4" aria-hidden /> {label}
             </button>
           ))}
-          <Link prefetch={false} href="/tablero" className="flex min-h-11 shrink-0 items-center gap-2 rounded-md px-4 text-[15px] font-semibold text-muted hover:bg-sunken hover:text-ink">
+          <Link prefetch={false} href="/tablero" className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-[15px] font-semibold text-muted hover:bg-sunken hover:text-ink">
             <LayoutDashboard className="size-4" aria-hidden /> Tablero
           </Link>
         </nav>
