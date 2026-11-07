@@ -180,12 +180,12 @@ async def register_by_chat(page: Page, j: dict):
     await chat_say(page, str(j["age"]), "¿Qué especialidad necesita?")
     await chat_say(page, j["menu"], "hoja de referencia")
     await chat_say(page, "2", "¿por qué necesita la consulta?")
-    await chat_say(page, j["motivo"], "AHORA alguno de estos signos")
+    await chat_say(page, j["motivo"], "algo que no puede esperar")  # one general alarm question (7/11)
     await chat_say(page, "NO", "¿Cómo prefiere que le avisemos?")
     await chat_say(page, "1", "con 2 días de anticipación")
     await chat_say(page, "1", "embarazada o tiene alguna discapacidad")
     await chat_say(page, "3", "Resumen:")
-    await chat_say(page, "1", "Su número de solicitud es")
+    await chat_say(page, "1", "con el código S-")  # closing that says what comes next (7/11)
 
 
 async def phone_button(page: Page, name: str, timeout=45000):

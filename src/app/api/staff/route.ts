@@ -156,7 +156,19 @@ export async function POST(req: Request) {
           .eq("slot.specialty", "Oncología Médica")
           .order("id", { ascending: false })
           .limit(1);
-        if (!open?.length) return fail("escena1: no open offer", 409);
+        if (!open?.length) {
+          // when every candidate already answered (Tito was the only one), respond_offer closed it by itself:
+          // that is the expected end of the scene, not an error for the operator
+          const { data: last } = await serverDb()
+            .from("slot_offers")
+            .select("id,state,slot:slots!inner(specialty,state)")
+            .eq("slot.specialty", "Oncología Médica")
+            .order("id", { ascending: false })
+            .limit(1);
+          const slot = last?.[0]?.slot as unknown as { state?: string } | undefined;
+          if (last?.length && slot?.state && slot.state !== "libre") return ok({ assignmentId: null, alreadyClosed: true });
+          return fail("escena1: no open offer", 409);
+        }
         const assignmentId = await rpc<number | null>("close_offer_v51", { p_offer: open[0].id, p_actor: actor });
         await broadcast("bulk");
         return ok({ assignmentId });

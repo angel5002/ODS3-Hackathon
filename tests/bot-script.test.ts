@@ -79,6 +79,12 @@ test("a baby (age 0) gets the fever question; an adult never does", () => {
   assert.ok(baby.said.some((x) => /bebé tiene fiebre y menos de 3 meses/.test(x.body)));
   const adult = play([...UNTIL_REASON, "Control", "No"]);
   assert.ok(!adult.said.some((x) => /bebé/.test(x.body)));
+  // jury test 7/11: "desde hace meses" from an adult must not ask about a baby
+  const months = play([...UNTIL_REASON, "Me cuesta leer de cerca desde hace meses.", "No"]);
+  assert.ok(!months.said.some((x) => /bebé/.test(x.body)));
+  assert.equal(months.state.step, "canal");
+  const said = play([...UNTIL_REASON, "Mi bebé tiene tos", "No"]);
+  assert.ok(said.said.some((x) => /bebé tiene fiebre y menos de 3 meses/.test(x.body)));
 });
 
 test("alarm words in the reason: asked once more, then the flow goes on", () => {

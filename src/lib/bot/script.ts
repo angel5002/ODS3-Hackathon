@@ -152,7 +152,8 @@ export function alarmQuestion(data: Record<string, string>) {
 }
 
 const PREGNANCY = /embaraz|gestant|gestaci|encinta|prenatal|semanas de embarazo/;
-const BABY = /\bbebe\b|\bbebito|recien nacid|lactante|\bmeses\b/;
+// a baby is said in so many words; "meses" alone is not one ("me cuesta leer desde hace meses", a 50-year-old)
+const BABY = /\bbebe\b|\bbebito|recien nacid|lactante|meses de (edad|nacid|vida)|mes(es)? de nacid/;
 
 /** Context questions that apply: only when the person said so (reason text, age 0 = a baby). */
 export function alarmFollowUps(data: Record<string, string>): string[] {
