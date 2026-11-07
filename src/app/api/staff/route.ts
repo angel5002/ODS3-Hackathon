@@ -9,6 +9,10 @@ import type { DemoState, Status } from "@/lib/types";
 import { juryFail } from "@/lib/jury/server";
 import { isJuryToken } from "@/lib/jury/tokens";
 import { setNoisyRoom } from "@/lib/voice/sessions";
+import { prepareFinal } from "@/lib/demo/prepare-final";
+
+// "Preparar para la final" runs the reset and several seeds in one request
+export const maxDuration = 60;
 
 const STAFF = "Admisión";
 const MANUAL: Status[] = ["confirmada", "liberada", "sin_respuesta", "derivada_a_persona", "pendiente"];
@@ -56,6 +60,13 @@ export async function POST(req: Request) {
         await rpc("reset_demo");
         await broadcast("full");
         return ok({ ms: Date.now() - t0 });
+      }
+      case "prepare_final": {
+        // E5 final: reset + jury cards, Tito, noisy room and the published rule in one step (src/lib/demo/prepare-final.ts)
+        const report = await prepareFinal(serverDb());
+        await broadcast("full");
+        if (!report.ok) return fail(report.steps.filter((s) => !s.ok).map((s) => `${s.step}: ${s.detail}`).join(" · "));
+        return ok(report);
       }
       case "settings":
         await saveSettings(body.settings ?? {});

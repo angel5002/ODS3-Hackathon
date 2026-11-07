@@ -294,7 +294,10 @@ function StepsRail({ state, now, busy, run, day }: { state: DemoState | null; no
         <StepLink n="8" title="Tablero" detail="Equidad y consultas netas" href="/tablero" icon={<LayoutDashboard className="size-4" aria-hidden />} />
       </ol>
 
-      <ResetButton busy={busy} run={run} />
+      <div className="mt-auto flex flex-col gap-2">
+        <ResetButton busy={busy} run={run} kind="prepare_final" />
+        <ResetButton busy={busy} run={run} />
+      </div>
     </Panel>
   );
 }
@@ -377,22 +380,43 @@ function StepAction(p: {
 }
 
 /** destructive and separated: asks in place before resetting (no browser dialog on the projector) */
-function ResetButton({ busy, run }: { busy: string; run: Run }) {
+const RESET_KINDS = {
+  reset: {
+    label: "Reiniciar demo",
+    busyLabel: "Reiniciando",
+    question: "¿Reiniciar la demo?",
+    detail: "Se borran mensajes, llamadas, ofertas, asignaciones, solicitudes nuevas y las sesiones de chat. Todo vuelve a los datos fijos.",
+    confirm: "Sí, reiniciar",
+    done: "Demo reiniciada",
+  },
+  prepare_final: {
+    label: "Preparar para la final",
+    busyLabel: "Preparando",
+    question: "¿Dejar todo listo para la final?",
+    detail: "Reinicia la demo, deja las cartillas sin abrir, prepara a Tito para la escena 1, activa la sala ruidosa y publica la regla de mayor prioridad al cierre.",
+    confirm: "Sí, preparar",
+    done: "Demo lista para la final",
+  },
+} as const;
+
+function ResetButton({ busy, run, kind = "reset" }: { busy: string; run: Run; kind?: keyof typeof RESET_KINDS }) {
   const [ask, setAsk] = useState(false);
+  const k = RESET_KINDS[kind];
+  const id = `${kind}-q`;
   return (
-    <div className="relative mt-auto border-t border-(--cc-border) pt-2 2xl:pt-3">
+    <div className="relative border-t border-(--cc-border) pt-2 2xl:pt-3">
       {ask && (
         <div
           role="alertdialog"
-          aria-labelledby="reset-q"
-          aria-describedby="reset-d"
+          aria-labelledby={id}
+          aria-describedby={`${kind}-d`}
           className="cc-swap absolute inset-x-0 bottom-full mb-2 rounded-xl border-2 border-(--cc-danger) bg-(--cc-surface) p-3"
         >
-          <p id="reset-q" className="flex items-center gap-1.5 font-bold">
-            <TriangleAlert className="size-4 text-(--cc-danger)" aria-hidden /> ¿Reiniciar la demo?
+          <p id={id} className="flex items-center gap-1.5 font-bold">
+            <TriangleAlert className="size-4 text-(--cc-danger)" aria-hidden /> {k.question}
           </p>
-          <p id="reset-d" className="mt-1 text-[13px] leading-snug text-(--cc-text-2)">
-            Se borran mensajes, llamadas, ofertas, asignaciones, solicitudes nuevas y las sesiones de chat. Todo vuelve a los datos fijos.
+          <p id={`${kind}-d`} className="mt-1 text-[13px] leading-snug text-(--cc-text-2)">
+            {k.detail}
           </p>
           <div className="mt-2.5 flex gap-2">
             <button
@@ -400,11 +424,11 @@ function ResetButton({ busy, run }: { busy: string; run: Run }) {
               disabled={!!busy}
               onClick={() => {
                 setAsk(false);
-                run("reset", {}, "Demo reiniciada");
+                run(kind, {}, k.done);
               }}
               className="cc-press min-h-10 flex-1 rounded-md bg-(--cc-danger) px-3 text-[14px] font-bold text-(--cc-on-danger) disabled:opacity-50"
             >
-              Sí, reiniciar
+              {k.confirm}
             </button>
             <button
               type="button"
@@ -424,7 +448,7 @@ function ResetButton({ busy, run }: { busy: string; run: Run }) {
         onClick={() => setAsk((v) => !v)}
         className="cc-press inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-(--cc-danger) bg-(--cc-surface) px-3 text-[14px] font-semibold text-(--cc-danger) hover:bg-(--cc-danger-subtle) disabled:opacity-50 2xl:min-h-12 2xl:text-[16px]"
       >
-        <RotateCcw className="size-4" aria-hidden /> {busy === "reset" ? "Reiniciando" : "Reiniciar demo"}
+        <RotateCcw className="size-4" aria-hidden /> {busy === kind ? k.busyLabel : k.label}
       </button>
     </div>
   );
