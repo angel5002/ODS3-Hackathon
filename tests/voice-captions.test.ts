@@ -11,6 +11,12 @@ test("jury cards: the last lines are reserved for card tokens (j-…), never all
   assert.equal(isCardToken("j-carmen-7f3a"), true);
   assert.equal(isCardToken("valeria"), false);
   assert.equal(isCardToken(null), false);
+  assert.equal(isCardToken("j-a1b2c3"), true, "printed card: j- + 6 characters");
+  assert.equal(isCardToken("j-test-luis"), true, "test card");
+  assert.equal(isCardToken("julio"), false, "old phone token starting with j");
+  assert.equal(isCardToken("j2895s6a"), false, "old token without the hyphen");
+  assert.equal(isCardToken("J-A1B2C3"), false, "exactly lowercase j-");
+  assert.equal(isCardToken(" j-a1b2c3"), false);
   assert.equal(reservedForCards(undefined, 8), 3, "default 3");
   assert.equal(reservedForCards("5", 8), 5);
   assert.equal(reservedForCards("20", 8), 7, "at least one line stays open for everyone");
