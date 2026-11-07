@@ -8,7 +8,7 @@
 // Layout of the live call: one top line (Demostración, identification, timer), the wave as the protagonist
 // (38 % of the height), the state in two or three words, the last caption only (two lines at most), three
 // controls (Silenciar, Colgar, Chat), a discreet "Hablar con una persona" and one safety line.
-// Colours are the --vc-* tokens of src/app/globals.css (variants "claro" and "oscuro").
+// Colours are the --vc-* tokens of src/app/globals.css (the light palette, "claro").
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import {
   Bot,
@@ -39,7 +39,7 @@ export const CALL_SAFETY_LINE = "Nunca pedimos pagos, claves, códigos ni su DNI
 export const callIdentification = (establishment: string) => `Asistente automatizado · ${establishment}`;
 
 export type CallViewExtraProps = {
-  /** Visual variant (optional, default "oscuro"). Sets data-voice-theme on the root. */
+  /** Visual variant (optional, default and only value "claro"). Sets data-voice-theme on the root. */
   theme?: VoiceTheme;
 };
 

@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CallView } from "@/components/voice/CallView";
 import { VoiceStartView } from "@/components/voice/VoiceStartView";
-import { VOICE_THEMES, type VoiceTheme } from "@/lib/voice/theme";
 import type { AudioLevels, BusyInfo, CallPhase, CallViewProps, Caption, ScriptOption } from "@/lib/voice/contract";
 import { DISCLAIMER } from "@/lib/labels";
 import { PLAYGROUND_STATES, type PlaygroundState } from "./states";
@@ -70,14 +69,12 @@ export function CallPlayground({
   panel,
   captions: initialCaptions,
   muted: initialMuted,
-  theme: initialTheme,
 }: {
   initial: PlaygroundState;
   frame: "pantalla" | "telefono";
   panel: boolean;
   captions: boolean;
   muted: boolean;
-  theme: VoiceTheme;
 }) {
   const [state, setState] = useState<PlaygroundState>(initial);
   const [frame, setFrame] = useState(initialFrame);
@@ -87,7 +84,6 @@ export function CallPlayground({
   const [turn, setTurn] = useState(0);
   const [scriptCaptions, setScriptCaptions] = useState<Caption[]>(() => (initial === "guion" ? GUION_FIRST : []));
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [theme, setTheme] = useState<VoiceTheme>(initialTheme);
   const voice = useRef<Voice>("silencio");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -216,7 +212,6 @@ export function CallPlayground({
     <div className="absolute inset-0 flex flex-col">
       <VoiceStartView
         ready
-        theme={theme}
         onStart={() => {
           go("conectando");
           later(1600, () => go("activa-auto"));
@@ -224,7 +219,7 @@ export function CallPlayground({
       />
     </div>
   ) : (
-    <CallView {...props} theme={theme} />
+    <CallView {...props} />
   );
 
   const stage =
@@ -240,22 +235,6 @@ export function CallPlayground({
 
   const controls = (
     <div className="space-y-4 text-sm">
-      <p className="font-semibold">Variante</p>
-      <div className="grid grid-cols-2 gap-1" role="radiogroup" aria-label="Variante de color">
-        {VOICE_THEMES.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            role="radio"
-            aria-checked={theme === v.id}
-            data-theme-option={v.id}
-            onClick={() => setTheme(v.id)}
-            className={`min-h-11 rounded-lg px-3 ${theme === v.id ? "bg-brand text-white" : "bg-surface text-ink hover:bg-brand-soft"}`}
-          >
-            {v.label}
-          </button>
-        ))}
-      </div>
       <p className="font-semibold">Estado de la llamada</p>
       <div className="grid gap-1" role="radiogroup" aria-label="Estado de la llamada">
         {PLAYGROUND_STATES.map((s) => (
@@ -292,7 +271,7 @@ export function CallPlayground({
 
   if (!panel)
     return (
-      <div data-voice-theme={theme} className="h-dvh">
+      <div data-voice-theme="claro" className="h-dvh">
         {stage}
       </div>
     );

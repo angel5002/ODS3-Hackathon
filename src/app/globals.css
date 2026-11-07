@@ -51,8 +51,7 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Voice tokens as Tailwind colours: bg-vc-bg, text-vc-text, border-vc-edge… They resolve to whatever
-   [data-voice-theme] the element sits in (see "Voice call themes" below). */
+/* Voice tokens as Tailwind colours: bg-vc-bg, text-vc-text, border-vc-edge… (values in "Voice call tokens" below). */
 @theme inline {
   --color-vc-bg: var(--vc-bg);
   --color-vc-bg-2: var(--vc-bg-2);
@@ -436,41 +435,13 @@ button:disabled {
   }
 }
 
-/* ---------- Voice call themes (E5 v2) ----------
-   Two variants for the call screen, the incoming call and the voice start screen. Every value that a
-   contrast pair uses is an opaque hex so `node scripts/dev/contrast-check.mjs` can measure it (WCAG 2.x
-   relative luminance): text >= 4.5:1, icons and control edges >= 3:1. Change a value here, run the script. */
-[data-voice-theme="oscuro"] {
-  --vc-bg: #0a2322;
-  --vc-bg-2: #0e2b2a;
-  --vc-text: #ffffff;
-  --vc-text-2: #d4e7e3;
-  --vc-text-3: #a8c7c1;
-  --vc-surface: #1b4341;
-  --vc-surface-press: #255452;
-  --vc-edge: #6a9a94;
-  --vc-icon: #7ee8d0;
-  --vc-agent: #5eead4;
-  --vc-person: #ffb35c;
-  --vc-rest: #8fb3ad;
-  --vc-danger: #dc3527;
-  --vc-danger-press: #c0291d;
-  --vc-on-danger: #ffffff;
-  --vc-accept: #079455;
-  --vc-accept-press: #067647;
-  --vc-on-accept: #ffffff;
-  --vc-primary: #7ee8d0;
-  --vc-primary-press: #5fd8bd;
-  --vc-on-primary: #06201f;
-  --vc-toggle: #ffffff;
-  --vc-on-toggle: #10302f;
-  --vc-warn: #ffc46b;
-  --vc-focus: #7ee8d0;
-  /* wave: additive light on a dark ground */
-  --vc-wave-blend: lighter;
-  --vc-glow: 26%;
-  color-scheme: dark;
-}
+/* ---------- Voice call tokens (E5 v2): the light palette chosen by the team ----------
+   Used by the call screen, the incoming call and the voice start screen, and available to the whole app
+   (declared on :root, so bg-vc-bg, text-vc-text… work anywhere). [data-voice-theme="claro"] re-applies them
+   inside any subtree. Every value that a contrast pair uses is an opaque hex so
+   `node scripts/dev/contrast-check.mjs` can measure it (WCAG 2.x relative luminance): text >= 4.5:1, icons,
+   wave and control edges >= 3:1. Change a value here, run the script. */
+:root,
 [data-voice-theme="claro"] {
   --vc-bg: #ffffff;
   --vc-bg-2: #eef6f4;

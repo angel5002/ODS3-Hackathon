@@ -15,7 +15,7 @@ export type VoiceStartViewProps = {
   /** the session can start; false shows "Preparando…" on a disabled button */
   ready: boolean;
   onStart: () => void;
-  /** visual variant, default "oscuro" */
+  /** visual variant, default "claro" */
   theme?: VoiceTheme;
   /** shown in the identification line; default "Hospital de demostración" */
   establishment?: string;

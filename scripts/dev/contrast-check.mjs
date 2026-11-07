@@ -1,9 +1,9 @@
 // Measures the contrast of the voice call tokens (E5 v2). Pure Node, no dependencies.
-// Reads the [data-voice-theme="…"] blocks of src/app/globals.css, takes every --vc-* hex value and prints, per
-// theme, each text/background and icon-or-control/background pair with its WCAG 2.x contrast ratio.
+// Reads the [data-voice-theme="claro"] block of src/app/globals.css (the light palette chosen by the team),
+// takes every --vc-* hex value and prints each text/background and icon-or-control/background pair with its WCAG 2.x contrast ratio.
 // Thresholds: text 4.5:1 (1.4.3), icons, wave and control edges 3:1 (1.4.11). Exit code 1 if any pair fails.
 //
-//   node scripts/dev/contrast-check.mjs            table for both themes
+//   node scripts/dev/contrast-check.mjs            table
 //   node scripts/dev/contrast-check.mjs --md       the same table as Markdown
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -75,7 +75,7 @@ let failures = 0;
 const lines = [];
 const out = (s) => lines.push(s);
 
-for (const theme of ["oscuro", "claro"]) {
+for (const theme of ["claro"]) {
   const t = tokens(theme);
   if (md) {
     out(`\n**Variante ${theme}**\n`);

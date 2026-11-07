@@ -119,10 +119,10 @@ export function VoiceWave({
     const target = new Float32Array(BANDS);
     const bands = new Float32Array(BANDS);
     const caches = LAYERS.map(() => new Map<number, CanvasGradient>());
-    let agent: RGB = [94, 234, 212];
-    let person: RGB = [255, 179, 92];
-    let restC: RGB = [143, 179, 173];
-    let blend: GlobalCompositeOperation = "lighter";
+    let agent: RGB = [10, 152, 132];
+    let person: RGB = [226, 89, 11];
+    let restC: RGB = [111, 143, 138];
+    let blend: GlobalCompositeOperation = "source-over";
     let themeSeen: VoiceTheme | undefined = undefined;
     let width = 0;
     let height = 0;
@@ -144,7 +144,7 @@ export function VoiceWave({
       person = parseColour(cs.getPropertyValue("--vc-person"), person);
       restC = parseColour(cs.getPropertyValue("--vc-rest"), restC);
       const b = cs.getPropertyValue("--vc-wave-blend").trim();
-      blend = b === "source-over" || b === "multiply" || b === "screen" || b === "lighter" ? b : "lighter";
+      blend = b === "source-over" || b === "multiply" || b === "screen" || b === "lighter" ? b : "source-over";
       themeSeen = props.current.theme;
       caches.forEach((c) => c.clear());
     }
