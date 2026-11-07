@@ -47,7 +47,7 @@ export type CallViewProps = {
   phase: CallPhase;
   /** "Confirmación de su cita", "Cupo disponible", "Registro de solicitud"… */
   purposeLabel: string;
-  /** shown in the identification line, e.g. "Hospital de demostración" */
+  /** shown in the identification line, e.g. "Hospital Mirasur" */
   establishment: string;
   /** who is speaking now during "activa" */
   agentSpeaking: boolean;

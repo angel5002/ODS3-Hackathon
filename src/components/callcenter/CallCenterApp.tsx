@@ -39,7 +39,7 @@ const SCRIPT: Record<string, string> = {
   alarma: "Le llamo porque mencionó signos de alarma. ¿Pudo acudir a emergencia? Si no, por favor acuda ahora o llame al 106.",
 };
 
-const SOURCE: Record<string, string> = { chat: "Chat", mensaje: "Mensaje", agente: "Agente de voz", regulador: "Regulador", sistema: "Sistema", telefono: "Teléfono" };
+const SOURCE: Record<string, string> = { chat: "Chat", mensaje: "Mensaje", agente: "Asistente de voz", regulador: "Regulador", sistema: "Sistema", telefono: "Teléfono" };
 const OUTCOMES = [
   ["confirmo", "Confirmó"],
   ["rechazo", "Rechazó"],
@@ -86,7 +86,7 @@ export function CallCenterApp() {
           <p className="text-xs text-white/60">Carga del personal hoy</p>
           <p className="font-display text-3xl font-bold tabular-nums text-mint">{num(data?.load.total ?? 0)}</p>
           <p className="text-xs text-white/60">
-            {num(data?.load.closed ?? 0)} atendidas · {num(data?.load.agent ?? 0)} derivadas por el agente
+            {num(data?.load.closed ?? 0)} atendidas · {num(data?.load.agent ?? 0)} derivadas por el asistente
           </p>
         </div>
       </div>
@@ -104,15 +104,21 @@ export function CallCenterApp() {
               <li key={t.id} className="flex flex-wrap items-center gap-3 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">
-                    {t.name ?? "Paciente"}
+                    {t.name ?? "Paciente sin identificar"}
                     {t.request_code ? <span className="font-normal text-muted"> · {t.request_code}</span> : null}
                     {t.chat_alias ? <span className="font-normal text-muted"> · chat «{t.chat_alias}»</span> : null}
                   </p>
                   <p className="text-sm text-muted">
-                    {t.specialty ?? ""}
-                    {t.appt_time ? ` · cita ${t.appt_time}` : ""} · desde {SOURCE[t.source] ?? t.source}
-                    {t.created_min != null ? ` · ${fmtMin(t.created_min)}` : ""}
-                    {t.note ? ` · ${t.note}` : ""}
+                    {/* only the parts that exist, so the line never starts with a stray « · » */}
+                    {[
+                      t.specialty,
+                      t.appt_time ? `cita ${t.appt_time}` : null,
+                      `desde ${SOURCE[t.source] ?? t.source}`,
+                      t.created_min != null ? fmtMin(t.created_min) : null,
+                      t.note,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -137,7 +143,7 @@ export function CallCenterApp() {
             <ul className="mt-2 divide-y divide-line rounded-2xl bg-surface ring-1 ring-line">
               {closed.map((t) => (
                 <li key={t.id} className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
-                  <span className="font-semibold">{t.name ?? "Paciente"}</span>
+                  <span className="font-semibold">{t.name ?? "Paciente sin identificar"}</span>
                   <span className="text-muted">{TASK_TYPE[t.type]}</span>
                   <span className="ml-auto">
                     <Pill tone="done">{OUTCOMES.find((o) => o[0] === t.outcome)?.[1] ?? t.outcome}</Pill>

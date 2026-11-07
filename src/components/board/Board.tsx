@@ -143,7 +143,7 @@ export function Board() {
         <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           <Tile label="Personas registradas sin cupo" value={b?.registered_without_slot ?? 0} sub={`${num(b?.pending_regulation ?? 0)} pendientes de regulación`} strong />
           <Tile label="Solicitudes con atención" value={b ? Math.round((100 * b.with_care) / Math.max(1, b.requests_total)) : 0} unit="%" sub={`${num(b?.with_care ?? 0)} de ${num(b?.requests_total ?? 0)} con cita`} />
-          <Tile label="Espera desde el primer intento" value={Math.round(b?.wait_median ?? 0)} unit="días" sub={`mediana · percentil 90: ${num(Math.round(b?.wait_p90 ?? 0))} días`} />
+          <Tile label="Espera desde el primer intento" value={Math.round(b?.wait_median ?? 0)} unit="días" sub={`mediana · 9 de cada 10 esperan hasta ${num(Math.round(b?.wait_p90 ?? 0))} días`} />
           <Tile label="Fuera de plazo" value={b ? Math.round((100 * b.over_deadline) / Math.max(1, b.regulated)) : 0} unit="%" sub={`${num(b?.over_deadline ?? 0)} superan el plazo de su categoría`} />
           <Tile label="Cupos liberados que se llenan" value={b?.slots_filled ?? 0} sub={`de ${num(b?.slots_freed ?? 0)} liberados · ${num(b?.domino ?? 0)} por efecto dominó`} />
           <Tile label="Ofertas enviadas" value={b?.offers_sent ?? 0} sub={`${num(b?.accepted ?? 0)} aceptadas · ${num(b?.declined ?? 0)} declinadas · ${num(b?.no_answer ?? 0)} sin respuesta`} />
@@ -153,7 +153,7 @@ export function Board() {
             value={withdrawals}
             sub={withdrawals ? Object.entries(b?.withdrawals ?? {}).map(([k, n]) => `${WITHDRAW_LABEL[k] ?? k}: ${n}`).join(" · ") : "ninguno; no responder no es un motivo"}
           />
-          <Tile label="Carga del personal" value={b?.tasks_today ?? 0} sub={`tareas humanas · ${num(b?.agent_derivations ?? 0)} derivadas por el agente · ${num(b?.agent_calls ?? 0)} llamadas del asistente`} />
+          <Tile label="Carga del personal" value={b?.tasks_today ?? 0} sub={`tareas para una persona · ${num(b?.agent_derivations ?? 0)} derivadas por el asistente · ${num(b?.agent_calls ?? 0)} llamadas del asistente`} />
           <Tile label="Inasistencia 2023 (HMA)" value={hist ? Math.round(hist.summary.no_show_rate * 1000) / 10 : 0} unit="%" sub={`${num(hist?.summary.no_shows ?? 106100)} citas perdidas en el año`} />
         </ul>
 
@@ -234,8 +234,8 @@ function Scenario({ params }: { params?: Record<string, number> }) {
         r ≈ <strong className="font-display text-3xl tabular-nums text-brand">{Math.round(r * 1000) / 10} %</strong> → unas{" "}
         <strong className="tabular-nums">{num(Math.round(annual / 100) * 100)}</strong> citas al año (106,100 × r)
       </p>
-      <div className="relative mt-3 h-3 rounded-full bg-sunken" role="img" aria-label={`r frente al umbral de ${(breakeven * 100).toFixed(1)} %`}>
-        <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (r / 0.2) * 100)}%` }} />
+      <div className="relative mt-3 h-3 rounded-md bg-sunken" role="img" aria-label={`r frente al umbral de ${(breakeven * 100).toFixed(1)} %`}>
+        <div className="h-full rounded-md bg-brand" style={{ width: `${Math.min(100, (r / 0.2) * 100)}%` }} />
         <div className="absolute inset-y-[-4px] w-0.5 bg-risk-alto" style={{ left: `${(breakeven / 0.2) * 100}%` }} />
       </div>
       <p className="mt-1.5 text-xs text-muted">

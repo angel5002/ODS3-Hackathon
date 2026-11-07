@@ -63,7 +63,7 @@ Lo completo y estable vale más que lo ambicioso y frágil.
 - **Preconsulta:** opcional, con consentimiento explícito, preguntas breves y respuestas "no sé" o "prefiero decirlo en la consulta". El resumen usa la plantilla fija de la v5.1, marca "no evaluado" lo que no se preguntó, enlaza a las respuestas originales y el médico puede corregirlo (cada cambio queda registrado). **Nunca incluye un diagnóstico** y nunca dice "sin signos de alarma" si una pregunta no se completó.
 - **Emergencia:** el triaje lo hace siempre un profesional. AsistIA no pregunta antes del triaje ni retrasa la atención. **No hay botón de autoaviso para el paciente.** Los datos del tablero de urgencias se rotulan "Datos simulados".
 - **Asistente de voz y chat** (sección 4.3):
-  - se presentan como "Asistente automatizado del Hospital de demostración", en una demostración;
+  - se presentan como "Asistente automatizado del Hospital Mirasur" (hospital ficticio; nunca como el Hospital María Auxiliadora), en una sola frase;
   - dicen durante la conversación que nunca piden pagos, claves, códigos ni el DNI completo, y no piden datos clínicos detallados;
   - ofrecen hablar con una persona y transfieren cuando se lo piden;
   - aclaran que el canal prepara la atención, no es una consulta médica y no atiende emergencias;

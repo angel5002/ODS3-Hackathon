@@ -9,7 +9,7 @@ import type { DemoState, Message } from "@/lib/types";
 import { RegisterForm } from "@/components/panel/WaitlistTab";
 import { StaffHeader } from "@/components/StaffHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { Bubble, DeadlineChip, DemoNotice, ReplyButton, ReplyButtons, SoundBar, ThreadList } from "@/components/chat/ChatParts";
+import { Bubble, DeadlineChip, DemoNotice, ReplyButton, ReplyButtons, SoundButton, ThreadList } from "@/components/chat/ChatParts";
 import { ChatThreadView, ExpiredNotice, FormWrapper, Home, PedirCitaFrame, PedirCitaHeader, type Msg, type View } from "@/components/chat/PedirCita";
 import { PhoneEmpty, PhoneFooter, PhoneHeader, PhoneLoading, PhoneMissing, Shell } from "@/components/phone/PhoneApp";
 import { DemoControlsView, type QrCard } from "@/components/demo/DemoControls";
@@ -201,6 +201,8 @@ export function Pantallas({ screen, origin, qrs }: { screen: Pantalla; origin: s
             now={0}
             busy=""
             run={noop}
+            liveData={LIVE}
+            voiceData={{ active: 0, queued: 0, sessions: [], events: [] }}
             live={<LiveSectionView data={LIVE} busy="" online={(iso) => Boolean(iso)} personas={LIVE.phones} act={noop} />}
             voice={<VoiceSessionsView data={{ active: 0, queued: 0, sessions: [], events: [] }} />}
             params={<ParamsView params={PARAMS} rule="ventana_prioridad" onRule={noop} edit={{}} setEdit={noop} busy={false} show={(p) => (PCT.has(p.key) ? String(p.value * 100) : String(p.value))} onSubmit={blockSubmit} />}
@@ -218,12 +220,11 @@ export function Pantallas({ screen, origin, qrs }: { screen: Pantalla; origin: s
         {screen === "telefono-enlace" && <PhoneMissing />}
         {(screen === "telefono" || screen === "telefono-vacio") && (
           <>
-            <PhoneHeader clock="10:05" />
-            <DemoNotice>
-              Teléfono simulado de <strong className="font-semibold text-vc-text">Rosa Mendoza Ríos</strong>. {DISCLAIMER}
-            </DemoNotice>
-            <SoundBar onEnable={noop} />
+            <PhoneHeader clock="10:05" owner="Rosa Mendoza Ríos" />
             <ThreadList>
+              <li className="flex justify-center">
+                <SoundButton onEnable={noop} />
+              </li>
               {screen === "telefono-vacio" ? (
                 <PhoneEmpty />
               ) : (
@@ -254,6 +255,7 @@ export function Pantallas({ screen, origin, qrs }: { screen: Pantalla; origin: s
               )}
             </ThreadList>
             <PhoneFooter />
+            <DemoNotice>{DISCLAIMER}</DemoNotice>
           </>
         )}
       </Shell>
@@ -264,14 +266,14 @@ export function Pantallas({ screen, origin, qrs }: { screen: Pantalla; origin: s
   return (
     <PedirCitaFrame>
       <PedirCitaHeader view={view} subtitle="Usted aparece como «Participante 7»" onBack={() => go("inicio")} onWipe={noop} />
-      <DemoNotice>{DISCLAIMER} Use un nombre ficticio.</DemoNotice>
-      {screen !== "chat" && <SoundBar onEnable={noop} />}
       {screen === "vencida" && <ExpiredNotice onRestart={noop} />}
-      {screen === "inicio" && <Home onPick={go} />}
+      {screen === "inicio" && <Home onPick={go} sound={<SoundButton onEnable={noop} />} />}
       {screen === "chat" && (
         <ChatThreadView messages={CHAT} consent typing={false} quick={["Acepto", "No puedo"]} text="" onText={noop} onSend={noop} onSubmit={noop} />
       )}
-      {screen === "chat-vacio" && <ChatThreadView messages={[]} consent={false} typing={false} onText={noop} quick={null} text="" onSend={noop} onSubmit={noop} />}
+      {screen === "chat-vacio" && (
+        <ChatThreadView messages={[]} consent={false} typing={false} onText={noop} quick={null} text="" onSend={noop} onSubmit={noop} sound={<SoundButton onEnable={noop} />} />
+      )}
       {screen === "formulario" && (
         <div className="contents" onSubmitCapture={blockSubmit}>
           <FormWrapper>
@@ -279,6 +281,7 @@ export function Pantallas({ screen, origin, qrs }: { screen: Pantalla; origin: s
           </FormWrapper>
         </div>
       )}
+      <DemoNotice>{DISCLAIMER}</DemoNotice>
     </PedirCitaFrame>
   );
 }

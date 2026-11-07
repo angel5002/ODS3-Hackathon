@@ -217,15 +217,15 @@ function SlotCard({ slot: s, busy, act }: { slot: Slot; busy: string; act: (k: s
             <>
               <p className="mt-3 text-sm">
                 <strong>
-                  {pct(p.fill_probability)} con {p.k} {p.k === 1 ? "candidato" : "candidatos"}
+                  {pct(p.fill_probability)} de probabilidad de llenarlo con {p.k} {p.k === 1 ? "candidato" : "candidatos"}
                 </strong>
-                {allOfZone ? ", todos los de la zona" : ` de ${p.available} en la zona`}. k es el menor número que llega al{" "}
-                {pct(p.target)} de probabilidad de llenarlo (tope 8).
+                {allOfZone ? ", todos los de la zona" : ` de ${p.available} en la zona`}. Se ofrece al menor número de personas que llega al{" "}
+                {pct(p.target)} de probabilidad (máximo 8).
               </p>
               <CandidateList list={p.candidates} />
               <Button
                 variant="primary"
-                className="mt-3 w-full rounded-full"
+                className="mt-3 w-full rounded-md"
                 disabled={!!busy}
                 onClick={() => act(`a${s.id}`, { action: "approve_offer", slotId: s.id }, `Oferta enviada a ${p.k} ${p.k === 1 ? "persona" : "personas"} a la vez`)}
               >
@@ -245,7 +245,7 @@ function SlotCard({ slot: s, busy, act }: { slot: Slot; busy: string; act: (k: s
           <CandidateList list={offer.candidates} offerId={offer.id} busy={busy} act={act} />
           <Button
             variant="primary"
-            className="mt-3 w-full rounded-full"
+            className="mt-3 w-full rounded-md"
             disabled={!!busy}
             onClick={() => act(`c${offer.id}`, { action: "close_offer", offerId: offer.id }, offer.rule === "primero_acepta" ? "Oferta cerrada: asignada al primero que aceptó" : "Oferta cerrada: asignada al de mayor prioridad entre quienes aceptaron")}
           >
@@ -304,7 +304,7 @@ function CandidateList({
             </p>
             <p className="text-xs text-muted">
               Prioridad <strong className="text-ink">{c.reason}</strong>
-              {c.a != null ? ` · acepta con prob. ${Math.round(c.a * 100)} %` : ""}
+              {c.a != null ? ` · probabilidad de aceptar: ${Math.round(c.a * 100)} %` : ""}
               {c.current_date ? ` · cita actual ${dateShort(c.current_date)}` : ""}
             </p>
           </div>
@@ -325,7 +325,7 @@ function CandidateList({
                         title="Usar simulado: responde que acepta"
                         aria-label={`Simular que ${c.short_name} acepta`}
                         onClick={() => act(`s${c.request_id}`, { action: "simulate_response", offerId, requestId: c.request_id, accept: true }, `${c.short_name} acepta (simulado)`)}
-                        className="press inline-flex items-center gap-1 rounded-full border border-st-ok/40 px-2 py-1 text-xs font-semibold text-st-ok hover:bg-st-ok-soft"
+                        className="press inline-flex items-center gap-1 rounded-md border border-st-ok/40 px-2 py-1 text-xs font-semibold text-st-ok hover:bg-st-ok-soft"
                       >
                         <Check className="size-3.5" aria-hidden /> Acepta
                       </button>
@@ -334,7 +334,7 @@ function CandidateList({
                         title="Usar simulado: responde que no puede"
                         aria-label={`Simular que ${c.short_name} no puede`}
                         onClick={() => act(`s${c.request_id}`, { action: "simulate_response", offerId, requestId: c.request_id, accept: false }, `${c.short_name} no puede (simulado)`)}
-                        className="press inline-flex items-center gap-1 rounded-full border border-line-strong px-2 py-1 text-xs font-semibold text-muted hover:bg-sunken"
+                        className="press inline-flex items-center gap-1 rounded-md border border-line-strong px-2 py-1 text-xs font-semibold text-muted hover:bg-sunken"
                       >
                         <X className="size-3.5" aria-hidden /> No
                       </button>

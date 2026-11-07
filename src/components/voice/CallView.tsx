@@ -5,10 +5,12 @@
 // `phase` and wires the actions; a button is drawn only when its callback exists. Rendered as
 // `absolute inset-0` inside a relative container: the simulated phone frame, the chat, or a full page.
 //
-// Layout of the live call: one top line (Demostración, identification, timer), the wave as the protagonist
-// (38 % of the height), the state in two or three words, the last caption only (two lines at most), three
-// controls (Silenciar, Colgar, Chat), a discreet "Hablar con una persona" and one safety line.
-// Colours are the --vc-* tokens of src/app/globals.css (the light palette, "claro").
+// Layout of the live call: one top line (identification, timer), the wave as the protagonist (38 % of the
+// height), the state in two or three words, the last caption only (two lines at most), three controls
+// (Silenciar, Colgar, Chat), a discreet "Hablar con una persona" and one safety line. No demo notice here: the
+// pages around the call carry it in their footer (docs/estilo.md).
+// Colours are the --vc-* tokens of src/app/globals.css (the light palette, "claro"): flat, no glow, no wash.
+// The round call buttons are the one exception to the 4 px corners: a phone convention people recognise.
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import {
   Bot,
@@ -35,7 +37,7 @@ import { VoiceWave } from "./VoiceWave";
 /** The one safety line shown on every call screen. */
 export const CALL_SAFETY_LINE = "Nunca pedimos pagos, claves, códigos ni su DNI completo";
 
-/** "Asistente automatizado · Hospital de demostración" */
+/** "Asistente automatizado · Hospital Mirasur" (the establishment comes from the controller) */
 export const callIdentification = (establishment: string) => `Asistente automatizado · ${establishment}`;
 
 export type CallViewExtraProps = {
@@ -90,7 +92,6 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
   const speaker: "agente" | "persona" | null =
     phase === "activa" ? (agentSpeaking || thinking ? "agente" : "persona") : phase === "guion" ? (agentSpeaking ? "agente" : null) : null;
   const waveActive = (phase === "activa" && !(muted && !agentSpeaking && !thinking)) || (phase === "guion" && agentSpeaking);
-  const glow = talk && phase !== "finalizando" ? (waveActive && speaker ? speaker : "agente") : null;
 
   const showPerson = !!actions.talkToPerson && PERSON_OK.includes(phase) && !(phase === "ocupado" && busy?.kind === "otro_dispositivo");
   // one key per screen: a new key replays the staggered entrance; the talk phases share one so the wave lives on
@@ -102,19 +103,7 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
       aria-label="Llamada del asistente automatizado"
       data-voice-theme={theme}
       className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-vc-bg text-vc-text [container-type:size]"
-      style={{ backgroundImage: "linear-gradient(to bottom, var(--vc-bg-2), var(--vc-bg) 62%)" }}
     >
-      {/* speaker wash behind the wave: two fixed layers, only their opacity changes */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[8%] h-[62%]">
-        <div
-          className="vc-wash absolute inset-0"
-          style={{ "--vc-wash-color": "var(--vc-agent)", opacity: glow === "agente" ? (waveActive ? 1 : 0.55) : 0 } as CSSProperties}
-        />
-        <div
-          className="vc-wash absolute inset-0"
-          style={{ "--vc-wash-color": "var(--vc-person)", opacity: glow === "persona" ? 1 : 0 } as CSSProperties}
-        />
-      </div>
 
       <TopLine establishment={establishment} duration={live || phase === "finalizando" ? formatDuration(seconds) : null} />
 
@@ -141,7 +130,7 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
               <button
                 type="button"
                 onClick={actions.talkToPerson}
-                className="vc-pill inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-vc-text-3 underline decoration-vc-edge decoration-1 underline-offset-4"
+                className="vc-pill inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-[15px] font-semibold text-vc-text-2 underline decoration-vc-edge decoration-1 underline-offset-4 active:bg-vc-surface"
               >
                 <UserRound className="size-4" aria-hidden />
                 Hablar con una persona
@@ -149,7 +138,7 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
             </div>
           )}
           {phase !== "finalizada" && (
-            <p className="-mx-3 mt-1.5 text-balance text-center text-[12px] leading-snug text-vc-text-3 @md:text-[13px]" style={{ "--i": 4 } as CSSProperties}>
+            <p className="-mx-3 mt-1.5 text-balance text-center text-[13px] leading-snug text-vc-text-3 @md:text-[14px]" style={{ "--i": 4 } as CSSProperties}>
               <ShieldCheck className="mr-1 inline size-4 align-[-3px] text-vc-icon" aria-hidden />
               {CALL_SAFETY_LINE}
             </p>
@@ -160,20 +149,14 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
   );
 }
 
-/** One line: Demostración, the identification and the timer. Below ~28rem the identification drops to a
- *  second, centred line so it is never cut. */
+/** One line: the identification and the timer, over a 1 px rule. The identification wraps, never cuts. */
 function TopLine({ establishment, duration }: { establishment: string; duration: string | null }) {
   return (
-    <header className="relative mx-auto w-full max-w-[920px] shrink-0 px-4 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 text-[13px] leading-tight">
-        <span className="col-start-1 row-start-1 justify-self-start rounded-full border border-vc-edge px-2.5 py-1 font-semibold text-vc-text-2">
-          Demostración
-        </span>
-        <p className="col-span-3 col-start-1 row-start-2 text-center text-vc-text-2 @md:col-span-1 @md:col-start-2 @md:row-start-1">
-          {callIdentification(establishment)}
-        </p>
+    <header className="relative w-full shrink-0 border-b border-vc-line">
+      <div className="mx-auto flex w-full max-w-[920px] items-center justify-between gap-3 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] text-[14px] leading-snug">
+        <p className="min-w-0 text-vc-text-2">{callIdentification(establishment)}</p>
         <span
-          className="col-start-3 row-start-1 min-w-[3.25rem] text-right text-[14px] font-semibold tabular-nums text-vc-text"
+          className="min-w-[3.25rem] shrink-0 text-right text-[15px] font-semibold tabular-nums text-vc-text"
           aria-label={duration ? `Duración ${duration}` : undefined}
         >
           {duration}
@@ -219,10 +202,10 @@ function TalkStage(
         <p role="status" aria-live="polite" aria-atomic="true" className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className="size-2.5 shrink-0 rounded-full transition-colors duration-300 motion-reduce:transition-none"
+            className="size-2.5 shrink-0 rounded-full transition-colors duration-150 motion-reduce:transition-none"
             style={{ background: TONE_COLOR[state.tone] }}
           />
-          <span key={state.word} aria-hidden className="vc-swap font-display text-[28px] font-bold leading-tight tracking-[-0.015em] @lg:text-[32px]">
+          <span key={state.word} aria-hidden className="vc-swap text-[26px] font-bold leading-tight @lg:text-[30px]">
             {state.word}
           </span>
           <span className="sr-only">{state.spoken}</span>
@@ -246,7 +229,7 @@ function TalkStage(
               type="button"
               disabled={!p.onScriptOption}
               onClick={() => p.onScriptOption?.(o.id)}
-              className={`vc-pill min-h-[52px] rounded-2xl px-4 py-2 text-[17px] font-semibold leading-tight disabled:opacity-50 ${
+              className={`vc-pill min-h-[52px] rounded-md px-4 py-2 text-[17px] font-semibold leading-tight disabled:opacity-50 ${
                 o.tone === "primary"
                   ? "bg-vc-primary text-vc-on-primary active:bg-vc-primary-press"
                   : "border border-vc-edge bg-vc-surface text-vc-text active:bg-vc-surface-press"
@@ -293,7 +276,7 @@ function CaptionLine({
         {visible &&
           (last ? (
             <div key={last.id} className="vc-swap w-full text-center" aria-live="polite">
-              <p className="text-[12.5px] font-semibold text-vc-text-3">{last.who === "agente" ? "Asistente" : "Usted"}</p>
+              <p className="text-[13px] font-semibold text-vc-text-3">{last.who === "agente" ? "Asistente" : "Usted"}</p>
               <p className={`mt-0.5 text-pretty text-[18px] leading-snug text-vc-text ${lines === 3 ? "line-clamp-3" : "line-clamp-2"}`}>
                 {lines === 3 ? last.text : lastSentence(last.text)}
               </p>
@@ -306,7 +289,7 @@ function CaptionLine({
         type="button"
         onClick={onToggle}
         aria-pressed={!visible}
-        className="vc-pill mt-1 inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-vc-text-2 active:bg-vc-surface"
+        className="vc-pill mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-[14px] font-semibold text-vc-text-2 active:bg-vc-surface"
       >
         {visible ? <CaptionsOff className="size-4" aria-hidden /> : <Captions className="size-4" aria-hidden />}
         {visible ? "Ocultar subtítulos" : "Mostrar subtítulos"}
@@ -334,7 +317,7 @@ function StaticStage(p: CallViewProps) {
           <p style={i(1)} className="mt-12 text-[15px] text-vc-text-2">
             Llamada entrante
           </p>
-          <p style={i(2)} className="mt-1 text-balance font-display text-[30px] font-bold leading-tight tracking-[-0.015em]">
+          <p style={i(2)} className="mt-1 text-balance text-[28px] font-bold leading-tight">
             {p.purposeLabel}
           </p>
         </>
@@ -369,16 +352,16 @@ function StaticStage(p: CallViewProps) {
           <Emblem tone="var(--vc-warn)" style={i(0)}>
             <Hourglass className="size-10" aria-hidden />
           </Emblem>
-          <p style={i(1)} role="status" className="vc-after-emblem mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
+          <p style={i(1)} role="status" className="vc-after-emblem mt-6 text-balance text-[24px] font-bold leading-tight">
             Todas las líneas están ocupadas
           </p>
           {p.busy?.position != null && p.busy.position > 0 && (
             <p style={i(2)} className="mt-4 flex flex-col items-center">
               <span className="text-[14px] text-vc-text-2">Su lugar en la fila</span>
-              <span className="vc-big-number font-display text-6xl font-bold tabular-nums leading-none">{p.busy.position}</span>
+              <span className="vc-big-number text-6xl font-bold tabular-nums leading-none">{p.busy.position}</span>
             </p>
           )}
-          <p style={i(3)} className="vc-optional mt-4 max-w-[30ch] text-pretty text-[15px] leading-snug text-vc-text-2">
+          <p style={i(3)} className="vc-optional mt-4 max-w-[30ch] text-pretty text-[16px] leading-snug text-vc-text-2">
             Seguimos intentando. También puede seguir por chat.
           </p>
         </>
@@ -403,11 +386,11 @@ function Message({ icon, title, detail, tone }: { icon: ReactNode; title: string
       <Emblem tone={tone} style={{ "--i": 0 } as CSSProperties}>
         {icon}
       </Emblem>
-      <p role="status" style={{ "--i": 1 } as CSSProperties} className="vc-after-emblem mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
+      <p role="status" style={{ "--i": 1 } as CSSProperties} className="vc-after-emblem mt-6 text-balance text-[24px] font-bold leading-tight">
         {title}
       </p>
       {detail && (
-        <p style={{ "--i": 2 } as CSSProperties} className="mt-2 max-w-[32ch] text-pretty text-[15px] leading-snug text-vc-text-2">
+        <p style={{ "--i": 2 } as CSSProperties} className="mt-2 max-w-[32ch] text-pretty text-[16px] leading-snug text-vc-text-2">
           {detail}
         </p>
       )}
@@ -417,7 +400,7 @@ function Message({ icon, title, detail, tone }: { icon: ReactNode; title: string
 
 function Emblem({ children, tone = "var(--vc-icon)", style }: { children: ReactNode; tone?: string; style?: CSSProperties }) {
   return (
-    <div className="vc-emblem grid size-24 shrink-0 place-items-center rounded-[30px] border border-vc-edge bg-vc-surface" style={{ ...style, color: tone }}>
+    <div className="vc-emblem grid size-20 shrink-0 place-items-center rounded-2xl border border-vc-line bg-vc-surface" style={{ ...style, color: tone }}>
       {children}
     </div>
   );
@@ -462,7 +445,7 @@ function RoundButton({
           {children}
         </button>
       </div>
-      <span className="text-center text-[13px] font-medium leading-tight text-vc-text-2" aria-hidden>
+      <span className="text-center text-[14px] font-semibold leading-tight text-vc-text-2" aria-hidden>
         {label}
       </span>
     </div>
@@ -477,7 +460,7 @@ function PillButton({ label, onClick, tone, icon }: { label: string; onClick: ()
         ? "bg-vc-danger text-vc-on-danger active:bg-vc-danger-press"
         : "border border-vc-edge bg-vc-surface text-vc-text active:bg-vc-surface-press";
   return (
-    <button type="button" onClick={onClick} className={`vc-pill vc-pill-tall flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-4 text-[17px] font-semibold ${cls}`}>
+    <button type="button" onClick={onClick} className={`vc-pill vc-pill-tall flex min-h-14 w-full items-center justify-center gap-2 rounded-md px-4 text-[17px] font-semibold ${cls}`}>
       {icon}
       {label}
     </button>

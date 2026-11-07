@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { ArrowLeft, ChevronRight, ClipboardList, MessageCircle, Mic, SendHorizontal, Trash2, TriangleAlert } from "lucide-react";
-import { Bubble, DemoNotice, QuickReplies, SoundBar, ThreadList, TypingBubble } from "./ChatParts";
+import { Bubble, DemoNotice, QuickReplies, SoundButton, ThreadList, TypingBubble } from "./ChatParts";
 import { toast } from "sonner";
 import { Brand } from "@/components/Brand";
 import { getJson, post } from "@/lib/post";
@@ -136,13 +136,10 @@ export function PedirCita() {
         onBack={() => setView("inicio")}
         onWipe={wipe}
       />
-      <DemoNotice>{DISCLAIMER} Use un nombre ficticio.</DemoNotice>
-      {!sound && <SoundBar onEnable={enableSound} />}
-
       {expired && <ExpiredNotice onRestart={safeReload} />}
 
-      {!expired && view === "inicio" && <Home onPick={setView} />}
-      {!expired && view === "chat" && data && <ChatView data={data} reload={load} />}
+      {!expired && view === "inicio" && <Home onPick={setView} sound={sound ? null : <SoundButton onEnable={enableSound} />} />}
+      {!expired && view === "chat" && data && <ChatView data={data} reload={load} sound={sound ? null : <SoundButton onEnable={enableSound} />} />}
       {!expired && view === "voz" && <VoiceRegister ready={!!data} onDone={() => setView("chat")} />}
       {!expired && view === "formulario" && (
         <FormWrapper>
@@ -158,12 +155,16 @@ export function PedirCita() {
         </FormWrapper>
       )}
 
+      {/* the one demo notice of the page, at its foot; not under a voice call (the call screen carries none) */}
+      {view !== "voz" && <DemoNotice>{DISCLAIMER}</DemoNotice>}
+
       {call && <CallScreen key={call.id} call={call} auth={{}} name={data?.alias ?? ""} onDone={load} />}
     </PedirCitaFrame>
   );
 }
 
-// ---------- Presentational pieces (E5 app): props only, also rendered by /dev/pantallas ----------
+// ---------- Presentational pieces (E5 app, E5 estilo): props only, also rendered by /dev/pantallas ----------
+// Sober style (docs/estilo.md): white surfaces, 1 px borders, 4 px controls, no gradients or shadows.
 
 const stagger = (n: number) => ({ "--i": n }) as CSSProperties;
 const VIEW_TITLE: Record<View, string> = {
@@ -176,10 +177,10 @@ const VIEW_TITLE: Record<View, string> = {
 /** The page and the phone-sized column (full screen on a phone, a framed column on a desktop). */
 export function PedirCitaFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-dvh justify-center bg-vc-bg-2 sm:py-6" style={{ backgroundImage: "radial-gradient(80% 60% at 50% 0%, var(--vc-surface), transparent 70%)" }}>
+    <div className="flex h-dvh justify-center bg-vc-bg-2 sm:py-6">
       <div
         data-voice-theme="claro"
-        className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-[28px] sm:border sm:border-vc-line sm:shadow-[0_28px_70px_-30px_rgb(16_48_47/0.45)]"
+        className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-2xl sm:border sm:border-vc-line"
       >
         {children}
       </div>
@@ -189,13 +190,13 @@ export function PedirCitaFrame({ children }: { children: ReactNode }) {
 
 export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View; subtitle: string; onBack: () => void; onWipe: () => void }) {
   return (
-    <header className="flex shrink-0 items-center gap-2.5 border-b border-vc-line bg-vc-bg px-3 pb-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))]">
+    <header className="flex shrink-0 items-center gap-2.5 border-b border-vc-line bg-vc-bg px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
       {view !== "inicio" ? (
         <button
           type="button"
           onClick={onBack}
           aria-label="Volver"
-          className="vc-round grid size-10 shrink-0 place-items-center rounded-full bg-vc-surface text-vc-text active:bg-vc-surface-press"
+          className="vc-round grid size-11 shrink-0 place-items-center rounded-md border border-vc-edge bg-vc-bg text-vc-text active:bg-vc-surface-press"
         >
           <ArrowLeft className="size-5" aria-hidden />
         </button>
@@ -205,8 +206,8 @@ export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View
         </span>
       )}
       <div className={`min-w-0 flex-1 leading-tight ${view === "inicio" ? "border-l border-vc-line pl-2.5" : ""}`}>
-        <p className="truncate font-display text-[17px] font-bold tracking-[-0.01em] text-vc-text">{VIEW_TITLE[view]}</p>
-        <p className="truncate text-[12px] text-vc-text-2">{subtitle}</p>
+        <p className="truncate text-[17px] font-bold text-vc-text">{VIEW_TITLE[view]}</p>
+        <p className="truncate text-[13px] text-vc-text-2">{subtitle}</p>
       </div>
       {view === "chat" && (
         <button
@@ -214,9 +215,9 @@ export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View
           onClick={onWipe}
           title="Borrar mi conversación"
           aria-label="Borrar mi conversación"
-          className="vc-round grid size-10 shrink-0 place-items-center rounded-full text-vc-text-2 hover:bg-vc-surface active:bg-vc-surface-press"
+          className="vc-round grid size-11 shrink-0 place-items-center rounded-md text-vc-text-2 hover:bg-vc-surface active:bg-vc-surface-press"
         >
-          <Trash2 className="size-[18px]" aria-hidden />
+          <Trash2 className="size-5" aria-hidden />
         </button>
       )}
     </header>
@@ -245,17 +246,15 @@ function safeReload() {
 export function ExpiredNotice({ onRestart }: { onRestart: () => void }) {
   return (
     <div className="vc-enter m-auto flex max-w-xs flex-col items-center p-6 text-center">
-      <span style={stagger(0)} className="grid size-14 place-items-center rounded-full bg-vc-surface text-vc-icon">
-        <MessageCircle className="size-6" aria-hidden />
-      </span>
-      <p style={stagger(1)} className="mt-4 text-[16px] font-semibold text-vc-text">
+      <MessageCircle style={stagger(0)} className="size-8 text-vc-icon" aria-hidden />
+      <p style={stagger(1)} className="mt-3 text-[17px] font-semibold text-vc-text">
         La conversación se cerró o venció.
       </p>
       <button
         type="button"
         style={stagger(2)}
         onClick={onRestart}
-        className="vc-pill mt-5 min-h-12 rounded-2xl bg-vc-primary px-6 text-[16px] font-semibold text-vc-on-primary active:bg-vc-primary-press"
+        className="vc-pill mt-5 min-h-12 rounded-md bg-vc-primary px-6 text-[17px] font-semibold text-vc-on-primary active:bg-vc-primary-press"
       >
         Empezar de nuevo
       </button>
@@ -266,7 +265,7 @@ export function ExpiredNotice({ onRestart }: { onRestart: () => void }) {
 export function FormWrapper({ children }: { children: ReactNode }) {
   return (
     <div className="vc-enter flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-5">
-      <p style={stagger(0)} className="mb-5 flex items-start gap-2.5 rounded-2xl bg-vc-bg-2 p-3.5 text-[14px] leading-snug text-vc-text-2">
+      <p style={stagger(0)} className="mb-5 flex items-start gap-2.5 border-l-4 border-vc-icon bg-vc-bg-2 p-3 text-[15px] leading-snug text-vc-text-2">
         <ClipboardList className="mt-0.5 size-4 shrink-0 text-vc-icon" aria-hidden />
         El mismo formulario de ventanilla. Su respuesta y las ofertas llegarán al chat de esta página.
       </p>
@@ -275,25 +274,23 @@ export function FormWrapper({ children }: { children: ReactNode }) {
   );
 }
 
-export function Home({ onPick }: { onPick: (v: View) => void }) {
+export function Home({ onPick, sound }: { onPick: (v: View) => void; sound?: ReactNode }) {
   const items = [
     { id: "chat" as const, icon: MessageCircle, title: "Chatear con el asistente", text: "Le hace unas preguntas y registra su solicitud en unos minutos." },
     { id: "voz" as const, icon: Mic, title: "Hablar con el asistente", text: "Una llamada de voz aquí mismo, en el navegador. Necesita el micrófono." },
     { id: "formulario" as const, icon: ClipboardList, title: "Formulario", text: "El mismo formulario de la ventanilla del hospital." },
   ];
   return (
-    <main
-      className="vc-enter flex-1 overflow-y-auto overscroll-contain px-5 pb-7 pt-7"
-      style={{ backgroundImage: "linear-gradient(to bottom, var(--vc-bg-2), var(--vc-bg) 60%)" }}
-    >
-      <h1 style={stagger(0)} className="text-balance font-display text-[30px] font-bold leading-[1.08] tracking-[-0.02em] text-vc-text">
+    <main className="vc-enter flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-6">
+      <h1 style={stagger(0)} className="text-balance text-[28px] font-bold leading-tight text-vc-text">
         ¿Necesita una cita?
       </h1>
-      <p style={stagger(1)} className="mt-3 max-w-[38ch] text-pretty text-[15px] leading-snug text-vc-text-2">
+      <p style={stagger(1)} className="mt-2 max-w-[38ch] text-pretty text-[17px] leading-snug text-vc-text-2">
         Registramos su solicitud aunque hoy no haya cupo. Un profesional la revisa y le avisamos aquí cuando haya un cupo para usted. No le
         pedimos su número ni su correo.
       </p>
-      <ul className="mt-6 space-y-3">
+      {sound && <div className="mt-4">{sound}</div>}
+      <ul className="mt-5 space-y-2.5">
         {items.map(({ id, icon: Icon, title, text }, n) => {
           const main = n === 0;
           return (
@@ -301,16 +298,16 @@ export function Home({ onPick }: { onPick: (v: View) => void }) {
               <button
                 type="button"
                 onClick={() => onPick(id)}
-                className={`app-lift flex w-full items-center gap-3.5 rounded-[22px] p-4 text-left ${
-                  main ? "bg-vc-primary text-vc-on-primary active:bg-vc-primary-press" : "bg-vc-bg text-vc-text ring-1 ring-vc-line active:bg-vc-bg-2"
+                className={`app-lift flex w-full items-center gap-3 rounded-md border p-4 text-left ${
+                  main
+                    ? "border-vc-primary bg-vc-primary text-vc-on-primary hover:bg-vc-primary-press active:bg-vc-primary-press"
+                    : "border-vc-edge bg-vc-bg text-vc-text hover:bg-vc-bg-2 active:bg-vc-surface-press"
                 }`}
               >
-                <span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${main ? "bg-vc-primary-press text-vc-on-primary" : "bg-vc-surface text-vc-icon"}`}>
-                  <Icon className="size-[22px]" aria-hidden />
-                </span>
+                <Icon className={`size-6 shrink-0 ${main ? "text-vc-on-primary" : "text-vc-icon"}`} aria-hidden />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[16px] font-semibold leading-tight">{title}</span>
-                  <span className={`mt-1 block text-[14px] leading-snug ${main ? "text-vc-on-primary-2" : "text-vc-text-2"}`}>{text}</span>
+                  <span className="block text-[17px] font-semibold leading-tight">{title}</span>
+                  <span className={`mt-1 block text-[15px] leading-snug ${main ? "text-vc-on-primary-2" : "text-vc-text-2"}`}>{text}</span>
                 </span>
                 <ChevronRight className={`size-5 shrink-0 ${main ? "text-vc-on-primary-2" : "text-vc-icon"}`} aria-hidden />
               </button>
@@ -318,15 +315,15 @@ export function Home({ onPick }: { onPick: (v: View) => void }) {
           );
         })}
       </ul>
-      <p style={stagger(5)} className="mt-6 flex items-start gap-2.5 rounded-2xl bg-vc-danger-soft p-3.5 text-[13px] leading-snug text-vc-text">
-        <TriangleAlert className="mt-px size-4 shrink-0 text-vc-danger-press" aria-hidden />
+      <p style={stagger(5)} className="mt-6 flex items-start gap-2.5 border-l-4 border-vc-danger bg-vc-danger-soft p-3 text-[15px] leading-snug text-vc-text">
+        <TriangleAlert className="mt-0.5 size-5 shrink-0 text-vc-danger-press" aria-hidden />
         <span>Si tiene dolor fuerte en el pecho, falta de aire, un desmayo o sangrado abundante, no espere una cita: acuda a emergencia o llame al 106 (SAMU).</span>
       </p>
     </main>
   );
 }
 
-function ChatView({ data, reload }: { data: ChatData; reload: () => Promise<void> }) {
+function ChatView({ data, reload, sound }: { data: ChatData; reload: () => Promise<void>; sound?: ReactNode }) {
   const [text, setText] = useState("");
   const [typing, setTyping] = useState(false);
   const listRef = useRef<HTMLOListElement>(null);
@@ -369,6 +366,7 @@ function ChatView({ data, reload }: { data: ChatData; reload: () => Promise<void
       onText={(v) => setText(v.slice(0, 500))}
       onSend={send}
       onSubmit={() => send(text)}
+      sound={sound}
     />
   );
 }
@@ -383,17 +381,20 @@ type ChatThreadViewProps = {
   onText: (value: string) => void;
   onSend: (text: string) => void;
   onSubmit: () => void;
+  /** "Activar sonido y llamadas", at the top of the thread while sound is off */
+  sound?: ReactNode;
 };
 
 const BUBBLE_LABEL: Record<string, string> = { oferta: "Oferta de cupo", validacion: "Confirmación de cupo" };
 
 /** The chat thread, the quick answers and the composer. Props only (ChatView owns the state). */
-export function ChatThreadView({ messages, consent, typing, quick, text, listRef, onText, onSend, onSubmit }: ChatThreadViewProps) {
+export function ChatThreadView({ messages, consent, typing, quick, text, listRef, onText, onSend, onSubmit, sound }: ChatThreadViewProps) {
   return (
     <>
       <ThreadList listRef={listRef}>
+        {sound && <li className="flex justify-center">{sound}</li>}
         {!messages.length && !typing && (
-          <li className="mx-auto mt-8 max-w-[260px] rounded-2xl bg-vc-bg p-4 text-center text-[14px] leading-snug text-vc-text-2 ring-1 ring-vc-line">
+          <li className="mx-auto mt-8 max-w-[280px] rounded-md border border-vc-line bg-vc-bg p-4 text-center text-[15px] leading-snug text-vc-text-2">
             Escriba un mensaje para empezar. El asistente le hará unas preguntas, una a la vez.
           </li>
         )}
@@ -416,11 +417,11 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
           e.preventDefault();
           onSubmit();
         }}
-        className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-t border-vc-line bg-vc-bg px-3 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2"
+        className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-t border-vc-line bg-vc-bg px-3 pb-2 pt-2"
       >
         {/* the PERSONA hint lives above the field: as a placeholder it was cut on a 360 px phone */}
         {consent && (
-          <p id="msg-hint" className="w-full px-1 text-[12px] text-vc-text-3">
+          <p id="msg-hint" className="w-full px-1 text-[13px] text-vc-text-3">
             Para hablar con una persona, escriba PERSONA.
           </p>
         )}
@@ -435,13 +436,13 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
           aria-describedby={consent ? "msg-hint" : undefined}
           autoComplete="off"
           enterKeyHint="send"
-          className="min-h-12 min-w-0 flex-1 rounded-full border border-vc-edge bg-vc-bg px-4 text-[16px] text-vc-text transition-[border-color] duration-150 placeholder:text-vc-text-3 focus:border-vc-focus"
+          className="min-h-12 min-w-0 flex-1 rounded-md border border-vc-edge bg-vc-bg px-3 text-[16px] text-vc-text placeholder:text-vc-text-3 focus:border-vc-focus"
         />
         <button
           type="submit"
           disabled={!text.trim() || typing}
           aria-label="Enviar"
-          className="vc-round grid size-12 shrink-0 place-items-center rounded-full bg-vc-primary text-vc-on-primary active:bg-vc-primary-press disabled:bg-vc-surface disabled:text-vc-text-3"
+          className="vc-round grid size-12 shrink-0 place-items-center rounded-md bg-vc-primary text-vc-on-primary active:bg-vc-primary-press disabled:bg-vc-surface disabled:text-vc-text-3"
         >
           <SendHorizontal className="size-5" aria-hidden />
         </button>

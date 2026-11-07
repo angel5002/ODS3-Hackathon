@@ -65,7 +65,7 @@ export function ValidateTab() {
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Por validar</h1>
         <p className="mt-1 max-w-[85ch] text-sm text-muted">
-          Antes de registrar la cita se confirma con el ganador que es el paciente o su cuidador y que podrá asistir. Las
+          Antes de registrar la cita se confirma con la persona que aceptó el cupo que es el paciente o su cuidador y que podrá asistir. Las
           reprogramaciones elegidas por los pacientes esperan aquí su aprobación. Toda asignación se puede revertir, con un motivo.
         </p>
       </div>

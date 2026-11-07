@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BellRing, Building2, QrCode } from "lucide-react";
-import { Bubble, DeadlineChip, DemoNotice, ReplyButton, ReplyButtons, SoundBar, ThreadList } from "@/components/chat/ChatParts";
+import { Bubble, DeadlineChip, DemoNotice, ReplyButton, ReplyButtons, SoundButton, ThreadList } from "@/components/chat/ChatParts";
 import { toast } from "sonner";
 import { useDemoState, useHints, useNow, useSingleFlight } from "@/lib/realtime";
 import { getJson, post } from "@/lib/post";
@@ -53,16 +53,18 @@ export function PhoneApp({ token }: { token: string }) {
 
   const patientId = data?.patient.id;
   useHints((h) => {
+    if (missing) return; // unknown link: stop asking (it would only answer 404)
     if (isBroad(h) || (patientId && h.patients.includes(patientId)) || h.kind === "slot" || h.kind === "call") load();
   });
 
-  // presence for the operator ("En vivo" in /demo), every 20 s while open
+  // presence for the operator ("En vivo" in /demo), every 20 s while open — not for an unknown link
   useEffect(() => {
+    if (missing) return;
     const ping = () => post("/api/patient", { token, action: "presence", soundReady }).catch(() => {});
     ping();
     const id = setInterval(ping, 20000);
     return () => clearInterval(id);
-  }, [token, soundReady]);
+  }, [token, soundReady, missing]);
 
   const count = data?.messages.length ?? 0;
   useEffect(() => {
@@ -150,14 +152,17 @@ export function PhoneApp({ token }: { token: string }) {
 
   return (
     <Shell>
-      <PhoneHeader clock={state ? fmtMin(nowMin) : ""} />
-      <DemoNotice>
-        Teléfono simulado de <strong className="font-semibold text-vc-text">{p.full_name}</strong>
-        {p.caregiver_name ? ` (lo usa ${p.caregiver_name}, ${p.caregiver_relation})` : ""}. {DISCLAIMER}
-      </DemoNotice>
-      {!soundReady && <SoundBar onEnable={enableSound} />}
+      <PhoneHeader
+        clock={state ? fmtMin(nowMin) : ""}
+        owner={`${p.full_name}${p.caregiver_name ? ` (lo usa ${p.caregiver_name}, ${p.caregiver_relation})` : ""}`}
+      />
 
       <ThreadList listRef={listRef}>
+        {!soundReady && (
+          <li className="flex justify-center">
+            <SoundButton onEnable={enableSound} />
+          </li>
+        )}
         {!data.messages.length && <PhoneEmpty />}
         {data.messages.map((m) => {
           const so = m.slot_offer_id ? data.slotOffers.find((o) => o.id === m.slot_offer_id) : undefined;
@@ -193,6 +198,7 @@ export function PhoneApp({ token }: { token: string }) {
         })}
       </ThreadList>
       <PhoneFooter />
+      <DemoNotice>{DISCLAIMER}</DemoNotice>
 
       {callActive && data.call && (
         <CallScreen key={data.call.id} call={data.call} auth={{ token }} name={p.first_name} onDone={load} />
@@ -201,7 +207,7 @@ export function PhoneApp({ token }: { token: string }) {
   );
 }
 
-// ---------- Presentational pieces (E5 app): props only, also rendered by /dev/pantallas ----------
+// ---------- Presentational pieces (E5 app, E5 estilo): props only, also rendered by /dev/pantallas ----------
 
 const PHONE_BUBBLE_LABEL: Record<string, string> = {
   oferta: "Oferta de cupo",
@@ -211,13 +217,10 @@ const PHONE_BUBBLE_LABEL: Record<string, string> = {
 /** The simulated phone: full screen on a phone, a framed handset on a desktop. */
 export function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="flex h-dvh items-stretch justify-center bg-vc-bg-2 sm:py-6"
-      style={{ backgroundImage: "radial-gradient(80% 60% at 50% 0%, var(--vc-surface), transparent 70%)" }}
-    >
+    <div className="flex h-dvh items-stretch justify-center bg-vc-bg-2 sm:py-6">
       <div
         data-voice-theme="claro"
-        className="relative flex h-full w-full max-w-[420px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-[34px] sm:border-[7px] sm:border-vc-text sm:shadow-[0_30px_70px_-28px_rgb(16_48_47/0.55)]"
+        className="relative flex h-full w-full max-w-[420px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-2xl sm:border sm:border-vc-edge"
       >
         {children}
       </div>
@@ -225,18 +228,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function PhoneHeader({ clock }: { clock: string }) {
+/** `owner`: whose simulated phone this is ("Rosa Mendoza Ríos (lo usa …)"); without it, "Mensajes automáticos". */
+export function PhoneHeader({ clock, owner }: { clock: string; owner?: string }) {
   return (
-    <header className="flex shrink-0 items-center gap-3 border-b border-vc-line bg-vc-bg px-3 pb-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))]">
+    <header className="flex shrink-0 items-center gap-3 border-b border-vc-line bg-vc-bg px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
       <div className="grid size-10 shrink-0 place-items-center rounded-full bg-vc-surface text-vc-icon">
         <Building2 className="size-5" aria-hidden />
       </div>
       <div className="min-w-0 flex-1 leading-tight">
-        <p className="truncate font-display text-[16px] font-bold tracking-[-0.01em] text-vc-text">Citas · Hospital María Auxiliadora</p>
-        <p className="truncate text-[12px] text-vc-text-2">Mensajes automáticos</p>
+        <p className="truncate text-[16px] font-bold text-vc-text">Citas · Hospital Mirasur</p>
+        <p className="truncate text-[13px] text-vc-text-2">{owner ? `Teléfono simulado de ${owner}` : "Mensajes automáticos"}</p>
       </div>
       {clock && (
-        <span className="shrink-0 rounded-full border border-vc-edge px-2.5 py-1 text-[13px] font-semibold tabular-nums text-vc-text" aria-label={`Hora de la demo ${clock}`}>
+        <span className="shrink-0 text-[15px] font-semibold tabular-nums text-vc-text" aria-label={`Hora de la demo ${clock}`}>
           {clock}
         </span>
       )}
@@ -246,10 +250,8 @@ export function PhoneHeader({ clock }: { clock: string }) {
 
 export function PhoneEmpty() {
   return (
-    <li className="mx-auto mt-10 flex max-w-[270px] flex-col items-center rounded-2xl bg-vc-bg p-5 text-center text-[14px] leading-snug text-vc-text-2 ring-1 ring-vc-line">
-      <span className="mb-3 grid size-11 place-items-center rounded-full bg-vc-surface text-vc-icon">
-        <BellRing className="size-5" aria-hidden />
-      </span>
+    <li className="mx-auto mt-8 flex max-w-[280px] flex-col items-center rounded-md border border-vc-line bg-vc-bg p-5 text-center text-[15px] leading-snug text-vc-text-2">
+      <BellRing className="mb-2 size-6 text-vc-icon" aria-hidden />
       Todavía no hay mensajes. Cuando el hospital envíe el recordatorio o le ofrezca un cupo, llegará aquí.
     </li>
   );
@@ -257,8 +259,8 @@ export function PhoneEmpty() {
 
 export function PhoneFooter() {
   return (
-    <footer className="flex shrink-0 items-center gap-2 border-t border-vc-line bg-vc-bg px-3 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2.5">
-      <div className="flex-1 rounded-full bg-vc-surface px-4 py-3 text-[14px] text-vc-text-3">Responda con los botones del mensaje</div>
+    <footer className="flex shrink-0 items-center gap-2 border-t border-vc-line bg-vc-bg px-3 py-2">
+      <div className="flex-1 rounded-md bg-vc-surface px-3 py-2.5 text-[15px] text-vc-text-3">Responda con los botones del mensaje</div>
     </footer>
   );
 }
@@ -266,8 +268,7 @@ export function PhoneFooter() {
 export function PhoneLoading() {
   return (
     <>
-      <DemoNotice>{DISCLAIMER}</DemoNotice>
-      <div className="m-auto flex items-center gap-2.5 text-[15px] text-vc-text-2" role="status">
+      <div className="m-auto flex items-center gap-2.5 text-[16px] text-vc-text-2" role="status">
         <span className="app-typing text-vc-text-3" aria-hidden>
           <i />
           <i />
@@ -275,6 +276,7 @@ export function PhoneLoading() {
         </span>
         Cargando mensajes…
       </div>
+      <DemoNotice>{DISCLAIMER}</DemoNotice>
     </>
   );
 }
@@ -282,15 +284,13 @@ export function PhoneLoading() {
 export function PhoneMissing() {
   return (
     <>
-      <DemoNotice>{DISCLAIMER}</DemoNotice>
       <div className="vc-enter m-auto flex max-w-xs flex-col items-center p-6 text-center">
-        <span style={{ "--i": 0 } as React.CSSProperties} className="grid size-14 place-items-center rounded-full bg-vc-surface text-vc-icon">
-          <QrCode className="size-6" aria-hidden />
-        </span>
-        <p style={{ "--i": 1 } as React.CSSProperties} className="mt-4 text-pretty text-[15px] leading-snug text-vc-text-2">
+        <QrCode className="size-8 text-vc-icon" aria-hidden />
+        <p className="mt-3 text-pretty text-[16px] leading-snug text-vc-text-2">
           Este enlace no corresponde a ningún paciente de la demo. Vuelva a escanear el código QR.
         </p>
       </div>
+      <DemoNotice>{DISCLAIMER}</DemoNotice>
     </>
   );
 }

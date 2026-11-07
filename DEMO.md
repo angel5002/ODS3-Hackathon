@@ -8,15 +8,15 @@
 - todo en la paleta clara;
 - la llamada con la onda de voz en el centro, el estado en dos o tres palabras («Hablando», «Te escucho», «Pensando») y los subtítulos de la última frase;
 - tres controles: Silenciar, Colgar y Chat;
-- la tarjeta «Voz en vivo» en `/demo`;
-- el selector de la regla de asignación en los parámetros de `/demo`.
+- `/demo` como **centro de control** en una sola pantalla (se proyecta): a la izquierda los pasos del guion con su número; arriba el recorrido del paciente en 6 etapas con su conteo y el último evento, y el QR del jurado; abajo **Llamadas en vivo**, **Cupos liberados** (con la **regla de asignación activa**, se cambia ahí mismo) y la **Lista de espera** en el orden v5.1;
+- debajo, en **Preparación y herramientas del operador** (paso 0): En vivo, Voz en vivo, teléfonos simulados, ajustes y parámetros.
 
 ## Quién hace qué
 
 | Integrante | Dispositivo | Pantalla |
 |---|---|---|
 | 1 | Laptop al proyector | `/panel` (Admisión) y `/tablero` |
-| 2 | Segunda laptop | `/demo` (operador: reloj, En vivo, Voz en vivo) y `/regulador` |
+| 2 | Segunda laptop | `/demo` (operador: centro de control; abajo, En vivo y Voz en vivo) y `/regulador` |
 | 3 | Celular A | Chat de `/pedir-cita` vinculado a **Julio** |
 | 4 | Celular B | Teléfono simulado de **Rosa** (`/t/rosa`) |
 | Jurado | Su celular | QR impreso de `/pedir-cita` |
@@ -25,11 +25,11 @@
 
 ## Antes (paso 0, 5 minutos antes)
 
-1. `/demo` → **Reiniciar demo**. Ojo: borra las sesiones de chat, así que se hace antes de que el jurado escanee.
-2. `/demo` → Parámetros → **Regla de asignación: Mayor prioridad al cierre de la ventana**. Es la regla por defecto.
-3. Celular A: abrir `/pedir-cita`, tocar **Activar sonido y llamadas**, **Chatear con el asistente** y escribir ACEPTO. En **En vivo** de `/demo`, vincularlo a Julio.
+1. `/demo` → **Reiniciar demo** (abajo a la izquierda; pide confirmar en el mismo lugar: **Sí, reiniciar**). Ojo: borra las sesiones de chat, así que se hace antes de que el jurado escanee.
+2. `/demo` → Cupos liberados → **Regla de asignación activa: Mayor prioridad al cierre**. Es la regla por defecto.
+3. Celular A: abrir `/pedir-cita`, tocar **Activar sonido y llamadas**, **Chatear con el asistente** y escribir ACEPTO. En `/demo` → **Paso 0 · Preparar** (baja a **En vivo**), vincularlo a Julio.
 4. Celular B: abrir `/t/rosa` y tocar **Activar sonido y llamadas**. El aviso «Sonido y micrófono listos» aparece abajo.
-5. **Probar llamada** en ambos desde **En vivo**. El agente debe presentarse como asistente automatizado del Hospital de demostración. En **Voz en vivo** se ve la sesión «En llamada» y, al colgar, «Terminada».
+5. **Probar llamada** en ambos desde **En vivo**. El agente debe presentarse como asistente automatizado del Hospital Mirasur. En **Voz en vivo** se ve la sesión «En llamada» y, al colgar, «Terminada».
 
 ## Guion
 
@@ -38,7 +38,7 @@
 | 0:00–0:40 | 1 | Un jurado escanea el QR → **Chatear** → ACEPTO → pide Dermatología con un nombre ficticio | En `/regulador` aparece la solicitud S-04XX sin alias ni datos de contacto | «Quien no consigue cupo hoy no queda registrado en ningún sistema. Aquí sí, y el regulador decide sin ver quién es.» | **Formulario** de `/pedir-cita` |
 | 0:40–1:00 | 2 | Regulador: **P3** | La solicitud entra a la lista de espera con su razón: «P3 · 0 % de su plazo» | «El orden es público: primero la categoría clínica, y dentro de ella, quién ya consumió más de su plazo. Un P3 nunca pasa a un P2. Sin bonos, y nunca el seguro ni el sexo.» | — |
 | 1:00–1:40 | 3 | Panel: **Enviar recordatorios (72 h)**. Carmen toca **No podré asistir** | Por reasignar: cupo del 19/10 a las 10:20, zona cercana, con 4 candidatos | «El mensaje llega a todos; quien no puede avisa con un toque y el cupo se recupera tres días antes.» | Botón de Carmen en su teléfono simulado |
-| 1:40–2:30 | 4 | `/demo` → **2. Cerrar el plazo**. Suena el Celular B (Rosa): **Contestar**, en altavoz | Pantalla de llamada: onda de voz, «Hablando» y «Te escucho», subtítulos. En `/demo` → Voz en vivo: «En llamada» | «Rosa no respondió y está en el 10 % de mayor riesgo: la llama el asistente en el navegador. Se identifica como asistente automatizado, nunca pide pagos, claves, códigos ni el DNI completo, y ofrece hablar con una persona.» | Ver «Si falla la voz» |
+| 1:40–2:30 | 4 | `/demo` → **Paso 4 · Cerrar el plazo de respuesta**. Suena el Celular B (Rosa): **Contestar**, en altavoz | Pantalla de llamada: onda de voz, «Hablando» y «Te escucho», subtítulos. En `/demo` → Llamadas en vivo: «Rosa D. · En llamada» con el tiempo | «Rosa no respondió y está en el 10 % de mayor riesgo: la llama el asistente en el navegador. Se identifica como asistente automatizado, nunca pide pagos, claves, códigos ni el DNI completo, y ofrece hablar con una persona.» | Ver «Si falla la voz» |
 | 2:30–3:30 | 5 | **Aprobar y enviar oferta a 4**. Julio (chat real) responde **1** primero; Ana (simulada) acepta después. **Cerrar oferta y asignar** | «Asignado a Ana G. (mayor prioridad: P2, 69 % de su plazo) aunque Julio respondió primero (P2, 44 % de su plazo).» Julio queda en espera prioritaria | «Responder rápido no da ventaja: al cerrar la ventana gana quien tiene mayor prioridad entre quienes aceptaron. La otra regla, "primero que acepta", está a un clic en los parámetros para compararlas en el piloto.» | Botones Acepta/No de cada candidato |
 | 3:30–4:10 | 6 | Por validar → **Usar simulado: confirma** (Ana) | Cita confirmada; su cita del 09/11 se libera (efecto dominó) → aprobar → Luis acepta → cerrar → termina en **Luis** | «El espacio vacío se corre a una fecha lejana, donde hay más tiempo para organizarse.» | Teléfono de Ana `/t/ana` |
 | 4:10–4:40 | 7 | Por reasignar: cupo de **Dermatología, lunes 23/10** → aprobar | En el chat del jurado llega la oferta; «1», y al cerrar, «Sí, confirmo»: cita registrada | «La persona que pidió la cita hace 4 minutos ya tiene una, sin hacer cola.» | Usar simulado |
@@ -52,7 +52,7 @@ La pantalla **nunca** pasa sola al guion fijo: dice qué pasó y ofrece la salid
 2. **«Llamada abierta en otro dispositivo»:** cerrar esa pantalla. El personaje está abierto en otro celular o pestaña.
 3. **«Todas las líneas están ocupadas»:** el plan admite 8 llamadas a la vez. La pantalla muestra el lugar en la fila y reintenta cada 10 s. Si no hay tiempo, **Seguir por chat**.
 4. **Sin audio en un iPhone:** volver a tocar **Activar sonido y llamadas**, subir el volumen y quitar el modo silencio. Si sigue sin sonar, abrir el teléfono simulado en la laptop 2.
-5. **Último recurso:** abrir `/t/rosa?voz=guion`, que fuerza el guion fijo desde el inicio, o terminar la llamada desde **En vivo** → **Terminar (usar simulado)** y seguir el guion con los botones simulados.
+5. **Último recurso:** abrir `/t/rosa?voz=guion`, que fuerza el guion fijo desde el inicio, o terminar la llamada desde **Llamadas en vivo** → **Terminar** (o **En vivo** → **Terminar (usar simulado)**) y seguir el guion con los botones simulados.
 
 ## Si falla otra cosa
 

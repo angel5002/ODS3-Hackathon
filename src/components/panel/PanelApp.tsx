@@ -151,16 +151,16 @@ export function PanelApp({ onReassign }: { onReassign?: () => void }) {
                 variant="primary"
                 onClick={sendReminders}
                 disabled={sending || loading || pending === 0}
-                className="min-h-11 rounded-full px-5 shadow-[0_10px_24px_-12px_rgba(14,90,87,0.9)]"
+                className="min-h-11 rounded-md px-5"
               >
                 <Send className="size-4" aria-hidden />
                 {pending === 0 && base.length ? "Recordatorios 72 h enviados" : sending ? "Enviando…" : "Enviar recordatorios (72 h)"}
               </Button>
               <div className="flex flex-wrap gap-1.5">
-                <Button className="min-h-8 rounded-full px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("agent_calls")} title="Llama a quienes no usan mensajería y a quienes no respondieron del 10 % de mayor riesgo">
+                <Button className="min-h-11 rounded-md px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("agent_calls")} title="Llama a quienes no usan mensajería y a quienes no respondieron del 10 % de mayor riesgo">
                   <PhoneCall className="size-3.5" aria-hidden /> Llamadas 48 h
                 </Button>
-                <Button className="min-h-8 rounded-full px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("last_reminders")} title="Último recordatorio a quienes no respondieron">
+                <Button className="min-h-11 rounded-md px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("last_reminders")} title="Último recordatorio a quienes no respondieron">
                   <Send className="size-3.5" aria-hidden /> Último recordatorio 24 h
                 </Button>
               </div>
@@ -183,7 +183,7 @@ export function PanelApp({ onReassign }: { onReassign?: () => void }) {
 
           <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
             <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-3">
-              <div role="tablist" aria-label="Vistas" className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-sunken p-1 [scrollbar-width:none]">
+              <div role="tablist" aria-label="Vistas" className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-sunken p-1 [scrollbar-width:none]">
                 <TabButton id="todas" tab={tab} setTab={setTab} label="Todas" count={all.length} />
                 <TabButton
                   id="llamadas"
@@ -207,7 +207,7 @@ export function PanelApp({ onReassign }: { onReassign?: () => void }) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar paciente…"
-                  className="w-full rounded-full border border-line bg-sunken py-2 pl-9 pr-3 text-sm transition-colors focus:bg-surface"
+                  className="w-full rounded-md border border-line bg-sunken py-2 pl-9 pr-3 text-sm transition-colors focus:bg-surface"
                 />
               </label>
             </div>
@@ -224,7 +224,7 @@ export function PanelApp({ onReassign }: { onReassign?: () => void }) {
                     setRisk("");
                     setStatus("");
                   }}
-                  className="press ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-medium text-muted hover:bg-sunken hover:text-ink"
+                  className="press ml-auto inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-medium text-muted hover:bg-sunken hover:text-ink"
                 >
                   <X className="size-3.5" aria-hidden /> Limpiar
                 </button>
@@ -301,7 +301,7 @@ function capitalize(x: string) {
 
 function Chip({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-muted ring-1 ring-line">
+    <span className="inline-flex items-center gap-1.5 rounded-md bg-surface px-3 py-1 text-muted ring-1 ring-line">
       <Icon className="size-3.5" aria-hidden />
       {children}
     </span>
@@ -312,7 +312,7 @@ function DemoClock({ state }: { state: DemoState | null }) {
   const now = useNow(1000);
   const running = Boolean(state?.clock_started_at);
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 ring-1 ring-line" title="Hora simulada de la demo: el día anterior a las citas">
+    <span className="inline-flex items-center gap-1.5 rounded-md bg-surface px-3 py-1 ring-1 ring-line" title="Hora simulada de la demo: el día anterior a las citas">
       <span className={`size-2 rounded-full ${running ? "animate-pulse bg-st-ok" : "bg-line-strong"}`} aria-hidden />
       <span className="text-muted">Hoy</span>
       <span className="font-semibold tabular-nums">{state ? `${demoDayLabel(demoNowMin(state, now))} ${fmtMin(demoNowMin(state, now))}` : "--:--"}</span>
@@ -355,7 +355,7 @@ function Indicators({ counts, onPick, active }: { counts: Record<string, number>
               <button
                 onClick={() => onPick(on ? "" : it.status!)}
                 aria-pressed={on}
-                className={`press h-full w-full rounded-2xl bg-surface p-3.5 text-left ring-1 transition-shadow duration-200 hover:shadow-[0_8px_24px_-14px_rgba(22,33,44,0.45)] ${
+                className={`press h-full w-full rounded-2xl bg-surface p-3.5 text-left ring-1  ${
                   on ? "ring-2 ring-brand" : "ring-line"
                 }`}
               >
@@ -395,13 +395,13 @@ function TabButton({
       aria-selected={on}
       title={title}
       onClick={() => setTab(id)}
-      className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ${
+      className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ${
         on ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
       }`}
     >
       {label}
       <span
-        className={`rounded-full px-1.5 text-xs tabular-nums ${
+        className={`rounded-md px-1.5 text-xs tabular-nums ${
           attention === "warn" ? "bg-st-warn text-white" : attention === "free" ? "bg-st-free text-white" : "bg-line/70 text-muted"
         }`}
       >
@@ -418,7 +418,7 @@ function Select({ label, value, onChange, options }: { label: string; value: str
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`max-w-48 rounded-full border bg-surface px-3 py-1.5 text-sm ${value ? "border-brand text-brand" : "border-line"}`}
+        className={`max-w-48 rounded-md border bg-surface px-3 py-1.5 text-sm ${value ? "border-brand text-brand" : "border-line"}`}
       >
         <option value="">Todos</option>
         {options.map(([v, l]) => (
@@ -530,7 +530,7 @@ function QuickAction({ row, onSelect }: { row: Row; onSelect: (id: number) => vo
   if (row.status === "sin_respuesta") {
     return (
       <Button
-        className="min-h-8 rounded-full px-3 text-xs"
+        className="min-h-11 rounded-md px-3 text-xs"
         disabled={busy}
         onClick={async (e) => {
           e.stopPropagation();
@@ -552,7 +552,7 @@ function QuickAction({ row, onSelect }: { row: Row; onSelect: (id: number) => vo
   if (row.status === "liberada") {
     return (
       <Button
-        className="min-h-8 rounded-full border-st-free/40 px-3 text-xs text-st-free"
+        className="min-h-11 rounded-md border-st-free/40 px-3 text-xs text-st-free"
         onClick={(e) => {
           e.stopPropagation();
           router.replace("/panel?vista=reasignar", { scroll: false });

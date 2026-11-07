@@ -13,9 +13,9 @@ const TONE: Record<string, string> = {
 
 export function RequestBadge({ state }: { state: RequestState }) {
   const s = REQUEST_STATE[state] ?? { label: state, tone: "neutral" };
-  return <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${TONE[s.tone]}`}>{s.label}</span>;
+  return <span className={`inline-flex whitespace-nowrap rounded-xs px-1.5 py-0.5 text-xs font-semibold ${TONE[s.tone]}`}>{s.label}</span>;
 }
 
 export function Pill({ tone = "neutral", children }: { tone?: string; children: React.ReactNode }) {
-  return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${TONE[tone]}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-xs px-1.5 py-0.5 text-xs font-semibold ${TONE[tone]}`}>{children}</span>;
 }

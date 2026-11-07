@@ -1,6 +1,7 @@
-// Measures the contrast of the voice call tokens (E5 v2). Pure Node, no dependencies.
-// Reads the [data-voice-theme="claro"] block of src/app/globals.css (the light palette chosen by the team),
-// takes every --vc-* hex value and prints each text/background and icon-or-control/background pair with its WCAG 2.x contrast ratio.
+// Measures the contrast of the colour tokens (E5 v2, E5 estilo). Pure Node, no dependencies.
+// Reads the [data-voice-theme="claro"] blocks of src/app/globals.css (the light palette chosen by the team) and the
+// app tokens of its first @theme block (--color-*: staff screens, landing, footer), and prints each
+// text/background and icon-or-control/background pair with its WCAG 2.x contrast ratio.
 // Thresholds: text 4.5:1 (1.4.3), icons, wave and control edges 3:1 (1.4.11). Exit code 1 if any pair fails.
 //
 //   node scripts/dev/contrast-check.mjs            table
@@ -74,8 +75,10 @@ const PAIRS = [
 // E5 app: /pedir-cita (inicio, chat, formulario), burbujas y campo del chat, teléfono simulado /t/[token] y /demo.
 // Every new foreground/background combination those screens use, including the ones whose tokens already existed.
 const APP_PAIRS = [
-  ["vc-text-2", "vc-surface", "texto", "franja de aviso «Demostración…» (app)"],
-  ["vc-icon", "vc-surface", "icono", "icono Info de la franja de aviso; mosaico de icono de opción (app)"],
+  ["vc-text-2", "vc-surface", "texto", "texto secundario sobre superficies neutras (app)"],
+  ["vc-text-3", "vc-bg", "texto", "aviso «Demostración…» al pie de /pedir-cita y del teléfono (E5 estilo)"],
+  ["vc-text", "vc-bg", "texto", "botón «Activar sonido y llamadas» (E5 estilo)"],
+  ["vc-icon", "vc-surface", "icono", "icono del edificio en la cabecera del teléfono (app)"],
   ["vc-text-3", "vc-surface", "texto", "pista «Responda con los botones del mensaje»; botón Enviar desactivado (app)"],
   ["vc-text", "vc-surface", "texto", "«Respondió: …» en la burbuja (app)"],
   ["vc-icon", "vc-bg", "texto", "rótulo «Oferta de cupo», «Teléfono N», enlaces (app)"],
@@ -106,32 +109,116 @@ const APP_PAIRS = [
 ];
 PAIRS.push(...APP_PAIRS);
 
+// E5 estilo: the app tokens of the first @theme block (staff screens, landing, footer, /acceso). A literal hex
+// stands for a value that lives in a CSS rule instead of a token (the agenda figure of the landing).
+function appTokens() {
+  const block = css.match(/@theme\s*\{([\s\S]*?)\n\}/);
+  if (!block) throw new Error("No @theme block in globals.css");
+  const out = { white: "#ffffff" };
+  for (const [, name, value] of block[1].matchAll(/--color-([a-z0-9-]+)\s*:\s*(#[0-9a-f]{6})\s*;/gi)) out[name] = value;
+  return out;
+}
+const BASE_PAIRS = [
+  ...["paper", "surface", "sunken"].flatMap((bg) => [
+    ["ink", bg, "texto", "texto principal y títulos"],
+    ["muted", bg, "texto", "texto secundario, pie de página, aviso de demostración"],
+    ["faint", bg, "texto", "texto terciario («Sin estimar»)"],
+    ["brand", bg, "texto", "enlaces, cifras destacadas, pestaña activa"],
+    ["line-strong", bg, "control", "borde de campos, selects y botones secundarios"],
+    ["brand", bg, "control", "foco (contorno de 3 px), borde del rol elegido"],
+  ]),
+  ["white", "brand", "texto", "texto en botón principal"],
+  ["white", "brand-hover", "texto", "texto en botón principal (cursor encima)"],
+  ["brand", "brand-soft", "texto", "pestaña activa de la cabecera del personal"],
+  ["ink", "brand-soft", "texto", "rol elegido en /acceso"],
+  ["risk-alto", "surface", "texto", "cifra «sin seguro» de la portada, botón de peligro"],
+  ["risk-alto", "risk-alto-soft", "texto", "etiqueta de riesgo Alto"],
+  ["risk-medio", "risk-medio-soft", "texto", "etiqueta de riesgo Medio"],
+  ["risk-bajo", "risk-bajo-soft", "texto", "etiqueta de riesgo Bajo"],
+  ["st-neutral", "st-neutral-soft", "texto", "estado Pendiente"],
+  ["st-sent", "st-sent-soft", "texto", "estado Recordatorio enviado"],
+  ["st-ok", "st-ok-soft", "texto", "estado Confirmada"],
+  ["st-free", "st-free-soft", "texto", "estado Cupo liberado"],
+  ["st-warn", "st-warn-soft", "texto", "estado Sin respuesta"],
+  ["st-call", "st-call-soft", "texto", "estado En llamada"],
+  ["st-human", "st-human-soft", "texto", "estado Pide una persona / Por validar"],
+  ["st-done", "st-done-soft", "texto", "estado Reasignada"],
+  ["white", "night", "texto", "texto en recuadros oscuros (regulador, call center)"],
+  ["mint", "night", "texto", "acento menta sobre recuadros oscuros"],
+  ["#7f938f", "surface", "control", "celda «Atendida» de la figura de la portada"],
+  ["line-strong", "surface", "control", "contorno de la celda «No atendida» de la figura"],
+  ["brand", "surface", "control", "celda «Recuperable» de la figura"],
+];
+
+// E5 demo: the /demo control center (projected to the jury) and its operator tools use their own local tokens
+// (DEMO_TOKENS in src/components/demo/DemoTheme.tsx, sober NHS/USWDS-like palette). Every pair the screen uses.
+function demoTokens() {
+  const src = readFileSync(join(root, "src", "components", "demo", "DemoTheme.tsx"), "utf8");
+  const out = {};
+  for (const [, name, value] of src.matchAll(/"(cc-[a-z0-9-]+)":\s*"(#[0-9a-fA-F]{6})"/g)) out[name] = value;
+  if (!Object.keys(out).length) throw new Error("No DEMO_TOKENS in DemoTheme.tsx");
+  return out;
+}
+const DEMO_PAIRS = [
+  ["cc-text", "cc-surface", "texto", "títulos, cifras y nombres de /demo"],
+  ["cc-text", "cc-subtle", "texto", "«Último: …», fila nueva de la lista (demo)"],
+  ["cc-text", "cc-page", "texto", "fondo de la página /demo"],
+  ["cc-text-2", "cc-surface", "texto", "texto secundario de los paneles (demo)"],
+  ["cc-text-2", "cc-subtle", "texto", "texto secundario sobre gris (demo)"],
+  ["cc-text-2", "cc-page", "texto", "línea de aviso «Demostración…» al pie (demo)"],
+  ["cc-accent", "cc-surface", "texto", "enlaces de los pasos, «Sonando», «Oferta a …» (demo)"],
+  ["cc-accent", "cc-subtle", "texto", "«Nueva» en la fila resaltada (demo)"],
+  ["cc-ok", "cc-surface", "texto", "«En llamada», «Asignado a …», paso hecho (demo)"],
+  ["cc-warn", "cc-surface", "texto", "«No contestó», «Sin ACEPTO» (demo)"],
+  ["cc-danger", "cc-surface", "texto", "botón «Reiniciar demo» (demo)"],
+  ["cc-danger", "cc-danger-subtle", "texto", "botón «Reiniciar demo» con el puntero encima (demo)"],
+  ["cc-on-primary", "cc-primary", "texto", "paso principal, regla activa, código QR del jurado (demo)"],
+  ["cc-on-primary", "cc-primary-press", "texto", "paso principal pulsado (demo)"],
+  ["cc-on-primary-2", "cc-primary", "texto", "«Para el jurado» (demo)"],
+  ["cc-on-danger", "cc-danger", "texto", "«Sí, reiniciar» (demo)"],
+  ["cc-control", "cc-surface", "control", "borde de botones secundarios, selectores y campos (demo)"],
+  ["cc-control", "cc-subtle", "control", "borde de botones sobre gris (demo)"],
+  ["cc-primary", "cc-surface", "control", "botón principal y etapa con movimiento (demo)"],
+  ["cc-danger", "cc-surface", "control", "borde de «Reiniciar demo»; borde P1 de la lista (demo)"],
+  ["cc-warn", "cc-surface", "control", "borde P2 y de llamada sin respuesta (demo)"],
+  ["cc-accent", "cc-surface", "control", "borde P3, de «Sonando» y de «Último» (demo)"],
+  ["cc-ok", "cc-surface", "control", "borde de «En llamada» y de cupo asignado (demo)"],
+  ["cc-accent", "cc-subtle", "control", "barra del % del plazo y borde de «Último» (demo)"],
+  ["cc-focus", "cc-surface", "control", "anillo de foco (demo)"],
+  ["cc-focus", "cc-page", "control", "anillo de foco sobre el fondo (demo)"],
+  ["cc-accent", "cc-surface", "icono", "iconos de los paneles (demo)"],
+];
+
 const MIN = { texto: 4.5, icono: 3, control: 3 };
 let failures = 0;
 const lines = [];
 const out = (s) => lines.push(s);
 
-for (const theme of ["claro"]) {
-  const t = tokens(theme);
+function section(title, t, pairs) {
   if (md) {
-    out(`\n**Variante ${theme}**\n`);
+    out(`\n**${title}**\n`);
     out("| Primer plano | Fondo | Tipo | Mínimo | Contraste | Resultado | Uso |");
     out("| --- | --- | --- | --- | --- | --- | --- |");
   } else {
-    out(`\nVariante ${theme}`);
+    out(`\n${title}`);
     out(`${"primer plano".padEnd(30)} ${"fondo".padEnd(28)} ${"tipo".padEnd(8)} mín   ratio   resultado  uso`);
   }
-  for (const [fg, bg, kind, use] of PAIRS) {
-    if (!t[fg] || !t[bg]) throw new Error(`Missing --${!t[fg] ? fg : bg} in theme ${theme}`);
-    const r = ratio(t[fg], t[bg]);
+  for (const [fg, bg, kind, use] of pairs) {
+    const val = (k) => (k.startsWith("#") ? k : t[k]);
+    if (!val(fg) || !val(bg)) throw new Error(`Missing token ${!val(fg) ? fg : bg} (${title})`);
+    const r = ratio(val(fg), val(bg));
     const ok = r >= MIN[kind];
     if (!ok) failures++;
-    const a = `${fg} ${t[fg]}`;
-    const b = `${bg} ${t[bg]}`;
+    const a = fg.startsWith("#") ? fg : `${fg} ${t[fg]}`;
+    const b = `${bg} ${val(bg)}`;
     if (md) out(`| ${a} | ${b} | ${kind} | ${MIN[kind]}:1 | ${r.toFixed(2)}:1 | ${ok ? "PASS" : "FAIL"} | ${use} |`);
     else out(`${a.padEnd(30)} ${b.padEnd(28)} ${kind.padEnd(8)} ${String(MIN[kind]).padEnd(4)} ${r.toFixed(2).padStart(6)}:1  ${ok ? "PASS" : "FAIL"}       ${use}`);
   }
 }
+
+section("Variante claro (llamada, /pedir-cita, chat, teléfono simulado)", tokens("claro"), PAIRS);
+section("App (personal, portada, pie de página, /acceso)", appTokens(), BASE_PAIRS);
+section("/demo (centro de control)", demoTokens(), DEMO_PAIRS);
 
 console.log(lines.join("\n"));
 console.log(`\n${failures === 0 ? "Todos los pares pasan." : `${failures} par(es) no pasan.`}`);
