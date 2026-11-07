@@ -9,9 +9,11 @@ export type Reply = { body: string; buttons?: string[] };
 export type BotState = { step: string; data: Record<string, string>; rechecked?: boolean; tries?: number };
 
 export const CONSENT =
-  "Hola. Este es el asistente de citas de AsistIA, una demostración de CientíficaHack 2026. No es un hospital real. " +
-  "Use un nombre ficticio y no comparta datos reales de salud. No le pediremos su número ni su correo, y esta conversación " +
-  "se borrará al terminar la demostración.\nResponda ACEPTO para continuar o SALIR para terminar.";
+  "Hola. Le escribe el asistente automatizado del Hospital de demostración, un hospital ficticio de AsistIA para CientíficaHack 2026. " +
+  "Este chat prepara su atención: no es una consulta médica ni atiende emergencias. " +
+  "Nunca le pediremos pagos, claves, códigos ni su DNI completo, ni tampoco su número o su correo. " +
+  "Use un nombre ficticio y no comparta datos reales de salud. Escriba PERSONA en cualquier momento para hablar con una persona. " +
+  "Esta conversación se borrará al terminar la demostración.\nResponda ACEPTO para continuar o SALIR para terminar.";
 
 const MENU: Reply = {
   body: "Gracias. ¿Qué desea hacer?\n1. Pedir una cita nueva\n2. Ver el estado de mi solicitud\n3. Hablar con una persona",
