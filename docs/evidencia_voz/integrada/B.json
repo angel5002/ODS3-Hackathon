@@ -1,0 +1,597 @@
+[
+ {
+  "t": 5.42,
+  "who": "staff",
+  "kind": "inicio",
+  "scenario": "B"
+ },
+ {
+  "t": 8.91,
+  "who": "staff",
+  "kind": "test_call",
+  "patient": "P0015",
+  "status": 200,
+  "callId": 4513
+ },
+ {
+  "t": 10.06,
+  "who": "rosa-pestaña2",
+  "kind": "console.info",
+  "text": "[voz b4a1b0fb] screen.mount {callId: 4513, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 10.24,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] screen.mount {callId: 4513, status: sonando, purpose: prueba, outgoing: false}"
+ },
+ {
+  "t": 10.77,
+  "who": "rosa-pestaña1",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 10.83,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] ui.answer {callId: 4513, clicks: 1}"
+ },
+ {
+  "t": 11.28,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] session.request {callId: 4513, queued: false}"
+ },
+ {
+  "t": 11.28,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 12.39,
+  "who": "rosa-pestaña2",
+  "kind": "ui",
+  "action": "contestar"
+ },
+ {
+  "t": 12.44,
+  "who": "rosa-pestaña2",
+  "kind": "console.info",
+  "text": "[voz b4a1b0fb] ui.answer {callId: 4513, clicks: 1}"
+ },
+ {
+  "t": 12.48,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": "Conectando…\n\nUn momento, por favor."
+ },
+ {
+  "t": 12.49,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] session.response {callId: 4513, ok: true, busy: null, reason: null}"
+ },
+ {
+  "t": 12.49,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4513, \"voiceSessionId\": \"fe755c19-5d4a-42da-aa66-92f069b2602d\", \"session\": true}"
+ },
+ {
+  "t": 12.49,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": "Conectando…\n\nUn momento, por favor."
+ },
+ {
+  "t": 12.79,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.start_session {callId: 4513, agent: asistia-confirmacion}"
+ },
+ {
+  "t": 12.81,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.status {callId: 4513, status: connecting}"
+ },
+ {
+  "t": 12.88,
+  "who": "rosa-pestaña2",
+  "kind": "console.info",
+  "text": "[voz b4a1b0fb] session.request {callId: 4513, queued: false}"
+ },
+ {
+  "t": 12.89,
+  "who": "rosa-pestaña2",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 12.99,
+  "who": "rosa-pestaña1",
+  "kind": "ws.open",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 12.99,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 12.99,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 12.99,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 13.26,
+  "who": "rosa-pestaña2",
+  "kind": "console.info",
+  "text": "[voz b4a1b0fb] session.response {callId: 4513, ok: false, busy: otro_dispositivo, reason: null}"
+ },
+ {
+  "t": 13.26,
+  "who": "rosa-pestaña2",
+  "kind": "http",
+  "path": "/api/voice/session",
+  "status": 200,
+  "body": "{\"callId\": 4513, \"session\": false, \"busy\": \"otro_dispositivo\"}"
+ },
+ {
+  "t": 13.51,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.status {callId: 4513, status: connected}"
+ },
+ {
+  "t": 13.51,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.connect {callId: 4513}"
+ },
+ {
+  "t": 13.64,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.first_agent_turn {callId: 4513, ms: 127}"
+ },
+ {
+  "t": 13.65,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 13.66,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 13.66,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/heartbeat",
+  "status": 200,
+  "body": "{\"alive\": true, \"state\": \"activa\", \"accepted\": true, \"call_status\": \"en_curso\"}"
+ },
+ {
+  "t": 13.78,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 14.14,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 15.52,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": "El asistente está hablando"
+ },
+ {
+  "t": 15.53,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": "Esta llamada ya se está atendiendo en otro dispositivo\n\nPara evitar dos conversaciones a la vez, aquí no se abre otra. Puede cerrar esta pantalla."
+ },
+ {
+  "t": 18.54,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": "El asistente está hablando"
+ },
+ {
+  "t": 18.55,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": "Esta llamada ya se está atendiendo en otro dispositivo\n\nPara evitar dos conversaciones a la vez, aquí no se abre otra. Puede cerrar esta pantalla."
+ },
+ {
+  "t": 21.57,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": "Te escucho\n\nHable con normalidad."
+ },
+ {
+  "t": 21.57,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": "Esta llamada ya se está atendiendo en otro dispositivo\n\nPara evitar dos conversaciones a la vez, aquí no se abre otra. Puede cerrar esta pantalla."
+ },
+ {
+  "t": 22.98,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/heartbeat",
+  "status": 200,
+  "body": "{\"alive\": true, \"state\": \"activa\", \"accepted\": true, \"call_status\": \"en_curso\"}"
+ },
+ {
+  "t": 24.6,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": "Te escucho\n\nHable con normalidad."
+ },
+ {
+  "t": 24.61,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": "Esta llamada ya se está atendiendo en otro dispositivo\n\nPara evitar dos conversaciones a la vez, aquí no se abre otra. Puede cerrar esta pantalla."
+ },
+ {
+  "t": 27.65,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] ui.hangup {callId: 4513, live: true}"
+ },
+ {
+  "t": 27.66,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] ui.colgar {callId: 4513}"
+ },
+ {
+  "t": 27.66,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.status {callId: 4513, status: disconnecting}"
+ },
+ {
+  "t": 27.66,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] finish {callId: 4513, result: La persona colgó, alreadyEnded: false, closeCall: true}"
+ },
+ {
+  "t": 27.67,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.status {callId: 4513, status: disconnected}"
+ },
+ {
+  "t": 27.67,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] sdk.disconnect {callId: 4513, reason: user, code: null}"
+ },
+ {
+  "t": 27.68,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] finish {callId: 4513, result: La persona colgó, alreadyEnded: true, closeCall: true}"
+ },
+ {
+  "t": 27.69,
+  "who": "rosa-pestaña1",
+  "kind": "ui",
+  "action": "colgar"
+ },
+ {
+  "t": 27.7,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": "Llamada finalizada\n\nDuración: 0:15"
+ },
+ {
+  "t": 27.71,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": "Esta llamada ya se está atendiendo en otro dispositivo\n\nPara evitar dos conversaciones a la vez, aquí no se abre otra. Puede cerrar esta pantalla."
+ },
+ {
+  "t": 27.86,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 27.86,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 27.86,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 27.88,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 27.88,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 27.91,
+  "who": "rosa-pestaña1",
+  "kind": "ws.close",
+  "host": "api.elevenlabs.io"
+ },
+ {
+  "t": 28.0,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 28.01,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 28.01,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/end",
+  "status": 200,
+  "body": "{\"ended\": true, \"call_id\": 4513}"
+ },
+ {
+  "t": 28.17,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/status",
+  "status": 200,
+  "body": "{\"ok\": true, \"applied\": true}"
+ },
+ {
+  "t": 28.55,
+  "who": "rosa-pestaña2",
+  "kind": "console.info",
+  "text": "[voz b4a1b0fb] screen.unmount {callId: 4513, ended: false}"
+ },
+ {
+  "t": 28.6,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] screen.unmount {callId: 4513, ended: true}"
+ },
+ {
+  "t": 28.6,
+  "who": "rosa-pestaña1",
+  "kind": "console.info",
+  "text": "[voz 640b1516] effect.desmontaje {callId: 4513}"
+ },
+ {
+  "t": 28.75,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 28.75,
+  "who": "rosa-pestaña1",
+  "kind": "http",
+  "path": "/api/voice/event",
+  "status": 204,
+  "body": ""
+ },
+ {
+  "t": 30.72,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 30.72,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 33.72,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 33.72,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 36.72,
+  "who": "rosa-pestaña1",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 36.73,
+  "who": "rosa-pestaña2",
+  "kind": "pantalla",
+  "line": null
+ },
+ {
+  "t": 42.77,
+  "who": "rosa-pestaña2",
+  "kind": "ui",
+  "action": "colgar (no disponible)",
+  "text": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"b"
+ },
+ {
+  "t": 45.81,
+  "who": "staff",
+  "kind": "fin",
+  "scenario": "B"
+ },
+ {
+  "t": 46.07,
+  "who": "staff",
+  "kind": "llamadas_al_final",
+  "calls": [
+   {
+    "id": 4513,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4512,
+    "status": "finalizada",
+    "purpose": "registro",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4511,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4510,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4509,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4508,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4507,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   },
+   {
+    "id": 4506,
+    "status": "finalizada",
+    "purpose": "prueba",
+    "provider": "elevenlabs"
+   }
+  ]
+ },
+ {
+  "t": 46.21,
+  "who": "staff",
+  "kind": "voz_al_final",
+  "activas": 0,
+  "en_fila": 0,
+  "sesiones": [
+   {
+    "id": "fe755c19",
+    "call_id": 4513,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "9f89beb0",
+    "call_id": 4511,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "7fd6f5f1",
+    "call_id": 4510,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "cf06c60a",
+    "call_id": 4509,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "f0e6b38c",
+    "call_id": 4512,
+    "state": "finalizada",
+    "ended_reason": "la persona colgó"
+   },
+   {
+    "id": "ada0dd55",
+    "call_id": 4508,
+    "state": "finalizada",
+    "ended_reason": "pestaña cerrada"
+   }
+  ]
+ }
+]

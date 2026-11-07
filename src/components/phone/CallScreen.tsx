@@ -1,26 +1,29 @@
 "use client";
 
-// Incoming call screen for the simulated phone and the live chat (RF-15). Fallback chain:
-//   1. ElevenLabs agent in the browser (signed URL)  2. fixed script with the browser's voice.
-// (Gemini Live is listed as an option in CLAUDE.md, but no Gemini implementation exists in the repository;
-//  see INFORME_E4.md.) If the live voice fails at any point, the same call continues with the script.
-// E5 (hito 2): the live voice follows an explicit state machine (src/lib/voice/machine.ts): one session per
-// call claimed on the server, idempotent start, "busy" when another device has the call or every line is
-// taken, and a reopened screen offers to reconnect instead of staying in "Conectando…".
+// Call screen CONTROLLER for the simulated phone and the live chat (RF-15). The view is CallView
+// (src/components/voice/CallView.tsx, props in src/lib/voice/contract.ts); this file only holds the logic:
+//   - the voice state machine (src/lib/voice/machine.ts): one session per call claimed on the server,
+//     idempotent start, busy when another device has the call or every line is taken;
+//   - LiveVoice (ElevenLabs in the browser) with heartbeat and pagehide;
+//   - the fixed script with the browser's voice, ONLY when the person chooses "Seguir por chat" (or the
+//     ?voz=guion plan B). If the voice cannot connect the screen says so: "No pudimos conectar la voz".
+// (Gemini Live is listed as an option in CLAUDE.md, but no Gemini implementation exists in the repository.)
 import { useEffect, useReducer, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Bot, MessageCircle, Mic, Phone, PhoneOff, RotateCcw, UserRound, Volume2, VolumeX } from "lucide-react";
-import { toast } from "sonner";
 import { post } from "@/lib/post";
 import type { Call } from "@/lib/types";
 import type { Option, Turn, VoiceAgent } from "@/lib/voice/agent";
 import { ScriptedVoiceAgent, stopSpeaking } from "@/lib/voice/scripted";
 import { ring } from "@/lib/voice/audio";
 import { bindDiag, newDiagId, voiceDiag } from "@/lib/voice/diag";
-import { initialVoiceState, isBusy, voiceReducer, voiceStateText } from "@/lib/voice/machine";
+import { initialVoiceState, isBusy, voiceReducer } from "@/lib/voice/machine";
+import type { AudioLevels, CallPhase, Caption } from "@/lib/voice/contract";
 import type { LiveVoiceControl, VoiceSession } from "@/components/voice/LiveVoice";
+import { CallView } from "@/components/voice/CallView";
 
 const LiveVoice = dynamic(() => import("@/components/voice/LiveVoice").then((m) => m.LiveVoice), { ssr: false });
+
+export const ESTABLISHMENT = "Hospital de demostración";
 
 const PURPOSE_LABEL: Record<string, string> = {
   confirmacion: "Confirmación de su cita",
@@ -42,43 +45,59 @@ type SessionResponse = {
   reason?: string;
 };
 
+/** Captions for CallView from the conversation turns. */
+export function toCaptions(turns: Turn[]): Caption[] {
+  return turns.map((t, i) => ({ id: i, who: t.who === "agente" ? "agente" : "persona", text: t.text }));
+}
+
+/** The person spoke last and the agent has not answered yet. */
+export function isThinking(turns: Turn[], speaking: boolean) {
+  return !speaking && turns.length > 0 && turns[turns.length - 1].who !== "agente";
+}
+
 export function CallScreen({
   call,
   auth,
-  name,
   onDone,
   outgoing,
 }: {
   call: Call;
   auth: { token?: string };
-  name: string;
+  /** kept for compatibility with the callers (the view no longer shows it) */
+  name?: string;
   onDone: () => void;
   /** registration started by the person: no ringing */
   outgoing?: boolean;
 }) {
   // a screen that opens on a call already "en curso" (tab reopened) offers to reconnect
-  const [phase, setPhase] = useState<"ringing" | "reconnect" | "connecting" | "talking" | "ended">(
+  const [phase, setPhase] = useState<"ringing" | "reconnect" | "connecting" | "talking" | "closing" | "ended">(
     outgoing ? "connecting" : call.status === "en_curso" ? "reconnect" : "ringing",
   );
   const [turns, setTurns] = useState<Turn[]>([]);
   const [options, setOptions] = useState<Option[]>([]);
-  const [sound, setSound] = useState(true);
   const [seconds, setSeconds] = useState(0);
   const [live, setLive] = useState<{ session: VoiceSession; voiceSessionId: string } | null>(null);
   const [speaking, setSpeaking] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [captionsVisible, setCaptionsVisible] = useState(true);
   const [provider, setProvider] = useState<"elevenlabs" | "guion" | null>(null);
   const [vs, dispatch] = useReducer(voiceReducer, initialVoiceState);
   const [failure, setFailure] = useState<string | null>(null);
   const agent = useRef<VoiceAgent | null>(null);
   const control = useRef<LiveVoiceControl | null>(null);
   const transcript = useRef<Turn[]>([]);
-  const logRef = useRef<HTMLOListElement>(null);
   const ended = useRef(false);
   const requesting = useRef(false);
   const queueId = useRef<string | null>(null);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sid] = useState(newDiagId);
   const answerClicks = useRef(0);
+
+  // stable audio getters for the wave (read inside requestAnimationFrame, never in React state)
+  const [levels] = useState<AudioLevels>(() => ({
+    input: () => control.current?.frequencies().input ?? null,
+    output: () => control.current?.frequencies().output ?? null,
+  }));
 
   useEffect(() => {
     voiceDiag(sid, "screen.mount", { callId: call.id, status: call.status, purpose: call.purpose ?? null, outgoing: !!outgoing });
@@ -105,10 +124,6 @@ export function CallScreen({
     return () => clearInterval(id);
   }, [phase]);
 
-  useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
-  }, [turns.length]);
-
   useEffect(() => () => stopSpeaking(), []);
 
   const autoStarted = useRef(false);
@@ -133,9 +148,11 @@ export function CallScreen({
 
   async function connect() {
     // plan B (and tests without a microphone): ?voz=guion forces the fixed script
-    if (new URLSearchParams(window.location.search).get("voz") === "guion") return fallback("Modo guion fijo (plan B)");
+    if (new URLSearchParams(window.location.search).get("voz") === "guion") return fallback("Modo guion fijo (plan B, ?voz=guion)");
     if (requesting.current || isBusy(vs) || ended.current) return;
     requesting.current = true;
+    setFailure(null);
+    setPhase("connecting");
     dispatch({ type: "START" });
     voiceDiag(sid, "session.request", { callId: call.id, queued: !!queueId.current });
     try {
@@ -153,7 +170,6 @@ export function CallScreen({
       }
       if (s.busy) {
         dispatch({ type: "SESSION_BUSY", kind: s.busy, position: s.position ?? null, queueId: s.queueId ?? null });
-        setPhase("connecting");
         if (s.busy === "capacidad") {
           queueId.current = s.queueId ?? null;
           retryTimer.current = setTimeout(() => {
@@ -163,13 +179,12 @@ export function CallScreen({
         }
         return;
       }
-      throw new Error(s.reason ?? "Voz en vivo no disponible");
+      throw new Error(s.reason ?? "La voz en vivo no está disponible ahora.");
     } catch (e) {
       // never fall back in silence: the screen says so and the person chooses (Reintentar / Seguir por chat)
       voiceDiag(sid, "voz.no_conecto", { callId: call.id, reason: (e as Error).message.slice(0, 140) });
       dispatch({ type: "SESSION_FAILED", message: (e as Error).message });
       setFailure((e as Error).message);
-      setPhase("connecting");
     } finally {
       requesting.current = false;
     }
@@ -179,13 +194,12 @@ export function CallScreen({
   async function fallback(reason: string) {
     voiceDiag(sid, "fallback", { callId: call.id, reason: reason.slice(0, 140), ended: ended.current, provider });
     if (ended.current) return;
-    setFailure(null);
     if (retryTimer.current) clearTimeout(retryTimer.current);
+    setFailure(null);
     setLive(null);
     if (provider === "guion") return;
     setProvider("guion");
     setPhase("talking");
-    toast("Llamada con el guion fijo", { description: reason });
     await setStatus("en_curso", undefined, undefined, { provider: "guion", fallback_reason: reason }).catch(() => {});
     try {
       const a = new ScriptedVoiceAgent(
@@ -195,13 +209,12 @@ export function CallScreen({
           onOptions: setOptions,
           onEnd: (result) => finish(result),
         },
-        sound,
+        !muted,
       );
       agent.current = a;
       await a.start();
     } catch (e) {
-      toast.error((e as Error).message);
-      finish("No se pudo iniciar la llamada");
+      setFailure((e as Error).message);
     }
   }
 
@@ -210,6 +223,7 @@ export function CallScreen({
     if (ended.current) return;
     ended.current = true;
     if (retryTimer.current) clearTimeout(retryTimer.current);
+    setPhase("closing");
     if (closeCall) await setStatus("finalizada", result, transcript.current).catch(() => {});
     setTimeout(() => {
       setPhase("ended");
@@ -242,104 +256,88 @@ export function CallScreen({
       return finish("La persona colgó");
     }
     if (agent.current) return agent.current.hangUp();
-    // waiting in the queue: leave it, the call ends
+    // waiting in the queue or after a failure: leave it, the call ends
     dispatch({ type: "HANGUP" });
     finish("Colgó");
   }
 
-  /** another device has this call: close this screen without touching the call */
+  /** another device has this call (or the call ended): close this screen without touching the call */
   function leave() {
-    voiceDiag(sid, "ui.cerrar_otro_dispositivo", { callId: call.id });
+    voiceDiag(sid, "ui.cerrar", { callId: call.id });
     ended.current = true;
     setPhase("ended");
     onDone();
   }
 
+  function toggleMute() {
+    const next = !muted;
+    setMuted(next);
+    if (live) control.current?.setMuted(next);
+    if (provider === "guion" && next) stopSpeaking();
+  }
+
+  function talkToPerson() {
+    voiceDiag(sid, "ui.hablar_con_persona", { callId: call.id, provider });
+    if (provider === "guion" && agent.current) return agent.current.choose("human");
+    if (live) control.current?.say("Quiero hablar con una persona, por favor.");
+  }
+
   if (phase === "ended") return null;
-  const mmss = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-  const busy = vs.name === "ocupado" ? vs : null;
+
+  const busy = vs.name === "ocupado" ? { kind: vs.kind, position: vs.position } : null;
   const failed = failure !== null && provider !== "guion" && !live;
-  const statusText =
-    failed
-      ? "No pudimos conectar la voz"
+  const viewPhase: CallPhase = failed
+    ? "sin_conexion"
+    : phase === "closing"
+      ? "finalizada"
       : phase === "ringing"
-      ? "Llamada entrante…"
-      : phase === "reconnect"
-        ? "La llamada sigue abierta"
-        : busy
-          ? voiceStateText(busy)
-          : phase === "connecting"
-            ? "Conectando…"
-            : provider === "elevenlabs"
-              ? `${mmss} · ${voiceStateText(vs, speaking)}`
-              : mmss;
+        ? "entrante"
+        : phase === "reconnect"
+          ? "reconectar"
+          : busy
+            ? "ocupado"
+            : provider === "guion"
+              ? "guion"
+              : vs.name === "activa"
+                ? "activa"
+                : vs.name === "finalizando"
+                  ? "finalizando"
+                  : vs.name === "finalizada"
+                    ? "finalizada"
+                    : "conectando";
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-[#10302f] text-white" role="dialog" aria-label="Llamada del asistente de citas">
-      <div className="flex flex-col items-center px-6 pb-4 pt-[calc(2.5rem+env(safe-area-inset-top))] text-center">
-        <div className={`relative grid size-20 place-items-center rounded-full bg-white/10 text-[#7ee0c9] ${phase === "ringing" || speaking ? "ring-pulse" : ""}`}>
-          <Bot className="size-9" aria-hidden />
-        </div>
-        <p className="mt-4 text-xl font-semibold">Asistente de citas</p>
-        <p className="text-sm text-white/70">{PURPOSE_LABEL[call.purpose ?? "confirmacion"]} · llamada automática de demostración</p>
-        <p className="mt-1 text-sm tabular-nums text-white/70" aria-live="polite">
-          {statusText}
-        </p>
-      </div>
-
-      {busy && (
-        <div className="mx-4 rounded-2xl bg-black/25 p-4 text-center text-sm" role="status">
-          {busy.kind === "otro_dispositivo" ? (
-            <p>Esta llamada ya se está atendiendo en otro teléfono o pestaña. Para evitar dos conversaciones a la vez, aquí no se abre otra.</p>
-          ) : (
-            <p>
-              Todas las líneas del asistente están ocupadas. {busy.position ? `Su lugar en la fila: ${busy.position}. ` : ""}Volvemos a intentar cada 10
-              segundos.
-            </p>
-          )}
-        </div>
-      )}
-
-      {failed && (
-        <div className="mx-4 rounded-2xl bg-black/25 p-4 text-center text-sm" role="alert">
-          <p className="font-semibold">No pudimos conectar la voz</p>
-          <p className="mt-1 text-white/75">{failure}</p>
-          <p className="mt-1 text-white/75">Puede reintentar o seguir respondiendo por escrito.</p>
-        </div>
-      )}
-
-      {phase === "reconnect" && (
-        <div className="mx-4 rounded-2xl bg-black/25 p-4 text-center text-sm">
-          <p>La conexión de voz se interrumpió. Puede volver a conectar o colgar.</p>
-        </div>
-      )}
-
-      {!failed && (phase === "talking" || (phase === "connecting" && !busy)) && (
-        <ol ref={logRef} className="mx-3 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-2xl bg-black/20 p-3" aria-live="polite">
-          {turns.map((t, i) => (
-            <li key={i} className={`bubble-in flex gap-2 ${t.who === "paciente" ? "justify-end" : ""}`}>
-              {t.who === "agente" && <Bot className="mt-1 size-4 shrink-0 text-[#7ee0c9]" aria-label="Asistente" />}
-              <p className={`max-w-[85%] rounded-2xl px-3 py-2 text-[15px] leading-snug ${t.who === "agente" ? "bg-white/10" : "bg-[#7ee0c9] text-[#0b2b2a]"}`}>
-                {t.text}
-              </p>
-              {t.who === "paciente" && <UserRound className="mt-1 size-4 shrink-0 text-white/60" aria-label={name} />}
-            </li>
-          ))}
-          {!turns.length && (
-            <li className="flex items-center justify-center gap-2 text-center text-sm text-white/60">
-              {provider === "elevenlabs" ? (
-                <>
-                  <Mic className="size-4" aria-hidden /> Hable con normalidad: el asistente le escucha.
-                </>
-              ) : (
-                "Conectando…"
-              )}
-            </li>
-          )}
-        </ol>
-      )}
-      {(phase === "ringing" || phase === "reconnect" || busy || failed) && <div className="flex-1" />}
-
+    <>
+      <CallView
+        phase={viewPhase}
+        purposeLabel={PURPOSE_LABEL[call.purpose ?? "confirmacion"] ?? "Llamada del asistente"}
+        establishment={ESTABLISHMENT}
+        agentSpeaking={speaking}
+        thinking={viewPhase === "activa" && isThinking(turns, speaking)}
+        muted={muted}
+        seconds={seconds}
+        captions={toCaptions(turns)}
+        captionsVisible={captionsVisible}
+        busy={busy}
+        errorMessage={failure}
+        levels={live ? levels : null}
+        scriptOptions={options.map((o) => ({ id: o.id, label: o.label, tone: o.tone === "primary" ? "primary" : "neutral" }))}
+        onScriptOption={(id) => agent.current?.choose(id)}
+        actions={{
+          answer: phase === "ringing" || phase === "reconnect" ? answer : undefined,
+          reject: phase === "ringing" ? reject : undefined,
+          hangUp,
+          toggleMute: live || provider === "guion" ? toggleMute : undefined,
+          toggleCaptions: () => setCaptionsVisible((v) => !v),
+          retry: failed ? () => void connect() : undefined,
+          continueByChat:
+            failed || busy?.kind === "capacidad" || viewPhase === "conectando"
+              ? () => fallback(failed ? `La persona eligió seguir por chat: ${failure}` : "Líneas de voz ocupadas o lentas: la persona eligió seguir por chat")
+              : undefined,
+          talkToPerson: live || provider === "guion" ? talkToPerson : undefined,
+          leave: busy?.kind === "otro_dispositivo" || phase === "closing" ? leave : undefined,
+        }}
+      />
       {live && (
         <LiveVoice
           sid={sid}
@@ -363,91 +361,6 @@ export function CallScreen({
           }}
         />
       )}
-
-      {phase === "talking" && options.length > 0 && (
-        <div className="grid gap-2 px-3 pt-3">
-          <p className="text-center text-xs text-white/60">Responda tocando una opción</p>
-          {options.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => agent.current?.choose(o.id)}
-              className={`press min-h-12 select-none rounded-xl px-4 text-[15px] font-semibold ${
-                o.tone === "primary" ? "bg-[#7ee0c9] text-[#0b2b2a]" : "bg-white/12 text-white active:bg-white/20"
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center justify-center gap-10 px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-5">
-        {phase === "ringing" ? (
-          <>
-            <RoundButton label="Rechazar" onClick={reject} className="bg-[#d92d20]">
-              <PhoneOff className="size-7" />
-            </RoundButton>
-            <RoundButton label="Contestar" onClick={answer} className="bg-[#17b26a]">
-              <Phone className="size-7" />
-            </RoundButton>
-          </>
-        ) : failed ? (
-          <>
-            <RoundButton label="Reintentar" onClick={() => void connect()} className="bg-[#17b26a]">
-              <RotateCcw className="size-7" />
-            </RoundButton>
-            <RoundButton label="Seguir por chat" onClick={() => fallback(`La persona eligió seguir por chat: ${failure}`)} className="bg-white/15">
-              <MessageCircle className="size-6" />
-            </RoundButton>
-            <RoundButton label="Colgar" onClick={hangUp} className="bg-[#d92d20]">
-              <PhoneOff className="size-7" />
-            </RoundButton>
-          </>
-        ) : busy?.kind === "otro_dispositivo" ? (
-          <RoundButton label="Cerrar" onClick={leave} className="bg-white/15">
-            <PhoneOff className="size-7" />
-          </RoundButton>
-        ) : (
-          <>
-            {phase === "reconnect" && (
-              <RoundButton label="Volver a conectar" onClick={answer} className="bg-[#17b26a]">
-                <RotateCcw className="size-7" />
-              </RoundButton>
-            )}
-            {busy?.kind === "capacidad" && (
-              <RoundButton label="Seguir por chat" onClick={() => fallback("Todas las líneas de voz están ocupadas: la persona eligió seguir por chat")} className="bg-white/15">
-                <MessageCircle className="size-6" />
-              </RoundButton>
-            )}
-            {provider === "guion" && (
-              <RoundButton
-                label={sound ? "Silenciar voz" : "Activar voz"}
-                onClick={() => {
-                  if (sound) stopSpeaking();
-                  setSound(!sound);
-                }}
-                className="bg-white/15"
-              >
-                {sound ? <Volume2 className="size-6" /> : <VolumeX className="size-6" />}
-              </RoundButton>
-            )}
-            <RoundButton label="Colgar" onClick={hangUp} className="bg-[#d92d20]">
-              <PhoneOff className="size-7" />
-            </RoundButton>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function RoundButton({ label, onClick, className, children }: { label: string; onClick: () => void; className: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <button aria-label={label} onClick={onClick} className={`press grid size-16 select-none place-items-center rounded-full ${className}`}>
-        {children}
-      </button>
-      <span className="text-xs text-white/80">{label}</span>
-    </div>
+    </>
   );
 }

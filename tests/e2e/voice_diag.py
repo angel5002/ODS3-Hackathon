@@ -72,7 +72,7 @@ class Recorder:
 
 
 async def status_line(page):
-    loc = page.locator('[role=dialog][aria-label="Llamada del asistente de citas"] p[aria-live]')
+    loc = page.locator('[role=dialog] [role=status], [role=dialog] p[aria-live]')
     try:
         if await loc.count():
             return (await loc.first.inner_text(timeout=1000)).strip()

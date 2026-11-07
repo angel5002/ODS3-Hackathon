@@ -4,7 +4,7 @@
 // browser, or the front-desk form as a fallback. No third-party logos, no phone number, no e-mail.
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ClipboardList, Info, MessageCircle, Mic, PhoneOff, SendHorizontal, Trash2, Volume2 } from "lucide-react";
+import { ArrowLeft, ClipboardList, Info, MessageCircle, Mic, SendHorizontal, Trash2, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { Brand } from "@/components/Brand";
 import { getJson, post } from "@/lib/post";
@@ -13,11 +13,13 @@ import { DISCLAIMER } from "@/lib/labels";
 import { ring, unlockAudio } from "@/lib/voice/audio";
 import type { Call } from "@/lib/types";
 import type { Turn } from "@/lib/voice/agent";
-import { CallScreen } from "@/components/phone/CallScreen";
+import { CallScreen, ESTABLISHMENT, isThinking, toCaptions } from "@/components/phone/CallScreen";
 import { RegisterForm } from "@/components/panel/WaitlistTab";
 import type { LiveVoiceControl, VoiceSession } from "@/components/voice/LiveVoice";
 import { bindDiag, newDiagId, voiceDiag } from "@/lib/voice/diag";
-import { initialVoiceState, isBusy, voiceReducer, voiceStateText } from "@/lib/voice/machine";
+import { initialVoiceState, isBusy, voiceReducer } from "@/lib/voice/machine";
+import type { AudioLevels, CallPhase } from "@/lib/voice/contract";
+import { CallView } from "@/components/voice/CallView";
 
 const LiveVoice = dynamic(() => import("@/components/voice/LiveVoice").then((m) => m.LiveVoice), { ssr: false });
 
@@ -398,13 +400,52 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
     void end("Colgó mientras esperaba");
   }
 
-  const busy = vs.name === "ocupado" ? vs : null;
-  const connectingOnly = vs.name === "solicitando" || (vs.name === "conectando" && !turns.length);
-  const showLog = !connectingOnly && (live !== null || vs.name === "finalizada" || vs.name === "finalizando" || vs.name === "activa");
+  const [muted, setMuted] = useState(false);
+  const [captionsVisible, setCaptionsVisible] = useState(true);
+  const [seconds, setSeconds] = useState(0);
+  const [closed, setClosed] = useState(false);
+  const [levels] = useState<AudioLevels>(() => ({
+    input: () => control.current?.frequencies().input ?? null,
+    output: () => control.current?.frequencies().output ?? null,
+  }));
+  useEffect(() => {
+    if (vs.name !== "activa") return;
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [vs.name]);
+
+  const busy = vs.name === "ocupado" ? { kind: vs.kind, position: vs.position } : null;
+  const viewPhase: CallPhase | null =
+    vs.name === "idle" || closed
+      ? null
+      : vs.name === "error"
+        ? "sin_conexion"
+        : busy
+          ? "ocupado"
+          : vs.name === "activa"
+            ? "activa"
+            : vs.name === "finalizando"
+              ? "finalizando"
+              : vs.name === "finalizada"
+                ? "finalizada"
+                : "conectando";
+
+  function continueByChat() {
+    if (callRef.current && vs.name === "error") {
+      post("/api/voice/status", {
+        callId: callRef.current,
+        status: "fallo",
+        result: "Siguió por chat",
+        fallback_reason: `La persona eligió seguir por chat: ${(reason || "la voz no conectó").slice(0, 100)}`,
+      }).catch(() => {});
+    }
+    if (live) control.current?.hangUp();
+    onDone();
+  }
 
   return (
-    <main className="flex flex-1 flex-col bg-[#10302f] p-4 text-white">
-      {vs.name === "idle" && (
+    <main className="relative flex flex-1 flex-col bg-[#10302f] p-4 text-white">
+      {viewPhase === null && (
         <div className="m-auto max-w-xs text-center">
           <p className="text-lg font-semibold">Hablar con el asistente</p>
           <p className="mt-2 text-sm text-white/75">Le hará las mismas preguntas que el chat, una a la vez. Use un nombre ficticio. No se graba la llamada.</p>
@@ -417,71 +458,37 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
           </button>
         </div>
       )}
-      {connectingOnly && (
-        <p className="m-auto text-white/75" aria-live="polite">
-          Conectando…
-        </p>
-      )}
-      {busy && (
-        <div className="m-auto max-w-xs text-center" role="status">
-          <p className="font-semibold">{voiceStateText(busy)}</p>
-          <p className="mt-1 text-sm text-white/75">
-            {busy.kind === "capacidad" ? "Volvemos a intentar cada 10 segundos. Mientras tanto puede seguir por el chat." : "Ya hay una llamada abierta en otra pestaña."}
-          </p>
-          <div className="mt-4 flex justify-center gap-2">
-            <button onClick={onDone} className="press min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]">
-              Continuar por chat
-            </button>
-            {busy.kind === "capacidad" && (
-              <button onClick={hangUp} className="press min-h-11 rounded-full bg-white/15 px-5 font-semibold">
-                Dejar de esperar
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-      {showLog && (
-        <>
-          <p className="text-center text-sm text-white/70" aria-live="polite">
-            {voiceStateText(vs, speaking)}
-          </p>
-          <ol className="mt-3 flex-1 space-y-2 overflow-y-auto rounded-2xl bg-black/20 p-3" aria-live="polite">
-            {turns.map((t, i) => (
-              <li key={i} className={`flex ${t.who === "paciente" ? "justify-end" : ""}`}>
-                <p className={`max-w-[85%] rounded-2xl px-3 py-2 text-[15px] ${t.who === "agente" ? "bg-white/10" : "bg-[#7ee0c9] text-[#0b2b2a]"}`}>{t.text}</p>
-              </li>
-            ))}
-          </ol>
-          {live ? (
-            <button onClick={hangUp} className="press mx-auto mt-4 grid size-16 place-items-center rounded-full bg-[#d92d20]" aria-label="Colgar">
-              <PhoneOff className="size-7" />
-            </button>
-          ) : (
-            <button onClick={onDone} className="press mx-auto mt-4 min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]">
-              Ver mi conversación
-            </button>
-          )}
-        </>
-      )}
-      {vs.name === "error" && (
-        <div className="m-auto max-w-xs text-center">
-          <p className="font-semibold">No pudimos conectar la voz</p>
-          <p className="mt-1 text-sm text-white/75">{reason || vs.message}</p>
-          <div className="mt-4 flex justify-center gap-2">
-            <button
-              onClick={() => {
-                if (callRef.current) post("/api/voice/status", { callId: callRef.current, status: "fallo", result: "Siguió por chat", fallback_reason: `La persona eligió seguir por chat: ${(reason || vs.message).slice(0, 100)}` }).catch(() => {});
-                onDone();
-              }}
-              className="press min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]"
-            >
-              Seguir por chat
-            </button>
-            <button onClick={start} className="press min-h-11 rounded-full bg-white/15 px-5 font-semibold">
-              Reintentar
-            </button>
-          </div>
-        </div>
+      {viewPhase && (
+        <CallView
+          phase={viewPhase}
+          purposeLabel="Registro de solicitud"
+          establishment={ESTABLISHMENT}
+          agentSpeaking={speaking}
+          thinking={viewPhase === "activa" && isThinking(turns, speaking)}
+          muted={muted}
+          seconds={seconds}
+          captions={toCaptions(turns)}
+          captionsVisible={captionsVisible}
+          busy={busy}
+          errorMessage={vs.name === "error" ? reason || vs.message : null}
+          levels={live ? levels : null}
+          scriptOptions={[]}
+          actions={{
+            hangUp,
+            toggleMute: live
+              ? () => {
+                  const next = !muted;
+                  setMuted(next);
+                  control.current?.setMuted(next);
+                }
+              : undefined,
+            toggleCaptions: () => setCaptionsVisible((v) => !v),
+            retry: vs.name === "error" ? () => void start() : undefined,
+            continueByChat,
+            talkToPerson: live ? () => control.current?.say("Quiero hablar con una persona, por favor.") : undefined,
+            leave: vs.name === "finalizada" ? () => setClosed(true) : busy?.kind === "otro_dispositivo" ? onDone : undefined,
+          }}
+        />
       )}
       {live && (
         <LiveVoice

@@ -14,7 +14,13 @@ import { voiceDiag } from "@/lib/voice/diag";
 import type { VoiceEvent } from "@/lib/voice/machine";
 
 export type VoiceSession = { signedUrl: string; dynamicVariables: Record<string, string>; agent: string };
-export type LiveVoiceControl = { hangUp: () => void; setMuted: (m: boolean) => void; frequencies: () => { input: Uint8Array | null; output: Uint8Array | null } };
+export type LiveVoiceControl = {
+  hangUp: () => void;
+  setMuted: (m: boolean) => void;
+  /** a typed message to the agent (e.g. "Quiero hablar con una persona") */
+  say: (text: string) => void;
+  frequencies: () => { input: Uint8Array | null; output: Uint8Array | null };
+};
 
 const HEARTBEAT_MS = 10_000;
 // clocks read inside SDK callbacks (never during render)
@@ -153,6 +159,13 @@ function Runner({ sid, callId, voiceSessionId, session, dispatch, onTurn, onSpea
         convRef.current.endSession();
       },
       setMuted: (m) => convRef.current.setMuted(m),
+      say: (text) => {
+        try {
+          convRef.current.sendUserMessage(text);
+        } catch {
+          // not connected yet
+        }
+      },
       frequencies: () => {
         try {
           return { input: convRef.current.getInputByteFrequencyData(), output: convRef.current.getOutputByteFrequencyData() };
