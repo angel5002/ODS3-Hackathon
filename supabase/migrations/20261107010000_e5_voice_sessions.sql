@@ -46,7 +46,7 @@ grant usage, select on sequence public.voice_events_id_seq to service_role;
 
 -- ---------------------------------------------------------------- helpers
 
-create or replace function public.voice_log(p_session uuid, p_call bigint, p_source text, p_kind text, p_detail jsonb default '{}'::jsonb)
+create function public.voice_log(p_session uuid, p_call bigint, p_source text, p_kind text, p_detail jsonb default '{}'::jsonb)
 returns boolean language plpgsql set search_path = '' as $$
 declare v_recent int;
 begin
@@ -62,7 +62,7 @@ begin
 end $$;
 
 -- conditional call status change (the voice code never overwrites a call that already moved on)
-create or replace function public.voice_call_status(p_call bigint, p_to text, p_result text default null)
+create function public.voice_call_status(p_call bigint, p_to text, p_result text default null)
 returns boolean language plpgsql set search_path = '' as $$
 declare c public.calls;
 begin
@@ -76,7 +76,7 @@ begin
 end $$;
 
 -- sessions without a heartbeat for 30 s are abandoned; their call is closed if nobody else is on it
-create or replace function public.voice_expire()
+create function public.voice_expire()
 returns int language plpgsql set search_path = '' as $$
 declare r record; v int := 0;
 begin
@@ -104,7 +104,7 @@ end $$;
 --   {ok: false, reason: 'en_otro_dispositivo'}          another tab/device already has the live session
 --   {ok: false, reason: 'ocupado', queue_id, position}  capacity reached: waits in a simple FIFO queue
 --   {ok: false, reason: 'terminada'}                    the call is over
-create or replace function public.voice_claim(p_call bigint, p_owner_kind text, p_max int, p_queue uuid default null)
+create function public.voice_claim(p_call bigint, p_owner_kind text, p_max int, p_queue uuid default null)
 returns jsonb language plpgsql set search_path = '' as $$
 declare c public.calls; v_live int; v_ahead int; v_id uuid; q public.voice_sessions;
 begin
@@ -152,7 +152,7 @@ end $$;
 
 -- Heartbeat and state change of a session (conditional transitions). Returns {alive, state, call_status}.
 -- p_state null = heartbeat only. Terminal states: finalizada, error, rechazada.
-create or replace function public.voice_update(p_session uuid, p_state text default null, p_conversation text default null,
+create function public.voice_update(p_session uuid, p_state text default null, p_conversation text default null,
                                                p_reason text default null, p_agent text default null)
 returns jsonb language plpgsql set search_path = '' as $$
 declare s public.voice_sessions; v_call_status text; v_ok boolean := true;
@@ -195,7 +195,7 @@ end $$;
 
 -- End of a session from the browser (hang up, pagehide beacon, unmount). With p_close_call the call is closed
 -- too, unless another live session took over.
-create or replace function public.voice_end(p_session uuid, p_reason text, p_close_call boolean default false, p_result text default null)
+create function public.voice_end(p_session uuid, p_reason text, p_close_call boolean default false, p_result text default null)
 returns jsonb language plpgsql set search_path = '' as $$
 declare s public.voice_sessions;
 begin
@@ -218,7 +218,7 @@ begin
 end $$;
 
 -- Definitive close from the ElevenLabs post-call webhook (by conversation id).
-create or replace function public.voice_end_by_conversation(p_conversation text, p_reason text)
+create function public.voice_end_by_conversation(p_conversation text, p_reason text)
 returns jsonb language plpgsql set search_path = '' as $$
 declare s public.voice_sessions;
 begin
@@ -232,7 +232,7 @@ begin
 end $$;
 
 -- What /demo shows: active sessions, queue and the latest voice events (no personal data).
-create or replace function public.voice_overview()
+create function public.voice_overview()
 returns jsonb language sql stable set search_path = '' as $$
   select jsonb_build_object(
     'active', (select count(*) from public.voice_sessions where state in ('solicitando', 'conectando', 'activa')),

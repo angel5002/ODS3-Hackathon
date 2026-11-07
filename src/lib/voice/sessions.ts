@@ -6,10 +6,10 @@ import type { CallRow } from "./tools";
 
 export const HEARTBEAT_MS = 10_000;
 
-/** Simultaneous voice sessions allowed (default: the 10 of the ElevenLabs Creator plan). */
+/** Simultaneous voice sessions allowed (default 8: the Creator plan allows 10, 2 are kept for test calls). */
 export function maxConcurrent() {
   const n = Number(process.env.VOICE_MAX_CONCURRENT);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 10;
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 8;
 }
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

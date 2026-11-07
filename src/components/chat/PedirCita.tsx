@@ -465,11 +465,17 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
       )}
       {vs.name === "error" && (
         <div className="m-auto max-w-xs text-center">
-          <p className="font-semibold">La llamada no está disponible</p>
+          <p className="font-semibold">No pudimos conectar la voz</p>
           <p className="mt-1 text-sm text-white/75">{reason || vs.message}</p>
           <div className="mt-4 flex justify-center gap-2">
-            <button onClick={onDone} className="press min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]">
-              Usar el chat
+            <button
+              onClick={() => {
+                if (callRef.current) post("/api/voice/status", { callId: callRef.current, status: "fallo", result: "Siguió por chat", fallback_reason: `La persona eligió seguir por chat: ${(reason || vs.message).slice(0, 100)}` }).catch(() => {});
+                onDone();
+              }}
+              className="press min-h-11 rounded-full bg-white px-5 font-semibold text-[#10302f]"
+            >
+              Seguir por chat
             </button>
             <button onClick={start} className="press min-h-11 rounded-full bg-white/15 px-5 font-semibold">
               Reintentar
@@ -493,9 +499,8 @@ function VoiceRegister({ onDone, ready }: { onDone: () => void; ready: boolean }
           onEnd={(kind, r) => {
             if (kind === "error") {
               voiceDiag(sid, "fail", { callId, message: r.slice(0, 140) });
-              setReason(`La voz falló (${r}). Puede seguir por el chat o el formulario.`);
+              setReason(`La conexión de voz se cortó (${r}).`);
               setLive(null);
-              if (callRef.current) post("/api/voice/status", { callId: callRef.current, status: "fallo", result: r.slice(0, 120) }).catch(() => {});
               return;
             }
             void end(r, kind !== "remoto");

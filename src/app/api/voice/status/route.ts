@@ -3,6 +3,7 @@
 // already ended is never reopened or overwritten by a late request from another tab.
 import { fail, ok } from "@/lib/api";
 import { rpc, serverDb } from "@/lib/supabase/server";
+import { logEvent } from "@/lib/voice/sessions";
 import { ownsCall } from "@/lib/voice/auth";
 import { loadCall } from "@/lib/voice/tools";
 
@@ -28,6 +29,10 @@ export async function POST(req: Request) {
       patch.actions = [...((patch.actions as unknown[]) ?? call.actions ?? []), { at: new Date().toISOString(), tool: "respaldo", result: body.fallback_reason.slice(0, 160) }];
     }
     if (Object.keys(patch).length) await serverDb().from("calls").update(patch).eq("id", call.id);
+    // E5: every fallback to the fixed script / chat is recorded with its reason
+    if (typeof body.fallback_reason === "string") {
+      await logEvent(null, call.id, "servidor", "respaldo.guion", { motivo: body.fallback_reason.slice(0, 160) });
+    }
     // the transcript is kept only on screen; we store the result line, never the full conversation
     const applied = await rpc<boolean>("voice_call_status", {
       p_call: call.id,

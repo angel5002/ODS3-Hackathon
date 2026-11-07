@@ -9,7 +9,7 @@
 // taken, and a reopened screen offers to reconnect instead of staying in "Conectando…".
 import { useEffect, useReducer, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Bot, Mic, Phone, PhoneOff, RotateCcw, UserRound, Volume2, VolumeX } from "lucide-react";
+import { Bot, MessageCircle, Mic, Phone, PhoneOff, RotateCcw, UserRound, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { post } from "@/lib/post";
 import type { Call } from "@/lib/types";
@@ -68,6 +68,7 @@ export function CallScreen({
   const [speaking, setSpeaking] = useState(false);
   const [provider, setProvider] = useState<"elevenlabs" | "guion" | null>(null);
   const [vs, dispatch] = useReducer(voiceReducer, initialVoiceState);
+  const [failure, setFailure] = useState<string | null>(null);
   const agent = useRef<VoiceAgent | null>(null);
   const control = useRef<LiveVoiceControl | null>(null);
   const transcript = useRef<Turn[]>([]);
@@ -164,16 +165,21 @@ export function CallScreen({
       }
       throw new Error(s.reason ?? "Voz en vivo no disponible");
     } catch (e) {
+      // never fall back in silence: the screen says so and the person chooses (Reintentar / Seguir por chat)
+      voiceDiag(sid, "voz.no_conecto", { callId: call.id, reason: (e as Error).message.slice(0, 140) });
       dispatch({ type: "SESSION_FAILED", message: (e as Error).message });
-      fallback((e as Error).message);
+      setFailure((e as Error).message);
+      setPhase("connecting");
     } finally {
       requesting.current = false;
     }
   }
 
+  /** Fixed script, only when the person chooses it ("Seguir por chat") or the ?voz=guion plan B. Logged with its reason. */
   async function fallback(reason: string) {
     voiceDiag(sid, "fallback", { callId: call.id, reason: reason.slice(0, 140), ended: ended.current, provider });
     if (ended.current) return;
+    setFailure(null);
     if (retryTimer.current) clearTimeout(retryTimer.current);
     setLive(null);
     if (provider === "guion") return;
@@ -252,8 +258,11 @@ export function CallScreen({
   if (phase === "ended") return null;
   const mmss = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   const busy = vs.name === "ocupado" ? vs : null;
+  const failed = failure !== null && provider !== "guion" && !live;
   const statusText =
-    phase === "ringing"
+    failed
+      ? "No pudimos conectar la voz"
+      : phase === "ringing"
       ? "Llamada entrante…"
       : phase === "reconnect"
         ? "La llamada sigue abierta"
@@ -291,13 +300,21 @@ export function CallScreen({
         </div>
       )}
 
+      {failed && (
+        <div className="mx-4 rounded-2xl bg-black/25 p-4 text-center text-sm" role="alert">
+          <p className="font-semibold">No pudimos conectar la voz</p>
+          <p className="mt-1 text-white/75">{failure}</p>
+          <p className="mt-1 text-white/75">Puede reintentar o seguir respondiendo por escrito.</p>
+        </div>
+      )}
+
       {phase === "reconnect" && (
         <div className="mx-4 rounded-2xl bg-black/25 p-4 text-center text-sm">
           <p>La conexión de voz se interrumpió. Puede volver a conectar o colgar.</p>
         </div>
       )}
 
-      {(phase === "talking" || (phase === "connecting" && !busy)) && (
+      {!failed && (phase === "talking" || (phase === "connecting" && !busy)) && (
         <ol ref={logRef} className="mx-3 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-2xl bg-black/20 p-3" aria-live="polite">
           {turns.map((t, i) => (
             <li key={i} className={`bubble-in flex gap-2 ${t.who === "paciente" ? "justify-end" : ""}`}>
@@ -321,7 +338,7 @@ export function CallScreen({
           )}
         </ol>
       )}
-      {(phase === "ringing" || phase === "reconnect" || busy) && <div className="flex-1" />}
+      {(phase === "ringing" || phase === "reconnect" || busy || failed) && <div className="flex-1" />}
 
       {live && (
         <LiveVoice
@@ -335,7 +352,12 @@ export function CallScreen({
           onSpeaking={setSpeaking}
           onConnected={(ms) => post("/api/voice/status", { token: auth.token, callId: call.id, status: "en_curso", first_turn_ms: ms }).catch(() => {})}
           onEnd={(kind, reason) => {
-            if (kind === "error") return fallback(`La voz en vivo falló (${reason}). Seguimos con el guion fijo.`);
+            if (kind === "error") {
+              // the live voice dropped: say it and let the person choose
+              setLive(null);
+              setFailure(reason);
+              return;
+            }
             // ended elsewhere (other device, staff, server): the call is already closed there
             finish(reason, kind !== "remoto");
           }}
@@ -369,6 +391,18 @@ export function CallScreen({
               <Phone className="size-7" />
             </RoundButton>
           </>
+        ) : failed ? (
+          <>
+            <RoundButton label="Reintentar" onClick={() => void connect()} className="bg-[#17b26a]">
+              <RotateCcw className="size-7" />
+            </RoundButton>
+            <RoundButton label="Seguir por chat" onClick={() => fallback(`La persona eligió seguir por chat: ${failure}`)} className="bg-white/15">
+              <MessageCircle className="size-6" />
+            </RoundButton>
+            <RoundButton label="Colgar" onClick={hangUp} className="bg-[#d92d20]">
+              <PhoneOff className="size-7" />
+            </RoundButton>
+          </>
         ) : busy?.kind === "otro_dispositivo" ? (
           <RoundButton label="Cerrar" onClick={leave} className="bg-white/15">
             <PhoneOff className="size-7" />
@@ -381,8 +415,8 @@ export function CallScreen({
               </RoundButton>
             )}
             {busy?.kind === "capacidad" && (
-              <RoundButton label="Seguir sin voz" onClick={() => fallback("Todas las líneas de voz están ocupadas")} className="bg-white/15">
-                <Volume2 className="size-6" />
+              <RoundButton label="Seguir por chat" onClick={() => fallback("Todas las líneas de voz están ocupadas: la persona eligió seguir por chat")} className="bg-white/15">
+                <MessageCircle className="size-6" />
               </RoundButton>
             )}
             {provider === "guion" && (
