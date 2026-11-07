@@ -185,10 +185,75 @@ def mode_gaps(states, captions):
     return out
 
 
+class StaffApi:
+    """Local server: the staff API with the local test PIN."""
+
+    def __init__(self, ctx, pin):
+        self.ctx, self.pin, self.ok = ctx, pin, False
+
+    async def _login(self):
+        if not self.ok:
+            r = await self.ctx.request.post("/api/access", data={"pin": self.pin, "role": "admision"})
+            assert r.ok, f"PIN local rechazado ({r.status})"
+            self.ok = True
+
+    async def patient(self, token):
+        await self._login()
+        live = await (await self.ctx.request.get("/api/staff/data?view=live")).json()
+        return {p["token"]: p["id"] for p in live["phones"]}[token]
+
+    async def test_call(self, patient):
+        r = await self.ctx.request.post("/api/staff", data={"action": "test_call", "patientId": patient})
+        return (await r.json()).get("callId")
+
+    async def status(self, call_id):
+        calls = (await (await self.ctx.request.get("/api/staff/data?view=live")).json())["calls"]
+        return next((c.get("status") for c in calls if c.get("id") == call_id), None)
+
+    async def end_call(self, call_id):
+        await self.ctx.request.post("/api/staff", data={"action": "end_call", "callId": call_id})
+
+
+class StaffRpc:
+    """Deployed alias (no staff PIN): the same database functions the staff actions call."""
+
+    def __init__(self, ctx):
+        url, key = _os.environ.get("NEXT_PUBLIC_SUPABASE_URL"), _os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        if not url or not key:
+            raise SystemExit("--rpc necesita NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en el entorno")
+        self.ctx, self.url, self.h = ctx, url.rstrip("/"), {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+
+    async def _get(self, path):
+        r = await self.ctx.request.get(f"{self.url}/rest/v1/{path}", headers=self.h)
+        assert r.ok, f"REST {r.status}"
+        return await r.json()
+
+    async def _rpc(self, fn, args):
+        r = await self.ctx.request.post(f"{self.url}/rest/v1/rpc/{fn}", headers=self.h, data=json.dumps(args))
+        assert r.ok, f"RPC {fn} {r.status}"
+        return await r.json() if (await r.body()) else None
+
+    async def patient(self, token):
+        return (await self._get(f"patients?token=eq.{token}&select=id"))[0]["id"]
+
+    async def test_call(self, patient):
+        return await self._rpc("start_test_call", {"p_session": None, "p_patient": patient})
+
+    async def status(self, call_id):
+        rows = await self._get(f"calls?id=eq.{int(call_id)}&select=status")
+        return rows[0]["status"] if rows else None
+
+    async def end_call(self, call_id):
+        await self._rpc("update_call", {"p_call": int(call_id), "p_status": "finalizada", "p_result": "Terminada por la prueba de voz", "p_transcript": None})
+
+
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:3110")
-    ap.add_argument("--pin", required=True)
+    ap.add_argument("--pin", default="", help="local test PIN (staff API of a local server)")
+    ap.add_argument("--rpc", action="store_true",
+                    help="deployed alias: create/close the test call with the start_test_call/update_call RPCs, using "
+                         "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from the environment (never printed)")
     ap.add_argument("--audio", required=True)
     ap.add_argument("--who", default="valeria")
     ap.add_argument("--cpu", type=float, default=4)
@@ -211,11 +276,8 @@ async def main():
             "--autoplay-policy=no-user-gesture-required",
         ])
         staff = await browser.new_context(base_url=a.base)
-        r = await staff.request.post("/api/access", data={"pin": a.pin, "role": "admision"})
-        assert r.ok, f"PIN local rechazado ({r.status})"
-        live = await (await staff.request.get("/api/staff/data?view=live")).json()
-        phones = {p["token"]: p["id"] for p in live["phones"]}
-        patient = phones[a.who]
+        ops = StaffRpc(staff) if a.rpc else StaffApi(staff, a.pin)
+        patient = await ops.patient(a.who)
 
         device = dict(pw.devices["Pixel 7"])
         ctx = await browser.new_context(**device, base_url=a.base, permissions=["microphone"],
@@ -237,8 +299,7 @@ async def main():
             await cdp.send("Network.enable")
             await cdp.send("Network.emulateNetworkConditions", NETWORKS[a.net])
 
-        r = await staff.request.post("/api/staff", data={"action": "test_call", "patientId": patient})
-        call_id = (await r.json()).get("callId")
+        call_id = await ops.test_call(patient)
         print(f"llamada de prueba {call_id} a {a.who}", flush=True)
         t_answer = None
         try:
@@ -263,12 +324,10 @@ async def main():
                          transport: M.transport, ended: M.ended, now: performance.now(), voz: V ? V.events : null }; }""")
         finally:
             # close only this call (never the team's)
-            calls = (await (await staff.request.get("/api/staff/data?view=live")).json())["calls"]
-            mine = [c for c in calls if c.get("id") == call_id]
-            if mine and mine[0].get("status") in ("sonando", "en_curso"):
-                await staff.request.post("/api/staff", data={"action": "end_call", "callId": call_id})
+            if await ops.status(call_id) in ("sonando", "en_curso"):
+                await ops.end_call(call_id)
                 print(f"llamada {call_id} cerrada por la prueba (seguía abierta)", flush=True)
-            final = [c for c in (await (await staff.request.get("/api/staff/data?view=live")).json())["calls"] if c.get("id") == call_id]
+            final = [{"status": await ops.status(call_id)}]
             await ctx.close()
             await staff.close()
             await browser.close()
