@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { fail } from "@/lib/api";
 import { rpc, serverDb } from "@/lib/supabase/server";
+import { demoOverview } from "./overview";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,9 @@ export async function GET(req: Request) {
       }
       case "voice":
         return NextResponse.json(await rpc("voice_overview"));
+      case "overview":
+        // /demo control center: stages, waiting list, slots and the assignment rule in one read
+        return NextResponse.json(await demoOverview());
       case "live":
         return NextResponse.json(await rpc("live_overview"));
       case "params": {
