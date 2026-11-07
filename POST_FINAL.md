@@ -5,7 +5,7 @@ Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ni
 ## 0. Producción ya corre la E5 (7/11, autorizado por el equipo)
 
 - **URL final (la de los QR):** https://ods3-hackathon.vercel.app
-- **Despliegue de producción de la E5:** `dpl_2uXrhLuXpiBEYtTAXFPj1YYJZSkx` (e5 `3b38c77`, desplegado con `--prod`, variables de Production). Después, el push de `main` hace que Vercel cree otro despliegue de producción desde git con el mismo código.
+- **Despliegue de producción vigente:** `dpl_HzEaCKPyK8hrpnqW6MFUhXwpRTiz`, construido por Vercel desde git (`main` = `e5` `c187c6f`). Antes hubo un despliegue directo con `--prod` (`dpl_2uXrhLuXpiBEYtTAXFPj1YYJZSkx`, e5 `3b38c77`) y un intento desde git que falló sin afectar producción (`dpl_7eatK5K5dvtDsbueQ2ZEGqHSeyeq`: `.vercelignore` excluía `src/video/`; corregido a `/video/`).
 - **Para revertir:** volver al despliegue anterior, `dpl_HTUNbr1oZAnB9eAum3W7h1SfhebS` (código E4, 6/11 06:00 UTC). En Vercel: Deployments → ese despliegue → *Instant Rollback* (o *Promote*). Y `breakeven_r` de vuelta a 0.053: `update public.params set value = 0.053 where key = 'breakeven_r';`.
 - **Lo que se aplicó del plan de merge:** solo `breakeven_r` = 0.052 (`supabase/data/20261107_breakeven_v51.sql`). **No** se aplicó `supabase/merge/20261107_v51_switch.sql`: reescribe 7 funciones existentes y la E5 ya llama a las `_v51` directamente. Queda para después de la final, con `test:priority`. Tampoco se cambió el texto «Hospital María Auxiliadora» de `send_reminders` (ver `docs/plan_merge.md` §2.3).
 - **Variables:** Production tiene todas las que usa la E5. La única diferencia con Preview es `VERCEL_PREVIEW_FEEDBACK_ENABLED` (solo Preview).
