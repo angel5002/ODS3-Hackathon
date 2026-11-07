@@ -19,13 +19,29 @@ Este documento reemplaza al estilo sobrio de E5 estilo (Public Sans y radios de 
 | 9 | Los colores de estado y de riesgo se mantienen (con tintes un poco más claros). | Son funcionales y siempre van con palabra e icono. |
 | 10 | Los recuadros oscuros (`night`) pasan a casi negro #161b1a, con el acento claro `mint` #9fd8cc. | La tarjeta oscura de Stoic («sleep better»). |
 | 11 | Las pulsaciones encogen a 0.98 durante 120 ms (`.press`). | Confirman el toque sin mover el diseño (Emil Kowalski: los botones deben sentirse escuchados). |
+| 12 | Los iconos son de línea y monocromos. Excepción: los iconos de estado del panel conservan el tono de su estado, y siempre van con la palabra. | Los iconos de estado ayudan al personal a recorrer siete contadores de un vistazo. |
+| 13 | En la llamada, el disco central es casi negro con la palabra en blanco (DM Serif Display). Pasa a grafito al terminar o al fallar la conexión. | Es el punto focal de «Breathe»: un solo elemento fuerte y todo lo demás en silencio. |
+| 14 | La voz de la persona se dibuja en grafito, no en naranja. | Así el único color de la pantalla es el de la IA. El estado siempre se dice además con una palabra. |
+| 15 | En `/demo` no se tocó nada (lo rediseña el frente D con estos tokens). | Reparto de frentes. |
 
 ## Reglas de texto (en todas las pantallas)
 
 - Un título, una línea de apoyo y las acciones. Lo demás aparece al tocar o no existe.
 - Ningún texto se corta con «…»: las líneas largas se ajustan a varias líneas (`text-pretty`) o se acortan en la redacción.
 - El aviso de demostración y la fuente de los datos van en **una línea discreta al pie**, nunca dentro de una llamada. El texto exacto lo fija `DISCLAIMER`.
-- Sin jerga interna: «regulación ciega» → «Asignar prioridad sin ver la identidad»; «efecto dominó» → «en cadena»; el rol «Call center» → «Central de llamadas» (solo la etiqueta en `src/lib/auth.ts`; el identificador `callcenter` no cambia).
+- Sin jerga interna:
+  - «Regulación clínica» y «regulación ciega» → «Asignar prioridad», con una línea: «Sin nombre, documento, seguro ni distrito: solo cuenta la necesidad clínica.»
+  - «Pendiente de regulación» → «Sin prioridad asignada».
+  - «efecto dominó» → «en cadena».
+  - El rol «Call center» → «Central de llamadas»: solo cambia la etiqueta en `src/lib/auth.ts`; el identificador `callcenter` no cambia. En la barra del personal se lee «Llamadas».
+- **Los párrafos de explicación** de las pantallas del personal se redujeron a una línea. El detalle queda en el `title`, que se ve al pasar el cursor, o tras «Ver guion», que se abre al tocar.
+- **El pie de página** es una sola línea: el aviso de demostración y la fuente de los datos (ODC-BY).
+- **/pedir-cita:**
+  - el título «¿Necesita una cita?» con una línea de apoyo;
+  - una acción principal, «Chatear con el asistente», en una píldora casi negra;
+  - dos alternativas en tarjetas pequeñas, «Hablar con el asistente» y «Formulario»;
+  - una línea de emergencia (106, SAMU).
+  - Los nombres accesibles que usan las pruebas de punta a punta no cambian: «Activar sonido y llamadas», «Teléfono simulado de…», «Hablar con el asistente» y «Chatear con el asistente».
 
 ## Accesibilidad
 
@@ -47,20 +63,47 @@ Basada en la pantalla «Breathe» de Stoic. `src/components/voice/CallView.tsx` 
 - **Las demás fases** (entrante, reconectar, ocupado, sin conexión, guion y finalizada) usan el mismo esqueleto: una o dos palabras en el disco, un título y una línea bajo los círculos, y sus acciones. Así, al conectar, al colgar y al pasar de una fase a otra solo cambian la palabra y el movimiento.
 - **«Hablar con una persona» y «Ocultar subtítulos»** aparecen al tocar el disco y se cierran solos a los 8 s. La persona también puede pedirlo de viva voz: el asistente transfiere.
 - **La línea de seguridad** («Nunca pedimos pagos…») sale de la llamada: la dice el asistente y aparece en la pantalla de inicio de voz.
-- **Subtítulos:** `src/lib/voice/captions.ts`.
-  - `tailCaption` muestra la última frase. Si no cabe, muestra su final desde una cláusula o una palabra entera, sin «…».
+- **Subtítulos:** `src/lib/voice/captions.ts`, un solo archivo compartido con la pista de voz.
+  - `useRevealedCaption` (de la pista de voz) muestra las palabras del asistente al ritmo de su voz.
+  - Luego, `tailCaption` muestra la última frase. Si no cabe, muestra su final desde una cláusula o una palabra entera, sin «…».
   - `tailSentences` es para el guion fijo: muestra las últimas frases completas que caben, para que la pregunta conserve su contexto.
-  - Las pruebas están en `tests/captions.test.ts`.
-- **Props opcionales nuevas** en `src/lib/voice/contract.ts`. Todas son opcionales y no cambian el comportamiento si no se pasan.
-  - `pushToTalk?: boolean`: reemplaza Silenciar por «Mantener para hablar».
-  - `actions.holdToTalk?: (pressed) => void`: se llama con `true` al presionar y con `false` al soltar, al salir el puntero o al perder el foco la ventana. La lógica la conecta otro frente.
+  - Las pruebas están en `tests/captions.test.ts` y `tests/voice-captions.test.ts`.
+- **Props opcionales** en `src/lib/voice/contract.ts`, unificadas con la pista de voz. Si no se pasan, no cambian nada.
+  - `pushToTalk?: { talking, start, end }` (modo sala ruidosa, de la pista de voz): Respira reemplaza Silenciar por «Mantener para hablar».
+    - Al presionar (puntero, Espacio o Enter) llama a `start()`.
+    - Al soltar, al cancelarse el puntero, al perder la captura o al perder el foco la ventana, llama a `end()`.
+    - Mientras no se presiona, el disco dice «Su turno».
+    - Como el botón ya existe, `PUSH_TO_TALK_BUTTON_READY = true`: `CallScreen` lo conecta con el push-to-talk de `LiveVoice`.
   - `scene?: boolean`: oculta los controles y el menú, para reproducir una escena en el proyector.
 - **Rendimiento:**
   - se dibuja en `<canvas>` con `requestAnimationFrame`;
   - no hay estado de React por cuadro ni asignaciones de memoria por cuadro (arreglos tipados, colores leídos una vez, transparencia con `globalAlpha`);
-  - el DPR se limita a 2;
+  - el DPR se limita a 1.5: con 2, el p95 se duplicaba en un Pixel 7 emulado;
   - el bucle se detiene cuando nada se mueve, va a 30 fps en los modos lentos y se pausa con la pestaña oculta.
   - Las mediciones están en la sección «Rendimiento medido».
+
+### Rendimiento medido
+
+- **Condiciones:**
+  - Playwright con Chromium y el perfil Pixel 7 (412 × 839, DPR 2.625);
+  - CPU 4 veces más lenta (`Emulation.setCPUThrottlingRate`);
+  - `/dev/llamada?estado=activa-auto` con audio simulado: el asistente habla, la persona habla y el asistente piensa;
+  - 12 s por corrida, tras 3 s de calentamiento.
+- **Qué se midió:**
+  - los intervalos entre cuadros (`requestAnimationFrame`);
+  - las tareas largas (`longtask`);
+  - `TaskDuration` y `ScriptDuration` de CDP, por segundo.
+
+| Corrida | fps | p50 | p95 | máx. | Tareas largas | CPU total (ms/s) | Script (ms/s) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Animado, DPR 2 (primera versión) | 55.7 | 16.7 ms | 33.3 ms | 66.6 ms | 0 | 834 | 133 |
+| **Animado, DPR 1.5 (final)** | **57.8** | **16.7 ms** | **16.8 ms** | 50.1 ms | **0** | 655 | 124 |
+| Estático (`prefers-reduced-motion`) | 59.5 | 16.7 ms | 16.8 ms | 33.4 ms | 0 | 166 | 91 |
+
+**Lectura:**
+- El script de Respira cuesta unos 33 ms por segundo, contando el generador de audio simulado de la página de desarrollo; con la CPU cuatro veces más lenta, eso es menos de 0.6 ms por cuadro.
+- El resto de la diferencia es rasterizar el lienzo. Chromium sin pantalla lo hace por software; en un teléfono real lo hace la GPU.
+- No hubo ninguna tarea larga con animación, así que el hilo principal queda libre para el audio.
 - **Respaldo:** la pantalla anterior, con la onda, queda en `CallViewClassic.tsx` y `VoiceWave.tsx`, según la regla de no borrar implementaciones que funcionan.
 
 ## Tokens

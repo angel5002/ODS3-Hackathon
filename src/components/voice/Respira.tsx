@@ -10,7 +10,8 @@
 // Budget (it runs during a live call and must never disturb the audio):
 //   - <canvas> + requestAnimationFrame; React never re-renders per frame (props go through a ref);
 //   - no allocations per frame once warm: typed arrays, colours parsed once into strings, alpha via globalAlpha;
-//   - DPR capped at 2; ~10 arcs and 6 short polylines per frame;
+//   - DPR capped at 1.5 (measured: at 2 the p95 frame doubled on an emulated Pixel 7 with CPU 4x); ~10 arcs and
+//     6 short polylines per frame;
 //   - the loop stops when nothing moves (rest, muted, finished transitions), runs at 30 fps for the slow modes
 //     (ring, connect, think) and stops while the tab is hidden;
 //   - prefers-reduced-motion: one static drawing per change of props, nothing moves.
@@ -35,7 +36,7 @@ const GAP = 0.27; // ring spacing, as a share of the disc radius
 const RING_ALPHA = [0.5, 0.32, 0.2, 0.11];
 const BANDS = 8;
 const VOICE_BINS = 48;
-const MAX_DPR = 2;
+const MAX_DPR = 1.5;
 const STEP = 3; // px between wave points
 const WAVES = [
   { alpha: 1, width: 2, freq: 2.2, speed: 5.2, phase: 0, gain: 1 },
