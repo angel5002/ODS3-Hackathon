@@ -1,19 +1,22 @@
 // Registration bot of the web chat (RF-14, docs/conversaciones.md §1-§2). A state machine on the server
 // controls every step; the model only interprets the answer to the current step (src/lib/bot/interpret.ts).
+// The script and the transitions are pure (src/lib/bot/script.ts, unit-tested); this file runs their effects
+// against the database: register the request, refer to emergency, tasks for a person.
 import { rpc, serverDb } from "@/lib/supabase/server";
 import { scrubReason } from "@/lib/scrub";
 import { dateEs } from "@/lib/labels";
-import { hasAlarmWords, interpret, type Kind } from "./interpret";
 import { HOSPITAL_NAME } from "@/lib/voice/hospital";
+import { hasAlarmWords, interpret } from "./interpret";
+import { PERSON_LABEL, PERSON_REPLY, ask, closingAlarm, closingRegistered, next, question, STEPS, type BotState, type Reply } from "./script";
 
-export type Reply = { body: string; buttons?: string[] };
-export type BotState = { step: string; data: Record<string, string>; rechecked?: boolean; tries?: number };
+export type { BotState, Reply } from "./script";
+export { BOT_SPECIALTIES, QUICK_ACTIONS, isPersonRequest } from "./script";
 
 export const CONSENT =
   `Hola. Le escribe el asistente automatizado del ${HOSPITAL_NAME}, un hospital ficticio de AsistIA para CientíficaHack 2026. ` +
   "Este chat prepara su atención: no es una consulta médica ni atiende emergencias. " +
   "Nunca le pediremos pagos, claves, códigos ni su DNI completo, ni tampoco su número o su correo. " +
-  "Use un nombre ficticio y no comparta datos reales de salud. Escriba PERSONA en cualquier momento para hablar con una persona. " +
+  `Use un nombre ficticio y no comparta datos reales de salud. Puede hablar con una persona en cualquier momento con el botón «${PERSON_LABEL}». ` +
   "Esta conversación se borrará al terminar la demostración.\nResponda ACEPTO para continuar o SALIR para terminar.";
 
 const MENU: Reply = {
@@ -21,114 +24,17 @@ const MENU: Reply = {
   buttons: ["1. Pedir una cita nueva", "2. Ver el estado de mi solicitud", "3. Hablar con una persona"],
 };
 
-// The 8 specialties offered first (highest demand on the demo day plus the two with free slots for the jury)
-export const BOT_SPECIALTIES = [
-  "Medicina Interna",
-  "Cardiología",
-  "Pediatría General",
-  "Ginecología",
-  "Traumatología",
-  "Oftalmología",
-  "Dermatología",
-  "Gastroenterología",
-];
-
-const ALARM_LIST =
-  "¿El paciente tiene AHORA alguno de estos signos? Responda SÍ o NO:\n" +
-  "· dolor fuerte en el pecho\n· dificultad para respirar\n· desmayo\n" +
-  "· debilidad repentina de un lado del cuerpo o dificultad para hablar\n· sangrado abundante\n" +
-  "· fiebre en un bebé de menos de 3 meses\n· en el embarazo: sangrado o dolor fuerte";
-
-type Step = { q: string; kind: Kind; options?: [string, string][]; buttons?: string[] };
-const STEPS: Record<string, Step> = {
-  para_quien: {
-    q: "¿La cita es para usted o para otra persona (por ejemplo, su hijo o su madre)?",
-    kind: "choice",
-    options: [
-      ["paciente", "Para mí"],
-      ["cuidador", "Para otra persona"],
-    ],
-  },
-  nombre: { q: "¿Cuál es el nombre del paciente? Puede ser un nombre ficticio.", kind: "text" },
-  documento: {
-    q: "¿Qué documento tiene el paciente?\n1. DNI\n2. Carné de extranjería\n3. Otro\n4. No tiene documento\n(No necesitamos el número.)",
-    kind: "choice",
-    options: [
-      ["dni", "DNI"],
-      ["ce", "Carné de extranjería"],
-      ["otro", "Otro"],
-      ["sin_documento", "No tiene documento"],
-    ],
-  },
-  edad: { q: "¿Qué edad tiene el paciente?", kind: "age" },
-  especialidad: {
-    q: `¿Qué especialidad necesita?\n${BOT_SPECIALTIES.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n9. No sé / me lo indicó un médico`,
-    kind: "choice",
-    options: [...BOT_SPECIALTIES.map((s) => [s, s] as [string, string]), ["Por definir", "No sé / me lo indicó un médico"]],
-  },
-  referencia: {
-    q: "¿Tiene una hoja de referencia de un centro de salud?\n1. Sí\n2. No",
-    kind: "choice",
-    options: [
-      ["si", "Sí"],
-      ["no", "No"],
-    ],
-  },
-  motivo: { q: "En una o dos frases, ¿por qué necesita la consulta? (Recuerde: es una demostración, no use datos reales)", kind: "text" },
-  alarma: { q: ALARM_LIST, kind: "yesno", buttons: ["SÍ", "NO"] },
-  canal: {
-    q: "¿Cómo prefiere que le avisemos?\n1. Por este chat\n2. Con una llamada",
-    kind: "choice",
-    options: [
-      ["chat", "Por este chat"],
-      ["llamada", "Con una llamada"],
-    ],
-  },
-  poco_aviso: {
-    q: "Si se libera un cupo con 2 días de anticipación, ¿podría asistir?\n1. Sí\n2. No",
-    kind: "choice",
-    options: [
-      ["si", "Sí"],
-      ["no", "No"],
-    ],
-  },
-  preferente: {
-    q: "¿El paciente está embarazada o tiene alguna discapacidad?\n1. Embarazo\n2. Discapacidad\n3. Ninguna\n4. Prefiero no decir",
-    kind: "choice",
-    options: [
-      ["embarazo", "Embarazo"],
-      ["discapacidad", "Discapacidad"],
-      ["ninguna", "Ninguna"],
-      ["no_dice", "Prefiero no decir"],
-    ],
-  },
-  resumen: {
-    q: "",
-    kind: "choice",
-    options: [
-      ["si", "Sí"],
-      ["corregir", "Corregir"],
-    ],
-  },
-};
-const ORDER = ["para_quien", "nombre", "documento", "edad", "especialidad", "referencia", "motivo", "alarma", "canal", "poco_aviso", "preferente", "resumen"];
-
-function ask(step: string, data: Record<string, string>): Reply {
-  const s = STEPS[step];
-  if (step === "resumen") {
-    const body =
-      `Resumen: ${data.especialidad} · paciente de ${data.edad} ${data.edad === "1" ? "año" : "años"} · ` +
-      `${data.referencia === "si" ? "con referencia" : "sin referencia"} · aviso por ${data.canal === "llamada" ? "llamada" : "chat"}. ¿Está correcto?\n1. Sí\n2. Corregir`;
-    return { body, buttons: ["1. Sí", "2. Corregir"] };
-  }
-  return { body: s.q, buttons: s.buttons ?? s.options?.map(([, l], i) => `${i + 1}. ${l}`) };
-}
-
 export function initialState(): BotState {
   return { step: "consent", data: {} };
 }
 
 type Ctx = { sessionId: string; linkedRequestId: number | null };
+
+/** "Hablar con una persona" (button, PERSONA or menu option 3): a task for the team, one closing. */
+export async function personRequest(ctx: Ctx, note: string): Promise<Reply> {
+  await rpc("create_task", { p_type: "pide_persona", p_request: ctx.linkedRequestId, p_appt: null, p_source: "chat", p_note: note, p_session: ctx.sessionId });
+  return PERSON_REPLY;
+}
 
 /** Advances the bot one message. Returns the replies to post (fixed texts from docs/conversaciones.md). */
 export async function botStep(state: BotState, text: string, ctx: Ctx): Promise<{ state: BotState; replies: Reply[]; meta?: Record<string, unknown> }> {
@@ -138,81 +44,34 @@ export async function botStep(state: BotState, text: string, ctx: Ctx): Promise<
     const choice = /^1|cita nueva|pedir/i.test(t) ? "1" : /^2|estado|solicitud/i.test(t) ? "2" : /^3|persona/i.test(t) ? "3" : null;
     if (choice === "1") return { state: { step: "para_quien", data: {} }, replies: [ask("para_quien", {})] };
     if (choice === "2") return { state: { ...state, step: "menu" }, replies: [await statusReply(ctx), MENU] };
-    if (choice === "3") {
-      await rpc("create_task", { p_type: "pide_persona", p_request: ctx.linkedRequestId, p_appt: null, p_source: "chat", p_note: "Pidió hablar con una persona desde el chat", p_session: ctx.sessionId });
-      return { state: { ...state, step: "menu" }, replies: [{ body: "Una persona del equipo de citas le escribirá pronto." }] };
-    }
+    if (choice === "3") return { state: { ...state, step: "menu" }, replies: [await personRequest(ctx, "Pidió hablar con una persona desde el chat")] };
     return { state: { ...state, step: "menu" }, replies: [MENU] };
   }
 
   const s = STEPS[state.step];
   if (!s) return { state: { step: "menu", data: {} }, replies: [MENU] };
-  const res = await interpret(s.q || "¿Está correcto el resumen?", t, s.kind, s.options ?? []);
-  const data = { ...state.data };
+  const res = await interpret(question(state.step, state.data) || "¿Está correcto el resumen?", t, s.kind, s.options ?? []);
   const meta = { interpreted_by: res.by, model_ms: res.ms };
+  // the free reason is scrubbed (names, numbers, links) before it is stored anywhere
+  const value = res.value != null && state.step === "motivo" ? scrubReason(res.value, state.data.nombre) : res.value;
+  const r = next(state, value, hasAlarmWords);
 
-  if (res.value == null) {
-    const tries = (state.tries ?? 0) + 1;
-    const hint =
-      state.step === "especialidad"
-        ? "Gracias. Para orientarla, elija una opción o la 9; un profesional revisará su caso."
-        : state.step === "alarma"
-          ? "Por favor responda SÍ o NO."
-          : "No le entendí bien. Puede responder con el número de la opción.";
-    return { state: { ...state, tries }, replies: [{ body: hint }, ask(state.step, data)], meta };
+  if (r.effect?.type === "register") {
+    const req = await createRequest(r.state.data, ctx, null);
+    return { state: { step: "done", data: {} }, replies: [closingRegistered(req.code, r.state.data)], meta: { ...meta, code: req.code } };
   }
-
-  data[state.step] = res.value;
-  let extra: Reply[] = [];
-  if (state.step === "documento" && res.value === "sin_documento") extra = [{ body: "No hay problema: igual registramos su solicitud." }];
-  if (state.step === "motivo") data.motivo = scrubReason(res.value, data.nombre);
-
-  // signs of alarm: emergency instructions, request derived, task for a person
-  if (state.step === "alarma") {
-    if (res.value === "si") {
-      const r = await createRequest(data, ctx, true);
-      return {
-        state: { step: "done", data: {} },
-        replies: [
-          {
-            body:
-              "Por lo que nos cuenta, no espere una cita: acuda a la emergencia más cercana o llame al 106 (SAMU). " +
-              `Avisamos a una persona del equipo de citas.${r ? ` (Registro ${r.code})` : ""}`,
-          },
-        ],
-        meta,
-      };
-    }
-    if (!state.rechecked && hasAlarmWords(data.motivo ?? "")) {
-      return {
-        state: { ...state, data, rechecked: true, tries: 0 },
-        replies: [{ body: "En el motivo mencionó algo que puede ser un signo de alarma. Revise otra vez, por favor." }, ask("alarma", data)],
-        meta,
-      };
-    }
+  if (r.effect?.type === "refer") {
+    const said = scrubReason(r.effect.said, r.state.data.nombre);
+    const req = await createRequest(r.state.data, ctx, said);
+    // derive_emergency already delivered the emergency instruction to this chat: the closing only says what
+    // happens next and offers a person now (one message each, never the instruction twice)
+    return { state: { step: "done", data: {} }, replies: [closingAlarm(req.code)], meta: { ...meta, code: req.code, alarm: true } };
   }
-
-  if (state.step === "resumen") {
-    if (res.value === "corregir") return { state: { step: "para_quien", data: {} }, replies: [{ body: "De acuerdo, empecemos de nuevo." }, ask("para_quien", {})], meta };
-    const r = await createRequest(data, ctx, false);
-    return {
-      state: { step: "done", data: {} },
-      replies: [
-        {
-          body:
-            `Listo. Su número de solicitud es ${r.code}. No es una cita todavía: un profesional la revisará y le avisaremos por aquí ` +
-            "cuando haya un cupo para usted. Si deja de responder, no pierde su lugar.",
-        },
-      ],
-      meta: { ...meta, code: r.code },
-    };
-  }
-
-  const next = ORDER[ORDER.indexOf(state.step) + 1];
-  return { state: { step: next, data, rechecked: state.rechecked, tries: 0 }, replies: [...extra, ask(next, data)], meta };
+  return { state: r.state, replies: r.replies, meta };
 }
 
-async function createRequest(data: Record<string, string>, ctx: Ctx, alarm: boolean) {
+/** Creates the request; with `alarmSaid` it is referred to emergency and the staff task says what the person said. */
+async function createRequest(data: Record<string, string>, ctx: Ctx, alarmSaid: string | null) {
   const r = await rpc<{ id: number; code: string }>("create_request", {
     p: {
       display_name: data.nombre || "Paciente sin nombre",
@@ -230,7 +89,15 @@ async function createRequest(data: Record<string, string>, ctx: Ctx, alarm: bool
       actor: "Bot del chat",
     },
   });
-  if (alarm) await rpc("derive_emergency", { p_request: r.id, p_actor: "Bot del chat", p_source: "chat" });
+  if (alarmSaid !== null) {
+    await rpc("derive_emergency", { p_request: r.id, p_actor: "Bot del chat", p_source: "chat" });
+    // the task derive_emergency created gets what the person said, so the team knows what is happening
+    await serverDb()
+      .from("staff_tasks")
+      .update({ note: `Signos de alarma. La persona dijo: «${alarmSaid}». Confirmar que acudió a emergencia.`.slice(0, 300) })
+      .eq("request_id", r.id)
+      .eq("type", "alarma");
+  }
   return r;
 }
 

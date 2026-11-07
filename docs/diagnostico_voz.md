@@ -433,3 +433,48 @@ Evaluado y **no** activado: `vad.background_voice_detection` (filtra voces de fo
 - https://elevenlabs.io/docs/eleven-agents/customization/conversation-flow (turnos, interrupciones por eventos del cliente, `turn_eagerness`, `soft_timeout_config`)
 - https://elevenlabs.io/docs/eleven-agents/customization/tools/tool-configuration/tool-interruptions (`interruption_mode`)
 - Código de `@elevenlabs/client` 1.35.0: `utils/ConnectionFactory.js` (la URL firmada solo admite WebSocket; el token, WebRTC), `utils/WebRTCConnection.js`, `platform/web/input.js` (restricciones del micrófono), `platform/web/output.js` y el procesador `audioConcatProcessor` (sin búfer de red en WebSocket).
+
+## 14. Chat de /pedir-cita y signos de alarma (prueba en teléfono, 7/11 10:35 UTC, S-0431)
+
+**Cierre duplicado.**
+- **Causa:** `derive_emergency` (Postgres) ya entrega al chat vinculado a la solicitud «Por lo que nos cuenta, no espere una cita… Avisamos a una persona del equipo de citas.». El bot, además, publicaba el mismo texto con «(Registro S-0431)».
+- No fue un doble envío ni un reintento: fueron dos fuentes para el mismo mensaje.
+- **Corrección:** el bot ya no repite la instrucción. Su cierre dice qué sigue: el código, que una persona del equipo lo revisará ahora y le escribirá por el chat, y que si empeora llame al 106. Además ofrece el botón «Hablar ahora con una persona».
+- **Pruebas:** `tests/bot-script.test.ts`. Además, una prueba de punta a punta en el servidor local: la instrucción aparece **1 vez**. La solicitud de prueba S-0439 se retiró y su tarea se cerró.
+
+**Cierres:**
+- Registro: en una o dos frases dice el código, que no es una cita, quién lo revisa, por dónde avisamos (chat o llamada) y que si empeora acuda a emergencia o llame al 106. No promete plazos.
+- Voz: lo mismo en `register_request` y en el mensaje al chat (`src/lib/voice/tools.ts`, rige cuando producción tenga este código).
+
+**Hablar con una persona:**
+- Acción rápida persistente: `GET /api/chat/messages` → `quickActions: [{ id: "persona", label: "Hablar con una persona", send: "Hablar con una persona" }]`.
+- El servidor reconoce «PERSONA», «Hablar con una persona», «Hablar ahora con una persona» y «3. Hablar con una persona» (`isPersonRequest`).
+- Si el texto dice «ahora», la tarea lo indica.
+- El consentimiento ya no dice «escriba PERSONA».
+
+**Signos de alarma** (`src/lib/bot/script.ts`):
+- **Una sola pregunta**, en segunda persona: «¿Siente ahora algo que no puede esperar, como dolor fuerte en el pecho, falta de aire o un desmayo?». Si la cita es para otra persona: «¿Rosa tiene ahora…?».
+- **Preguntas de contexto**, solo si la persona lo mencionó:
+  - embarazo en el motivo → «¿Tiene ahora sangrado o un dolor fuerte en el embarazo?»;
+  - bebé (edad 0 o «bebé» o «meses» en el motivo) → «¿El bebé tiene fiebre y menos de 3 meses?».
+- **Si dice que sí:** «¿Qué siente? Cuéntelo en pocas palabras…», con botones de ejemplo. Nunca un diagnóstico ni una causa. Luego se deriva y la tarea `alarma` guarda lo que dijo.
+- Si el motivo tiene palabras de alarma y respondió que no, se pregunta una vez más.
+- La lista de 7 signos ya no se usa.
+
+**Modo sala ruidosa en /pedir-cita:**
+- El servidor ya enviaba `pushToTalk` también en la llamada de registro.
+- Faltaba que `VoiceRegister` (`PedirCita.tsx`, pista A) lo pasara a `CallView` y a `LiveVoice`. La pista A confirma que ya lo hace en su rama, con la misma regla que `CallScreen`.
+
+### Cambios en los agentes de ElevenLabs (para POST_FINAL.md)
+
+Aplicados con `voice:sync`, después de `--dry`: solo PATCH de 14 herramientas y 4 agentes, ningún POST. Sin variables nuevas.
+
+10. **Prompt común:** ante algo que no puede esperar, en cualquier momento:
+    - preguntar en pocas palabras qué siente (si no lo dijo), sin sugerir causas ni diagnosticar;
+    - usar `flag_alarm` con lo que dijo en `symptom`;
+    - indicar emergencia o el 106 y decir que una persona del equipo revisará el caso;
+    - **no leer listas de signos**.
+11. **Tarea de registro:**
+    - una sola pregunta de alarma (la de arriba);
+    - embarazo o bebé solo si se mencionó;
+    - cierre con el texto `say`: qué se registró, quién lo revisa, por dónde avisamos y qué hacer si empeora, sin prometer plazos.

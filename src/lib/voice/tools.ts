@@ -192,14 +192,24 @@ async function exec(call: CallRow, tool: string, args: Record<string, unknown>):
           actor: "Asistente de voz",
         },
       });
+      // closing: what was registered, who reviews it, how we notify, what to do if it gets worse (no time promised)
+      const byCall = String(args.channel ?? "").includes("llam");
       if (call.chat_session_id) {
         await rpc("chat_system_message", {
           p_session: call.chat_session_id,
-          p_body: `Registramos por llamada su solicitud ${res.code}. No es una cita todavía: un profesional la revisará y le avisaremos por aquí. Si deja de responder, no pierde su lugar.`,
+          p_body:
+            `Registramos por llamada su solicitud ${res.code}; todavía no es una cita. Un profesional la revisará y le avisaremos ` +
+            `${byCall ? "con una llamada" : "por este chat"} cuando haya un cupo (si deja de responder, no pierde su lugar); si empeora, acuda a emergencia o llame al 106.`,
         });
       }
       const digits = res.code.replace(/\D/g, "").split("").join(", ");
-      return { say: `Listo. Su número de solicitud es S, ${digits}. No es una cita todavía: un profesional la revisará y le avisaremos.`, data: res, done: `Registró la solicitud ${res.code}` };
+      return {
+        say:
+          `Listo. Su número de solicitud es S, ${digits}; todavía no es una cita. Un profesional la revisará y le avisaremos ` +
+          `${byCall ? "con una llamada" : "por el chat"} cuando haya un cupo. Si empeora, acuda a emergencia o llame al 106.`,
+        data: res,
+        done: `Registró la solicitud ${res.code}`,
+      };
     }
     // ---------------------------------------------------------------- common
     case "transfer_to_human":
@@ -216,13 +226,26 @@ async function exec(call: CallRow, tool: string, args: Record<string, unknown>):
         await rpc("patient_reply", { p_appt: call.appointment_id, p_reply: "persona", p_channel: "voz", p_actor: "Asistente automático", p_detail: "Pidió hablar con una persona durante la llamada" }).catch(() => {});
       }
       return { say: "Listo: una persona del equipo de citas le contactará pronto. Gracias por llamar.", done: "Pidió hablar con una persona" };
-    case "flag_alarm":
+    case "flag_alarm": {
+      // what the person said goes to the staff task (never a diagnosis: their words, scrubbed)
+      const said = scrubReason(String(args.symptom ?? "").trim()).slice(0, 160);
       if (call.request_id) {
         await rpc("derive_emergency", { p_request: call.request_id, p_actor: "Asistente automático", p_source: "agente" });
+        if (said) {
+          await db
+            .from("staff_tasks")
+            .update({ note: `Signos de alarma (llamada). La persona dijo: «${said}». Confirmar que acudió a emergencia.`.slice(0, 300) })
+            .eq("request_id", call.request_id)
+            .eq("type", "alarma");
+        }
       } else {
-        await rpc("create_task", { p_type: "alarma", p_request: null, p_appt: call.appointment_id, p_source: "agente", p_note: String(args.symptom ?? "Signos de alarma mencionados en la llamada").slice(0, 200), p_session: call.chat_session_id });
+        await rpc("create_task", { p_type: "alarma", p_request: null, p_appt: call.appointment_id, p_source: "agente", p_note: (said ? `Signos de alarma en la llamada. La persona dijo: «${said}»` : "Signos de alarma mencionados en la llamada").slice(0, 200), p_session: call.chat_session_id });
       }
-      return { say: "No espere una cita: acuda a la emergencia más cercana o llame al 106. Ya avisamos a una persona del equipo.", done: "Signos de alarma: derivado a emergencia" };
+      return {
+        say: "No espere una cita: acuda a la emergencia más cercana o llame al 106. Ya avisamos a una persona del equipo de citas, que revisará su caso y le contactará.",
+        done: "Signos de alarma: derivado a emergencia",
+      };
+    }
     default:
       void db;
       throw new Error("unknown tool");

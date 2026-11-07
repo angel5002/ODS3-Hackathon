@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { serverDb } from "@/lib/supabase/server";
 import { CHAT_COOKIE, loadSession, readCookie } from "@/lib/chat/session";
 import { LIMITS, handleMessage } from "@/lib/chat/router";
+import { QUICK_ACTIONS } from "@/lib/bot/machine";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export async function GET(req: Request) {
     linkedName: linked?.first_name ?? null,
     messages: messages ?? [],
     call: calls?.[0] ?? null,
+    // persistent quick actions for the UI (a button always visible): tapping one sends `send` as a message
+    quickActions: QUICK_ACTIONS,
   });
 }
 
@@ -79,6 +82,6 @@ export async function POST(req: Request) {
     return res;
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "No pudimos procesar su mensaje. Intente de nuevo o escriba PERSONA." }, { status: 500 });
+    return NextResponse.json({ error: "No pudimos procesar su mensaje. Intente de nuevo o toque «Hablar con una persona»." }, { status: 500 });
   }
 }

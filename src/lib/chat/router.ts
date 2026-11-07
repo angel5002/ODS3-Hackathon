@@ -4,7 +4,7 @@
 // Every branch calls the same Postgres functions as the panel and the simulated phones.
 import { rpc, serverDb } from "@/lib/supabase/server";
 import { webChat } from "@/lib/channels";
-import { CONSENT, MENU, botStep, type BotState, type Reply } from "@/lib/bot/machine";
+import { CONSENT, MENU, botStep, isPersonRequest, personRequest, type BotState, type Reply } from "@/lib/bot/machine";
 import { rules } from "@/lib/bot/interpret";
 import type { loadSession } from "./session";
 
@@ -37,9 +37,12 @@ export async function handleMessage(session: Session, conversationId: number, te
     return { deleted: true, replies: [{ body: "Listo, borramos esta conversación." }] };
   }
   await db.from("chat_messages").insert({ conversation_id: conversationId, direction: "entrante", kind: "usuario", body: text });
-  if (t === "persona" || t === "3. hablar con una persona") {
-    await rpc("create_task", { p_type: "pide_persona", p_request: session.linked_request_id, p_appt: null, p_source: "chat", p_note: "Escribió PERSONA en el chat", p_session: session.id });
-    return reply(conversationId, [{ body: "Una persona del equipo de citas le escribirá pronto." }]);
+  // "Hablar con una persona" (persistent quick action), "… ahora" (after a referral), PERSONA or menu option 3
+  if (isPersonRequest(text)) {
+    const note = /ahora/.test(t)
+      ? "Pidió hablar con una persona AHORA, tras la indicación de acudir a emergencia"
+      : "Pidió hablar con una persona desde el chat";
+    return reply(conversationId, [await personRequest({ sessionId: session.id, linkedRequestId: session.linked_request_id }, note)]);
   }
 
   // consent first: until ACEPTO, only the consent text
