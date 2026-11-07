@@ -221,17 +221,27 @@ class StaffRpc:
         url, key = _os.environ.get("NEXT_PUBLIC_SUPABASE_URL"), _os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
         if not url or not key:
             raise SystemExit("--rpc necesita NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en el entorno")
-        self.ctx, self.url, self.h = ctx, url.rstrip("/"), {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+        # the new secret keys (sb_secret_…) go in `apikey` only; a legacy JWT key also needs the bearer header
+        h = {"apikey": key, "Content-Type": "application/json"}
+        if key.startswith("eyJ"):
+            h["Authorization"] = f"Bearer {key}"
+        self.ctx, self.url, self.h = ctx, url.rstrip("/"), h
+
+    # plain urllib (not the browser's request context): Supabase refuses secret keys from a browser user agent
+    def _call(self, path, body=None):
+        import urllib.request
+
+        req = urllib.request.Request(f"{self.url}/rest/v1/{path}", headers=self.h, method="POST" if body is not None else "GET",
+                                     data=json.dumps(body).encode() if body is not None else None)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            raw = r.read()
+        return json.loads(raw) if raw else None
 
     async def _get(self, path):
-        r = await self.ctx.request.get(f"{self.url}/rest/v1/{path}", headers=self.h)
-        assert r.ok, f"REST {r.status}"
-        return await r.json()
+        return await asyncio.to_thread(self._call, path)
 
     async def _rpc(self, fn, args):
-        r = await self.ctx.request.post(f"{self.url}/rest/v1/rpc/{fn}", headers=self.h, data=json.dumps(args))
-        assert r.ok, f"RPC {fn} {r.status}"
-        return await r.json() if (await r.body()) else None
+        return await asyncio.to_thread(self._call, f"rpc/{fn}", args)
 
     async def patient(self, token):
         return (await self._get(f"patients?token=eq.{token}&select=id"))[0]["id"]
