@@ -1,52 +1,61 @@
 @import "tailwindcss";
 
-/* AsistIA style (E5 estilo, docs/estilo.md): a sober public-health service in the line of the NHS and
-   U.S. Web Design Systems. One typeface (Public Sans), white surfaces on a light neutral page, deep teal ink,
-   one teal brand for actions, 1 px borders, small radii, no glows, gradients or decorative shadows.
+/* AsistIA style "Stoic, versión salud" (E5 stoic, docs/estilo.md). The calm of a journaling app applied to a
+   public-health service: a near-white page, near-black text, a lot of air, monochrome line icons, white cards
+   with a subtle 1 px border and generous corners, ONE main action per screen (near-black), and ONE accent, a
+   deep clinical teal, used sparingly (the assistant's voice, the active tab, the brand check, key links).
+   Type: DM Sans for the interface, DM Serif Display for big titles and numbers (the pitch deck's pair, so the app
+   and the slides read as one product). No gradients, no glows, no mint washes.
    Every status comes with a text label (and usually an icon), never colour alone.
-   Every text/background pair is measured by `node scripts/dev/contrast-check.mjs`. */
+   Every text/background pair is measured by `node scripts/dev/contrast-check.mjs`.
+   Token NAMES are stable (other tracks use them): values are remapped here, never renamed. */
 @theme {
-  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
-  /* kept as an alias so older `font-display` classes resolve to Public Sans: there is one typeface */
-  --font-display: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  /* display: big titles and big numbers only (one weight, 400; bold is never synthesized, see `font-synthesis`) */
+  --font-display: var(--font-dm-serif), ui-serif, Georgia, serif;
 
-  /* small radii: 2 px tags, 4 px controls and buttons, 6 px large containers. rounded-full stays for dots,
-     avatars and the round call buttons of the phone call (a phone convention) */
-  --radius-xs: 2px;
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 4px;
-  --radius-xl: 4px;
-  --radius-2xl: 6px;
-  --radius-3xl: 6px;
-  --radius-4xl: 6px;
+  /* generous, calm corners: 6 px tags, 12 px controls and buttons, 18–22 px cards. rounded-full stays for pill
+     buttons, dots, avatars and the round call buttons */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 22px;
+  --radius-4xl: 26px;
 
-  /* flat surfaces: the small shadows become a 1 px line, the large ones a subtle elevation for overlays only */
+  /* flat surfaces: the small shadows become a 1 px line, the large ones a soft lift for overlays only */
   --shadow-2xs: 0 0 0 1px var(--color-line);
   --shadow-xs: 0 0 0 1px var(--color-line);
-  --shadow-sm: 0 0 0 1px var(--color-line-strong);
+  --shadow-sm: 0 0 0 1px var(--color-line);
   --shadow-md: 0 0 0 1px var(--color-line-strong);
-  --shadow-lg: 0 6px 16px -8px rgb(16 48 47 / 0.28);
-  --shadow-xl: 0 8px 24px -10px rgb(16 48 47 / 0.3);
-  --shadow-2xl: 0 8px 24px -10px rgb(16 48 47 / 0.3);
+  --shadow-lg: 0 10px 30px -12px rgb(21 26 25 / 0.22);
+  --shadow-xl: 0 16px 40px -16px rgb(21 26 25 / 0.26);
+  --shadow-2xl: 0 16px 40px -16px rgb(21 26 25 / 0.26);
 
-  /* deep teal for dark callouts; mint is the one accent, used only on those dark surfaces */
-  --color-night: #10302f;
-  --color-night-2: #1b4745;
-  --color-mint: #5fd0b4;
-  --color-mint-soft: #d5efe8;
+  /* dark callouts are near-black (Stoic's dark card); the accent on them is a light teal */
+  --color-night: #161b1a;
+  --color-night-2: #262d2c;
+  --color-mint: #9fd8cc;
+  --color-mint-soft: #e4f1ee;
 
-  --color-paper: #f3f5f5;
+  --color-paper: #f6f7f6;
   --color-surface: #ffffff;
-  --color-sunken: #eef2f1;
-  --color-ink: #10302f;
-  --color-muted: #46605d;
-  --color-faint: #57706c;
-  --color-line: #d3dcda;
-  --color-line-strong: #718784;
-  --color-brand: #0e5a57;
-  --color-brand-hover: #0b4846;
-  --color-brand-soft: #e1eeec;
+  --color-sunken: #f0f2f1;
+  --color-ink: #151a19;
+  --color-muted: #4e5755;
+  --color-faint: #5b6462;
+  --color-line: #e2e5e4;
+  --color-line-strong: #7c8583;
+  /* "brand" is the main action: near-black, like Stoic's buttons. The teal lives in "accent". */
+  --color-brand: #151a19;
+  --color-brand-hover: #2e3634;
+  --color-brand-soft: #eceeed;
+  /* the one accent: deep clinical teal, used sparingly */
+  --color-accent: #0c6b62;
+  --color-accent-hover: #0a5952;
+  --color-accent-soft: #e4f1ee;
 
   --color-risk-alto: #b42318;
   --color-risk-alto-soft: #fde8e6;
@@ -55,22 +64,22 @@
   --color-risk-bajo: #3f6b2a;
   --color-risk-bajo-soft: #e7f0df;
 
-  --color-st-neutral: #56636d;
-  --color-st-neutral-soft: #eceff0;
+  --color-st-neutral: #545c5a;
+  --color-st-neutral-soft: #eef0ef;
   --color-st-sent: #2f5d8c;
-  --color-st-sent-soft: #e2ebf5;
+  --color-st-sent-soft: #e6eef7;
   --color-st-ok: #1b6e43;
-  --color-st-ok-soft: #dff1e6;
+  --color-st-ok-soft: #e2f2e8;
   --color-st-free: #6941c6;
-  --color-st-free-soft: #ece6fb;
+  --color-st-free-soft: #efe9fc;
   --color-st-warn: #b33a09;
-  --color-st-warn-soft: #fdebdc;
+  --color-st-warn-soft: #fdeee2;
   --color-st-call: #0a5fb4;
-  --color-st-call-soft: #deedfc;
+  --color-st-call-soft: #e2effc;
   --color-st-human: #9f1a55;
-  --color-st-human-soft: #fbe4ee;
-  --color-st-done: #0e5a57;
-  --color-st-done-soft: #d6ebe9;
+  --color-st-human-soft: #fbe7f0;
+  --color-st-done: #0c6b62;
+  --color-st-done-soft: #e4f1ee;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
@@ -108,6 +117,19 @@
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  /* DM Serif Display has one weight: never fake a bold or an italic */
+  font-synthesis: none;
+}
+
+/* Big titles and big numbers: the serif, at its one weight, whatever weight class sits next to it.
+   Unlayered, so it wins over the `font-bold` utility on the same element. */
+.font-display {
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+/* the serif's figures are proportional and tall: keep them tabular where the class asks for it */
+.font-display.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* iOS zooms into inputs under 16px; the team rule is 16 px text in every field anyway */
@@ -144,7 +166,7 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-brand);
+  outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -157,12 +179,16 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Pressable feedback: colour only, no movement */
+/* Pressable feedback: colour, and a barely visible press (0.98) so the tap feels heard */
 .press {
   transition:
     background-color 120ms ease,
     border-color 120ms ease,
-    color 120ms ease;
+    color 120ms ease,
+    transform 120ms var(--ease-out);
+}
+.press:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 /* A row that just changed state: a short highlight so the eye finds it */
@@ -243,15 +269,15 @@ button:disabled {
 .cell {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 2px;
-  background: #7f938f;
+  border-radius: 9999px;
+  background: #151a19;
 }
 .cell[data-kind="empty"] {
   background: #ffffff;
-  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  box-shadow: inset 0 0 0 1.5px var(--color-line-strong);
 }
 .cell[data-kind="recovered"] {
-  background: var(--color-brand);
+  background: var(--color-accent);
 }
 
 /* scroll reveal: content is simply there (kept as a class so the markup does not change) */
@@ -384,39 +410,41 @@ button:disabled {
   }
 }
 
-/* ---------- Voice call tokens (E5 estilo): the light palette, flattened ----------
-   Used by the call screen, the incoming call and the voice start screen, and available to the whole app
-   (declared on :root, so bg-vc-bg, text-vc-text… work anywhere). [data-voice-theme="claro"] re-applies them
-   inside any subtree. Every value that a contrast pair uses is an opaque hex so
-   `node scripts/dev/contrast-check.mjs` can measure it (WCAG 2.x relative luminance): text >= 4.5:1, icons,
-   wave and control edges >= 3:1. Change a value here, run the script. */
+/* ---------- Voice and app-surface tokens (E5 stoic): the same near-white palette ----------
+   Used by the call screen ("Respira"), the voice start screen, /pedir-cita, the chat and the simulated phone,
+   and available to the whole app (declared on :root, so bg-vc-bg, text-vc-text… work anywhere).
+   [data-voice-theme="claro"] re-applies them inside any subtree. Every value that a contrast pair uses is an
+   opaque hex so `node scripts/dev/contrast-check.mjs` can measure it (WCAG 2.x relative luminance): text >= 4.5:1,
+   icons, rings, waves and control edges >= 3:1. Change a value here, run the script.
+   Respira: the assistant's voice is the one accent (teal, --vc-agent); the person's voice is graphite
+   (--vc-person); the resting circles are --vc-rest. */
 :root,
 [data-voice-theme="claro"] {
-  --vc-bg: #ffffff;
-  --vc-bg-2: #f3f5f5;
-  --vc-text: #10302f;
-  --vc-text-2: #2f5250;
-  --vc-text-3: #4b6a67;
-  --vc-surface: #eef2f1;
-  --vc-surface-press: #dfe6e4;
-  --vc-edge: #6b8f8a;
-  --vc-icon: #0e5a57;
-  --vc-agent: #0b7a6c;
-  --vc-person: #c2410c;
-  --vc-rest: #6f8f8a;
+  --vc-bg: #fcfcfb;
+  --vc-bg-2: #f4f5f4;
+  --vc-text: #151a19;
+  --vc-text-2: #3f4846;
+  --vc-text-3: #59625f;
+  --vc-surface: #eff1f0;
+  --vc-surface-press: #e2e5e4;
+  --vc-edge: #7c8583;
+  --vc-icon: #262d2b;
+  --vc-agent: #0c6b62;
+  --vc-person: #3f4846;
+  --vc-rest: #7c8583;
   --vc-danger: #d92d20;
   --vc-danger-press: #b42318;
   --vc-on-danger: #ffffff;
   --vc-accept: #067647;
   --vc-accept-press: #085d3a;
   --vc-on-accept: #ffffff;
-  --vc-primary: #0e5a57;
-  --vc-primary-press: #0b4846;
+  --vc-primary: #151a19;
+  --vc-primary-press: #2e3634;
   --vc-on-primary: #ffffff;
-  --vc-toggle: #10302f;
+  --vc-toggle: #151a19;
   --vc-on-toggle: #ffffff;
   --vc-warn: #b54708;
-  --vc-focus: #0e5a57;
+  --vc-focus: #0c6b62;
   /* wave: flat colours, layers stack normally */
   --vc-wave-blend: source-over;
   color-scheme: light;
@@ -535,17 +563,25 @@ button:disabled {
   --color-vc-on-primary-2: var(--vc-on-primary-2);
   --color-vc-warn-soft: var(--vc-warn-soft);
   --color-vc-danger-soft: var(--vc-danger-soft);
+  --color-vc-accent: var(--vc-accent);
+  --color-vc-accent-soft: var(--vc-accent-soft);
+  --color-vc-card: var(--vc-card);
 }
 :root,
 [data-voice-theme="claro"] {
   /* hairlines and card edges: decorative only (a control edge uses --vc-edge) */
-  --vc-line: #d3dcda;
-  /* secondary text on the brand surfaces (own chat bubbles, the main option) */
-  --vc-on-primary-2: #c5dcd8;
+  --vc-line: #e4e7e6;
+  /* secondary text on the main-action surfaces (own chat bubbles, the main option) */
+  --vc-on-primary-2: #c4cac8;
   /* "Se cierra a las…" */
   --vc-warn-soft: #fef3e6;
   /* emergency note */
   --vc-danger-soft: #fdeceb;
+  /* E5 stoic: the one accent (= the assistant's voice) and its soft tint, for app screens */
+  --vc-accent: #0c6b62;
+  --vc-accent-soft: #e4f1ee;
+  /* a white card on the near-white page */
+  --vc-card: #ffffff;
 }
 
 /* "escribiendo…": three dots that light up one after another (opacity only) */

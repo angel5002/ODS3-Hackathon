@@ -325,7 +325,7 @@ export function RegisterForm({ onDone, endpoint = "/api/staff", compact }: { onD
         </select>
       </label>
       <label className="text-sm sm:col-span-2">
-        <span className="font-semibold">Motivo</span> <span className="text-muted">(una o dos frases, sin datos que identifiquen)</span>
+        <span className="font-semibold">Motivo</span> <span className="text-muted">(sin datos que lo identifiquen)</span>
         <textarea value={f.reason_text} onChange={(e) => set("reason_text", e.target.value)} rows={2} maxLength={400} className={`${input} mt-1`} />
       </label>
       <label className="text-sm">
@@ -337,7 +337,7 @@ export function RegisterForm({ onDone, endpoint = "/api/staff", compact }: { onD
       </label>
       <label className="text-sm">
         <span className="font-semibold">Distrito</span>{" "}
-        <span className="text-muted">{compact ? "(opcional; solo para revisar que la atención sea justa)" : "(solo para auditar equidad)"}</span>
+        <span className="text-muted">(opcional)</span>
         <input value={f.district} onChange={(e) => set("district", e.target.value)} className={`${input} mt-1`} maxLength={60} />
       </label>
       <fieldset className="grid gap-1.5 text-sm sm:col-span-2 sm:grid-cols-2">
@@ -351,24 +351,18 @@ export function RegisterForm({ onDone, endpoint = "/api/staff", compact }: { onD
             ["disability", "Tiene alguna discapacidad"],
           ] as const
         ).map(([k, l]) => (
-          <label key={k} className="flex items-center gap-2">
+          <label key={k} className="flex min-h-11 items-center gap-2.5">
             <input type="checkbox" checked={f[k] as boolean} onChange={(e) => set(k, e.target.checked)} className="size-4 accent-brand" />
             {l}
           </label>
         ))}
       </fieldset>
       {compact ? (
-        <p className="text-xs text-muted sm:col-span-2">
-          Un profesional de salud revisará su solicitud y le avisaremos en el chat de esta página. Su tiempo de espera cuenta desde hoy
-          y no se reinicia nunca.
-        </p>
+        <p className="text-sm text-muted sm:col-span-2">Su espera cuenta desde hoy y no se reinicia.</p>
       ) : (
-        <p className="text-xs text-muted sm:col-span-2">
-          La solicitud entra como <strong>pendiente de regulación</strong> (se ordena como P3 hasta que un profesional la revise). La
-          fecha de hoy queda como primer intento y no se reinicia nunca.
-        </p>
+        <p className="text-sm text-muted sm:col-span-2">Entra como P3 hasta que un profesional la revise. Su espera cuenta desde hoy.</p>
       )}
-      <Button type="submit" variant="primary" disabled={busy} className="min-h-11 rounded-md sm:col-span-2">
+      <Button type="submit" variant="primary" disabled={busy} className="min-h-12 rounded-full sm:col-span-2">
         {busy ? "Registrando…" : "Registrar solicitud"}
       </Button>
     </form>

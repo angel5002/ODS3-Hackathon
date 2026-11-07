@@ -151,16 +151,16 @@ export function PanelApp({ onReassign }: { onReassign?: () => void }) {
                 variant="primary"
                 onClick={sendReminders}
                 disabled={sending || loading || pending === 0}
-                className="min-h-11 rounded-md px-5"
+                className="min-h-11 rounded-full px-5"
               >
                 <Send className="size-4" aria-hidden />
                 {pending === 0 && base.length ? "Recordatorios 72 h enviados" : sending ? "Enviando…" : "Enviar recordatorios (72 h)"}
               </Button>
               <div className="flex flex-wrap gap-1.5">
-                <Button className="min-h-11 rounded-md px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("agent_calls")} title="Llama a quienes no usan mensajería y a quienes no respondieron del 10 % de mayor riesgo">
+                <Button className="min-h-11 rounded-full px-4 text-sm" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("agent_calls")} title="Llama a quienes no usan mensajería y a quienes no respondieron del 10 % de mayor riesgo">
                   <PhoneCall className="size-3.5" aria-hidden /> Llamadas 48 h
                 </Button>
-                <Button className="min-h-11 rounded-md px-3 text-xs" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("last_reminders")} title="Último recordatorio a quienes no respondieron">
+                <Button className="min-h-11 rounded-full px-4 text-sm" disabled={sending || !state?.reminders_sent_min} onClick={() => stage("last_reminders")} title="Último recordatorio a quienes no respondieron">
                   <Send className="size-3.5" aria-hidden /> Último recordatorio 24 h
                 </Button>
               </div>
@@ -181,9 +181,9 @@ export function PanelApp({ onReassign }: { onReassign?: () => void }) {
             }}
           />
 
-          <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
+          <div className="overflow-hidden rounded-3xl bg-surface ring-1 ring-line">
             <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-3">
-              <div role="tablist" aria-label="Vistas" className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-sunken p-1 [scrollbar-width:none]">
+              <div role="tablist" aria-label="Vistas" className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-sunken p-1 [scrollbar-width:none]">
                 <TabButton id="todas" tab={tab} setTab={setTab} label="Todas" count={all.length} />
                 <TabButton
                   id="llamadas"
@@ -207,7 +207,7 @@ export function PanelApp({ onReassign }: { onReassign?: () => void }) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar paciente…"
-                  className="w-full rounded-md border border-line bg-sunken py-2 pl-9 pr-3 text-sm transition-colors focus:bg-surface"
+                  className="w-full rounded-full border border-line bg-sunken py-2 pl-9 pr-3 text-sm transition-colors focus:bg-surface"
                 />
               </label>
             </div>
@@ -301,7 +301,7 @@ function capitalize(x: string) {
 
 function Chip({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md bg-surface px-3 py-1 text-muted ring-1 ring-line">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-muted ring-1 ring-line">
       <Icon className="size-3.5" aria-hidden />
       {children}
     </span>
@@ -312,7 +312,7 @@ function DemoClock({ state }: { state: DemoState | null }) {
   const now = useNow(1000);
   const running = Boolean(state?.clock_started_at);
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md bg-surface px-3 py-1 ring-1 ring-line" title="Hora simulada de la demo: el día anterior a las citas">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 ring-1 ring-line" title="Hora simulada de la demo: el día anterior a las citas">
       <span className={`size-2 rounded-full ${running ? "animate-pulse bg-st-ok" : "bg-line-strong"}`} aria-hidden />
       <span className="text-muted">Hoy</span>
       <span className="font-semibold tabular-nums">{state ? `${demoDayLabel(demoNowMin(state, now))} ${fmtMin(demoNowMin(state, now))}` : "--:--"}</span>
@@ -338,10 +338,10 @@ function Indicators({ counts, onPick, active }: { counts: Record<string, number>
         const value = counts[it.key] ?? 0;
         const body = (
           <>
-            <span className={`grid size-9 place-items-center rounded-xl ${it.tone}`}>
-              <it.icon className="size-[18px]" aria-hidden />
+            <span className={`inline-flex items-center ${it.tone.split(" ").find((c) => c.startsWith("text-"))}`}>
+              <it.icon className="size-5" aria-hidden strokeWidth={1.75} />
             </span>
-            <span className="mt-3 block font-display text-[28px] font-bold leading-none tabular-nums">
+            <span className="mt-4 block font-display text-[38px] leading-none tabular-nums">
               <span key={value} className="bump inline-block">
                 {num(value)}
               </span>
@@ -355,14 +355,14 @@ function Indicators({ counts, onPick, active }: { counts: Record<string, number>
               <button
                 onClick={() => onPick(on ? "" : it.status!)}
                 aria-pressed={on}
-                className={`press h-full w-full rounded-2xl bg-surface p-3.5 text-left ring-1  ${
-                  on ? "ring-2 ring-brand" : "ring-line"
+                className={`press h-full w-full rounded-3xl bg-surface p-4 text-left ring-1 ${
+                  on ? "ring-2 ring-ink" : "ring-line hover:bg-sunken"
                 }`}
               >
                 {body}
               </button>
             ) : (
-              <div className="h-full rounded-2xl bg-surface p-3.5 ring-1 ring-line">{body}</div>
+              <div className="h-full rounded-3xl bg-surface p-4 ring-1 ring-line">{body}</div>
             )}
           </li>
         );
@@ -395,7 +395,7 @@ function TabButton({
       aria-selected={on}
       title={title}
       onClick={() => setTab(id)}
-      className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ${
+      className={`flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ${
         on ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
       }`}
     >
