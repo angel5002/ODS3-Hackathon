@@ -383,7 +383,7 @@ Aplicados con `npm run voice:sync` (antes, `--dry`: solo `PATCH` de las 14 herra
    - Oferta: «Hola, le llama el asistente automatizado del Hospital Mirasur porque se liberó un cupo de {{specialty}}. ¿Hablo con {{patient_name}}?»
    - Validación: «Hola, le llama el asistente automatizado del Hospital Mirasur para validar su cupo. ¿Hablo con {{patient_name}} o con su cuidador?»
    - Registro: «Hola, le habla el asistente automatizado del Hospital Mirasur para registrar su solicitud de cita. ¿Es para usted o para otra persona?»
-2. **Prompt común**: Hospital Mirasur; frases cortas, una idea y una pregunta por turno; no repetir la presentación; la seguridad solo si la persona pregunta o antes de pedir un dato; para confirmar identidad basta un «sí» y **nunca** se pide nombre completo, DNI ni número de documento (en una llamada de prueba previa el agente pidió el DNI); transferencia: «Claro, le paso con el equipo de citas», `transfer_to_human` en el mismo turno y `end_call` enseguida; si una herramienta falla, no hablar de errores técnicos; el eco del parlante se ignora; no terminar la llamada solo por un silencio; sin etiquetas entre corchetes.
+2. **Prompt común**: Hospital Mirasur; frases cortas, una idea y una pregunta por turno; no repetir la presentación; la seguridad solo si la persona pregunta o antes de pedir un dato; para confirmar identidad basta un «sí» y **nunca** se pide nombre completo, DNI ni número de documento (en una llamada de prueba previa el agente pidió el DNI); transferencia: «Claro, le paso con el equipo de citas», `transfer_to_human` en el mismo turno y `end_call` enseguida; si una herramienta falla, no hablar de errores técnicos; el eco del parlante se ignora; no terminar la llamada solo por un silencio, y `end_call` solo cuando la tarea esté resuelta y la persona no tenga más preguntas o se despida; sin etiquetas entre corchetes.
 3. **Tareas**: registro pide el nombre ficticio al preguntar el nombre y recuerda no compartir datos reales de salud antes del motivo (antes iba en el saludo); confirmación no inventa la especialidad ni la fecha si no las tiene.
 4. `conversation.client_events`: **sin `interruption`** (la voz de la persona o el eco ya no cortan al agente; lo que se dice mientras habla no se transcribe). Para volver atrás: `"interruptions": true` en `voice/agents/common.json`.
 5. `agent.disable_first_message_interruptions: true`.
@@ -397,21 +397,35 @@ Evaluado y **no** activado: `vad.background_voice_detection` (filtra voces de fo
 ### Día de la final: modo sala ruidosa y líneas reservadas para las tarjetas
 
 **Modo sala ruidosa** («mantener para hablar»):
-- **Ajuste:** `settings_v51` con la clave `sala_ruidosa` = `on` | `off`. Si la clave no existe, cuenta como **`on`**. Migración solo aditiva `supabase/migrations/20261107050000_e5_sala_ruidosa.sql` (inserta la clave; **no aplicada**: la acción de abajo la crea igual con `upsert`).
+- **Ajuste:** `settings_v51` con la clave `sala_ruidosa` = `on` | `off`. Si la clave no existe, cuenta como **`on`**. Migración solo aditiva `supabase/migrations/20261107050000_e5_sala_ruidosa.sql` (inserta la clave; ya aplicada por el equipo; la acción de abajo la crea igual con `upsert`).
 - **Cambiarlo desde /demo:** `POST /api/staff` con `{ "action": "noisy_room", "on": true | false }` → `{ "noisyRoom": boolean }`. **Leerlo:** `GET /api/staff/data?view=voice` agrega `salaRuidosa` y `lineasReservadasTarjetas`.
 - **Llega al teléfono** en cada respuesta de `POST /api/voice/session`: `pushToTalk: boolean`.
 - **Para la pista de la pantalla de llamada** (contrato en `src/lib/voice/contract.ts`):
   - `CallViewProps.pushToTalk?: { talking, start, end }` (opcional): si viene, dibujar «Mantener para hablar»; `onPointerDown → start()`, `onPointerUp / onPointerCancel / onPointerLeave → end()`.
-  - `PUSH_TO_TALK_BUTTON_READY` (hoy `false`): ponerlo en `true` **en el mismo cambio** que dibuja el botón. Mientras sea `false`, `CallScreen` no silencia el micrófono (un micrófono silenciado sin botón dejaría a la persona sin poder hablar).
+  - `PUSH_TO_TALK_BUTTON_READY`: la pista de la pantalla «Respira» lo puso en `true` al dibujar el botón (e5 `21fb14a`). Mientras sea `false`, `CallScreen` no silencia el micrófono (un micrófono silenciado sin botón dejaría a la persona sin poder hablar).
   - Por debajo, `LiveVoice` tiene la prop `pushToTalk` y en `controlRef.current`: `setPushToTalk(on)`, `isPushToTalk()`, `talkStart()`, `talkEnd()` (el micrófono sigue abierto 300 ms después de soltar). Usa `setMuted` del SDK.
 - **Agentes:** las interrupciones por voz ya están desactivadas para todos (punto 4 de los cambios), que es la sensibilidad mínima posible; con el botón, el turno termina al soltar.
 
 **Líneas reservadas para las tarjetas del jurado:**
 - Las últimas `VOICE_RESERVED_FOR_CARDS` líneas (por defecto **3**, nunca todas) de `VOICE_MAX_CONCURRENT` (8) quedan para llamadas de pacientes cuyo token empieza exactamente con `j-` (tarjetas impresas `j-` + 6 caracteres y de prueba `j-test-…`; tokens antiguos como `julio` o `j2895s6a` **no** cuentan), directamente o por la sesión de chat vinculada.
-
-**Variables de entorno opcionales de la voz** (no están en `.env.example`): `VOICE_TRANSPORT` = `webrtc` (por defecto) | `websocket` (plan B para todos); `VOICE_RESERVED_FOR_CARDS` = líneas reservadas para las tarjetas (por defecto 3); `VOICE_MAX_CONCURRENT` (por defecto 8).
 - Si no tiene tarjeta y solo quedan las reservadas, `POST /api/voice/session` responde `{ session: null, busy: "capacidad", chatInstead: true }`, sin fila de espera. El teléfono simulado pasa solo a las opciones escritas, sin pantalla de error (`voice_events`: `sesion.reservada_tarjetas`). `/pedir-cita` (fuera de esta rama) todavía muestra «Todas las líneas están ocupadas» con «Seguir por chat»: puede mapear `chatInstead` a `onDone()`.
 - Verificado en local con `VOICE_MAX_CONCURRENT=2` y `VOICE_RESERVED_FOR_CARDS=1`: Valeria habló por voz (llamada 4551) y Luis, al contestar, pasó directo a las opciones escritas (4552, proveedor `guion`).
+
+**Variables de entorno opcionales de la voz** (no están en `.env.example`): `VOICE_TRANSPORT` = `webrtc` (por defecto) | `websocket` (plan B para todos); `VOICE_RESERVED_FOR_CARDS` = líneas reservadas para las tarjetas (por defecto 3); `VOICE_MAX_CONCURRENT` (por defecto 8).
+
+### Prueba en el alias desplegado (https://asistia-e5.vercel.app, `dpl_CuVpyuJGtj78XtFeJ5tpkEovJcYd`, e5 `21fb14a`)
+
+`tests/e2e/voice_long_call.py --rpc` (llamada de prueba por `start_test_call`, cerrada al final), Pixel 7, CPU ×4, 4G lenta, Valeria:
+
+| Modo | Llamada | Transporte | Fotogramas p95 | Tareas largas | Vaciados | Interrupciones | Transferencia | Resultado |
+|---|---|---|---|---|---|---|---|---|
+| Sala ruidosa **activada** (botón sostenido desde los 31 s) | 4559 | WebRTC | 33.3 ms | 813 ms/min | 0 | 0 | 7.2 s | OK |
+| Sala ruidosa desactivada | 4566 | WebRTC | 33.3 ms | 738 ms/min | 0 | 0 | 8.3 s | OK |
+
+- Con la sala ruidosa activada, la primera frase del micrófono («Sí, soy yo»), dicha **sin** sostener el botón, no llegó al agente: preguntó «¿Sigue ahí?». Al sostenerlo, la conversación siguió normal.
+- Para desactivarla y volver a activarla se usó la acción `noisy_room` (servidor local contra la misma base). Quedó **activada**.
+- Un intento previo (4560, desactivada) terminó a los 43 s: en la llamada de prueba `get_appointment` todavía responde 403 en producción y el agente cerró la llamada aunque la persona seguía preguntando. Se agregó al prompt común: «Usa end_call solo cuando la tarea esté resuelta y la persona no tenga más preguntas, o cuando ella se despida». La repetición (4566) llegó hasta la transferencia.
+- Antes del cambio de alias (4558, despliegue de las 09:51 sin esta rama): WebSocket y 2 vaciados del búfer con la misma configuración.
 
 ### Documentación consultada
 
@@ -419,3 +433,48 @@ Evaluado y **no** activado: `vad.background_voice_detection` (filtra voces de fo
 - https://elevenlabs.io/docs/eleven-agents/customization/conversation-flow (turnos, interrupciones por eventos del cliente, `turn_eagerness`, `soft_timeout_config`)
 - https://elevenlabs.io/docs/eleven-agents/customization/tools/tool-configuration/tool-interruptions (`interruption_mode`)
 - Código de `@elevenlabs/client` 1.35.0: `utils/ConnectionFactory.js` (la URL firmada solo admite WebSocket; el token, WebRTC), `utils/WebRTCConnection.js`, `platform/web/input.js` (restricciones del micrófono), `platform/web/output.js` y el procesador `audioConcatProcessor` (sin búfer de red en WebSocket).
+
+## 14. Chat de /pedir-cita y signos de alarma (prueba en teléfono, 7/11 10:35 UTC, S-0431)
+
+**Cierre duplicado.**
+- **Causa:** `derive_emergency` (Postgres) ya entrega al chat vinculado a la solicitud «Por lo que nos cuenta, no espere una cita… Avisamos a una persona del equipo de citas.». El bot, además, publicaba el mismo texto con «(Registro S-0431)».
+- No fue un doble envío ni un reintento: fueron dos fuentes para el mismo mensaje.
+- **Corrección:** el bot ya no repite la instrucción. Su cierre dice qué sigue: el código, que una persona del equipo lo revisará ahora y le escribirá por el chat, y que si empeora llame al 106. Además ofrece el botón «Hablar ahora con una persona».
+- **Pruebas:** `tests/bot-script.test.ts`. Además, una prueba de punta a punta en el servidor local: la instrucción aparece **1 vez**. La solicitud de prueba S-0439 se retiró y su tarea se cerró.
+
+**Cierres:**
+- Registro: en una o dos frases dice el código, que no es una cita, quién lo revisa, por dónde avisamos (chat o llamada) y que si empeora acuda a emergencia o llame al 106. No promete plazos.
+- Voz: lo mismo en `register_request` y en el mensaje al chat (`src/lib/voice/tools.ts`, rige cuando producción tenga este código).
+
+**Hablar con una persona:**
+- Acción rápida persistente: `GET /api/chat/messages` → `quickActions: [{ id: "persona", label: "Hablar con una persona", send: "Hablar con una persona" }]`.
+- El servidor reconoce «PERSONA», «Hablar con una persona», «Hablar ahora con una persona» y «3. Hablar con una persona» (`isPersonRequest`).
+- Si el texto dice «ahora», la tarea lo indica.
+- El consentimiento ya no dice «escriba PERSONA».
+
+**Signos de alarma** (`src/lib/bot/script.ts`):
+- **Una sola pregunta**, en segunda persona: «¿Siente ahora algo que no puede esperar, como dolor fuerte en el pecho, falta de aire o un desmayo?». Si la cita es para otra persona: «¿Rosa tiene ahora…?».
+- **Preguntas de contexto**, solo si la persona lo mencionó:
+  - embarazo en el motivo → «¿Tiene ahora sangrado o un dolor fuerte en el embarazo?»;
+  - bebé (edad 0 o «bebé» o «meses» en el motivo) → «¿El bebé tiene fiebre y menos de 3 meses?».
+- **Si dice que sí:** «¿Qué siente? Cuéntelo en pocas palabras…», con botones de ejemplo. Nunca un diagnóstico ni una causa. Luego se deriva y la tarea `alarma` guarda lo que dijo.
+- Si el motivo tiene palabras de alarma y respondió que no, se pregunta una vez más.
+- La lista de 7 signos ya no se usa.
+
+**Modo sala ruidosa en /pedir-cita:**
+- El servidor ya enviaba `pushToTalk` también en la llamada de registro.
+- Faltaba que `VoiceRegister` (`PedirCita.tsx`, pista A) lo pasara a `CallView` y a `LiveVoice`. La pista A confirma que ya lo hace en su rama, con la misma regla que `CallScreen`.
+
+### Cambios en los agentes de ElevenLabs (para POST_FINAL.md)
+
+Aplicados con `voice:sync`, después de `--dry`: solo PATCH de 14 herramientas y 4 agentes, ningún POST. Sin variables nuevas.
+
+10. **Prompt común:** ante algo que no puede esperar, en cualquier momento:
+    - preguntar en pocas palabras qué siente (si no lo dijo), sin sugerir causas ni diagnosticar;
+    - usar `flag_alarm` con lo que dijo en `symptom`;
+    - indicar emergencia o el 106 y decir que una persona del equipo revisará el caso;
+    - **no leer listas de signos**.
+11. **Tarea de registro:**
+    - una sola pregunta de alarma (la de arriba);
+    - embarazo o bebé solo si se mencionó;
+    - cierre con el texto `say`: qué se registró, quién lo revisa, por dónde avisamos y qué hacer si empeora, sin prometer plazos.
