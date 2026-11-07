@@ -10,6 +10,7 @@ Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ni
    ```
    Otra forma: en el panel de Vercel, Settings → Deployment Protection → Deployment Protection Exceptions → quitar `asistia-e5.vercel.app`.
    Para comprobarlo, abrir `https://asistia-e5.vercel.app` en una ventana privada: debe redirigir al inicio de sesión de Vercel.
+   **Lo mismo para el alias corto `asistia.vercel.app`** (7/11, la URL de los QR impresos; apunta al mismo despliegue que `asistia-e5`): `node --env-file=.env.local scripts/dev/vercel-alias.mjs --reprotect asistia.vercel.app`, y quitar `asistia.vercel.app` de `allowed_hosts` en `voice/agents/common.json` (sección 2). Las cookies no fijan dominio: no hay nada que deshacer en ellas.
 2. **Opcional: quitar el alias** `asistia-e5.vercel.app` (panel de Vercel → Domains del proyecto, o `DELETE /v2/aliases/{alias}` de la API).
 3. **Opcional: borrar los despliegues de vista previa de la E5:**
    - `dpl_5Z7CcD4sRZ8vY3KgLuSp9z3Uyuug`;
@@ -23,7 +24,7 @@ Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ni
 
 `voice/agents/common.json` → `allowed_hosts` tiene hoy `ods3-hackathon.vercel.app`, `localhost:3000` y `asistia-e5.vercel.app`.
 
-1. Quitar **`asistia-e5.vercel.app`**. Conservar `ods3-hackathon.vercel.app`, porque producción lo usa.
+1. Quitar **`asistia-e5.vercel.app`** y **`asistia.vercel.app`**. Conservar `ods3-hackathon.vercel.app`, porque producción lo usa.
 2. Decidir si `localhost:3000` se queda. Sirve solo para pruebas locales y venía de la E4.
 3. Publicar en ElevenLabs. Primero en seco, y comprobar que solo hay `PATCH` a las 14 herramientas y los 4 agentes existentes:
    ```bash
