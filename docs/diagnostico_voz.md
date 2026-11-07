@@ -223,7 +223,7 @@ Al terminar, la base quedó sin solicitudes ni tareas nuevas y sin llamadas abie
 - Faltan en Production:
   - `ELEVENLABS_WEBHOOK_SECRET`, que también está vacía en `.env.local`;
   - las herramientas locales (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `VERCEL_TOKEN`, `VERCEL_OIDC_TOKEN`, `GEMINI_API_KEY`, que no usa el código);
-  - las de Twilio y de teléfonos, vacías y fuera de la v5.1.
+  - las de telefonía heredadas de la E4, vacías y fuera de la v5.1.
 - Las variables de ElevenLabs se cargaron el 6/11 a las 17:49 UTC, y el despliegue de producción vigente (`dpl_7tq6…ErCxdyZF`) es de las **17:51 UTC**, así que las incluye.
 
 **Voz del teléfono simulado contra el despliegue real:**
