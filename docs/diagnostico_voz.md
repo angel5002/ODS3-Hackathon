@@ -407,7 +407,9 @@ Evaluado y **no** activado: `vad.background_voice_detection` (filtra voces de fo
 - **Agentes:** las interrupciones por voz ya están desactivadas para todos (punto 4 de los cambios), que es la sensibilidad mínima posible; con el botón, el turno termina al soltar.
 
 **Líneas reservadas para las tarjetas del jurado:**
-- Las últimas `VOICE_RESERVED_FOR_CARDS` líneas (por defecto **3**, nunca todas) de `VOICE_MAX_CONCURRENT` (8) quedan para llamadas de pacientes cuyo token empieza con `j-`, directamente o por la sesión de chat vinculada.
+- Las últimas `VOICE_RESERVED_FOR_CARDS` líneas (por defecto **3**, nunca todas) de `VOICE_MAX_CONCURRENT` (8) quedan para llamadas de pacientes cuyo token empieza exactamente con `j-` (tarjetas impresas `j-` + 6 caracteres y de prueba `j-test-…`; tokens antiguos como `julio` o `j2895s6a` **no** cuentan), directamente o por la sesión de chat vinculada.
+
+**Variables de entorno opcionales de la voz** (no están en `.env.example`): `VOICE_TRANSPORT` = `webrtc` (por defecto) | `websocket` (plan B para todos); `VOICE_RESERVED_FOR_CARDS` = líneas reservadas para las tarjetas (por defecto 3); `VOICE_MAX_CONCURRENT` (por defecto 8).
 - Si no tiene tarjeta y solo quedan las reservadas, `POST /api/voice/session` responde `{ session: null, busy: "capacidad", chatInstead: true }`, sin fila de espera. El teléfono simulado pasa solo a las opciones escritas, sin pantalla de error (`voice_events`: `sesion.reservada_tarjetas`). `/pedir-cita` (fuera de esta rama) todavía muestra «Todas las líneas están ocupadas» con «Seguir por chat»: puede mapear `chatInstead` a `onDone()`.
 - Verificado en local con `VOICE_MAX_CONCURRENT=2` y `VOICE_RESERVED_FOR_CARDS=1`: Valeria habló por voz (llamada 4551) y Luis, al contestar, pasó directo a las opciones escritas (4552, proveedor `guion`).
 
