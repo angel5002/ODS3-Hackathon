@@ -290,7 +290,7 @@ El acceso se hace con `DEMO_PIN` y un selector de rol. Los roles son Admisión, 
 - **Webhook posterior a la llamada:** valida la firma HMAC y guarda el resumen y las acciones en `calls`. La transcripción completa no se guarda.
 - **Registro por voz en el navegador:** desde `/pedir-cita`, con una URL firmada que emite el servidor. La clave nunca llega al navegador.
 - **Sin telefonía:** no se integra ningún proveedor telefónico ni se usan números reales. La interfaz `VoiceChannel` queda preparada para conectar el mismo agente a la línea del establecimiento en un piloto.
-- **Identificación y seguridad** (v5.1, sección 4.3): el agente se presenta como "Asistente automatizado del Hospital de demostración", dice que nunca pide pagos, claves, códigos ni el DNI completo y ofrece hablar con una persona. Textos exactos en `docs/conversaciones.md` §4.
+- **Identificación y seguridad** (v5.1, sección 4.3): el agente se presenta como "Asistente automatizado del Hospital Mirasur", dice que nunca pide pagos, claves, códigos ni el DNI completo y ofrece hablar con una persona. Textos exactos en `docs/conversaciones.md` §4.
 - **Respaldo:**
   - si falla ElevenLabs (cuota, red o error), se usa Gemini Live en la misma pantalla de llamada;
   - si también falla Gemini, se usa el guion fijo.

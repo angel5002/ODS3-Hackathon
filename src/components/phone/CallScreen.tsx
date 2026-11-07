@@ -23,7 +23,7 @@ import { CallView } from "@/components/voice/CallView";
 
 const LiveVoice = dynamic(() => import("@/components/voice/LiveVoice").then((m) => m.LiveVoice), { ssr: false });
 
-export const ESTABLISHMENT = "Hospital de demostración";
+export const ESTABLISHMENT = "Hospital Mirasur";
 
 const PURPOSE_LABEL: Record<string, string> = {
   confirmacion: "Confirmación de su cita",

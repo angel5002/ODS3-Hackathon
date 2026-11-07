@@ -102,10 +102,10 @@ export function ParamsView({
 }: ParamsViewProps) {
   return (
     <DemoCard className="p-5">
-      <h2 className="font-display text-[19px] font-bold tracking-[-0.01em]">
+      <h2 className="text-[19px] font-bold">
         Reglas aprobadas por el hospital (parámetros)
       </h2>
-      <p className="mt-1 text-[13px] text-vc-text-2">
+      <p className="mt-1 text-[13px] text-(--cc-text-2)">
         Valores iniciales de la propuesta (sección 4.6). Cambiarlos se registra
         como supuesto de la demo.
       </p>
@@ -132,7 +132,7 @@ export function ParamsView({
                     }
                     className={demoField}
                   />
-                  <span className="w-20 text-[12px] text-vc-text-2">
+                  <span className="w-20 text-[12px] text-(--cc-text-2)">
                     {p.unit}
                   </span>
                 </span>
