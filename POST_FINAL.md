@@ -2,6 +2,16 @@
 
 Lista de todo lo temporal que se creó durante la E5 para probar y presentar. Ninguno de estos pasos se ejecuta solo: los hace una persona del equipo, en este orden. Los comandos cargan las claves dentro del proceso (`--env-file` o dotenv) y no las muestran.
 
+## 0. Producción ya corre la E5 (7/11, autorizado por el equipo)
+
+- **URL final (la de los QR):** https://ods3-hackathon.vercel.app
+- **Despliegue de producción de la E5:** `dpl_2uXrhLuXpiBEYtTAXFPj1YYJZSkx` (e5 `3b38c77`, desplegado con `--prod`, variables de Production). Después, el push de `main` hace que Vercel cree otro despliegue de producción desde git con el mismo código.
+- **Para revertir:** volver al despliegue anterior, `dpl_HTUNbr1oZAnB9eAum3W7h1SfhebS` (código E4, 6/11 06:00 UTC). En Vercel: Deployments → ese despliegue → *Instant Rollback* (o *Promote*). Y `breakeven_r` de vuelta a 0.053: `update public.params set value = 0.053 where key = 'breakeven_r';`.
+- **Lo que se aplicó del plan de merge:** solo `breakeven_r` = 0.052 (`supabase/data/20261107_breakeven_v51.sql`). **No** se aplicó `supabase/merge/20261107_v51_switch.sql`: reescribe 7 funciones existentes y la E5 ya llama a las `_v51` directamente. Queda para después de la final, con `test:priority`. Tampoco se cambió el texto «Hospital María Auxiliadora» de `send_reminders` (ver `docs/plan_merge.md` §2.3).
+- **Variables:** Production tiene todas las que usa la E5. La única diferencia con Preview es `VERCEL_PREVIEW_FEEDBACK_ENABLED` (solo Preview).
+- **`main` = `e5`** (fast-forward el 7/11).
+- **Temporales que siguen activos y apuntan a despliegues de vista previa:** `asistia.vercel.app` y `asistia-e5.vercel.app`, ambos con excepción de protección y presentes en `allowed_hosts` de los agentes de voz. Se quitan como dicen las secciones 1 y 2.
+
 ## 1. Vista previa pública `asistia-e5.vercel.app` (Vercel)
 
 1. **Quitar la excepción de protección del alias.** Hoy ese dominio abre sin iniciar sesión en Vercel; el resto del proyecto sigue protegido.
