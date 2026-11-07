@@ -4,7 +4,8 @@
 // the call screen: the resting wave, one title, two short lines, one button and the safety line. It receives
 // only these props: no SDK, no server calls. The controller (PedirCita › VoiceRegister) mounts it while the
 // voice state is "idle" and passes `ready` (the anonymous chat session exists) and `onStart`.
-// It fills its parent (flex-1, full height); give the parent a height or a flex column.
+// Like CallView it is rendered as `absolute inset-0` inside a relative container (the <main> of the voice view,
+// whatever its padding), so it always takes the full available height.
 import type { CSSProperties } from "react";
 import { Mic, ShieldCheck } from "lucide-react";
 import { DEFAULT_VOICE_THEME, type VoiceTheme } from "@/lib/voice/theme";
@@ -28,7 +29,7 @@ export function VoiceStartView({ ready, onStart, theme = DEFAULT_VOICE_THEME, es
     <section
       aria-label="Hablar con el asistente"
       data-voice-theme={theme}
-      className={`@container relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-vc-bg text-vc-text ${className}`}
+      className={`@container absolute inset-0 z-20 flex flex-col overflow-hidden bg-vc-bg text-vc-text ${className}`}
       style={{ backgroundImage: "linear-gradient(to bottom, var(--vc-bg-2), var(--vc-bg) 62%)" }}
     >
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[6%] h-[55%]">
@@ -64,7 +65,7 @@ export function VoiceStartView({ ready, onStart, theme = DEFAULT_VOICE_THEME, es
         </div>
       </div>
 
-      <p className="relative shrink-0 text-balance px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-2 text-center text-[12px] leading-snug text-vc-text-3 @md:text-[13px]">
+      <p className="relative shrink-0 text-balance px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-2 text-center text-[12px] leading-snug text-vc-text-3 @md:text-[13px]">
         <ShieldCheck className="mr-1 inline size-4 align-[-3px] text-vc-icon" aria-hidden />
         {CALL_SAFETY_LINE}
       </p>

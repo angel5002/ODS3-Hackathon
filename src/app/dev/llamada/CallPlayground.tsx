@@ -71,13 +71,13 @@ export function CallPlayground({
   muted: initialMuted,
 }: {
   initial: PlaygroundState;
-  frame: "pantalla" | "telefono";
+  frame: "pantalla" | "telefono" | "pedir";
   panel: boolean;
   captions: boolean;
   muted: boolean;
 }) {
   const [state, setState] = useState<PlaygroundState>(initial);
-  const [frame, setFrame] = useState(initialFrame);
+  const [frame, setFrame] = useState<"pantalla" | "telefono" | "pedir">(initialFrame);
   const [captionsVisible, setCaptionsVisible] = useState(initialCaptions);
   const [muted, setMuted] = useState(initialMuted);
   const [seconds, setSeconds] = useState(initial === "finalizada" ? 94 : initial === "finalizando" ? 41 : initial.startsWith("activa") || initial === "guion" ? 37 : 0);
@@ -209,15 +209,13 @@ export function CallPlayground({
   };
 
   const screen = start ? (
-    <div className="absolute inset-0 flex flex-col">
-      <VoiceStartView
-        ready
-        onStart={() => {
-          go("conectando");
-          later(1600, () => go("activa-auto"));
-        }}
-      />
-    </div>
+    <VoiceStartView
+      ready
+      onStart={() => {
+        go("conectando");
+        later(1600, () => go("activa-auto"));
+      }}
+    />
   ) : (
     <CallView {...props} />
   );
@@ -227,6 +225,24 @@ export function CallPlayground({
       <div className="grid h-full place-items-center p-4">
         <div className="relative h-[min(800px,calc(100dvh-2rem))] w-full max-w-[400px] overflow-hidden rounded-[28px] border-[6px] border-ink shadow-xl">
           {screen}
+        </div>
+      </div>
+    ) : frame === "pedir" ? (
+      // same boxes as /pedir-cita (PedirCita): app bar, notice, sound bar and the voice view <main>
+      <div className="flex h-full justify-center bg-[#cfd8d4] sm:py-6">
+        <div className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-paper sm:rounded-[28px] sm:shadow-xl">
+          <header className="flex items-center gap-2 bg-brand px-3 pb-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))] text-white">
+            <span className="grid size-9 place-items-center" aria-hidden>
+              ←
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate font-semibold">Llamada con el asistente</p>
+              <p className="truncate text-xs text-white/75">Usted aparece como «Cóndor 267»</p>
+            </div>
+          </header>
+          <p className="bg-[#fff8e1] px-3 py-1.5 text-[11px] leading-snug text-[#6b4e00]">{DISCLAIMER} Use un nombre ficticio.</p>
+          <p className="bg-[#10302f] px-3 py-2.5 text-center text-sm font-semibold text-white">Activar sonido y llamadas</p>
+          <main className="relative flex flex-1 flex-col p-4">{screen}</main>
         </div>
       </div>
     ) : (
@@ -264,6 +280,10 @@ export function CallPlayground({
       <label className="flex min-h-11 items-center gap-2">
         <input type="checkbox" checked={frame === "telefono"} onChange={(e) => setFrame(e.target.checked ? "telefono" : "pantalla")} className="size-5" />
         Dentro del marco de teléfono
+      </label>
+      <label className="flex min-h-11 items-center gap-2">
+        <input type="checkbox" checked={frame === "pedir"} onChange={(e) => setFrame(e.target.checked ? "pedir" : "pantalla")} className="size-5" />
+        Dentro de /pedir-cita
       </label>
       <p className="text-xs leading-snug text-muted">Audio simulado. Página solo para desarrollo. {DISCLAIMER}</p>
     </div>

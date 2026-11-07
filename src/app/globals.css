@@ -610,3 +610,33 @@ button:disabled {
     transform: none;
   }
 }
+
+/* short call screens (the call inside /pedir-cita on a small phone): the message stages tighten up so the
+   title, the detail and every button fit without cutting anything. Needs the call root's size container. */
+@container (max-height: 600px) {
+  .vc-emblem {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 20px;
+  }
+  .vc-emblem svg {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  .vc-after-emblem {
+    margin-top: 0.75rem;
+  }
+  .vc-pill-tall {
+    min-height: 3rem;
+  }
+  .vc-stack {
+    gap: 0.5rem;
+  }
+  .vc-big-number {
+    font-size: 2.5rem;
+  }
+  /* repeats what the buttons already say: the first thing to go when there is no room */
+  .vc-optional {
+    display: none;
+  }
+}

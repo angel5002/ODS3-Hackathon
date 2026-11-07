@@ -122,7 +122,10 @@ export function CallView(props: CallViewProps & CallViewExtraProps) {
         {talk ? (
           <TalkStage {...props} speaker={speaker} waveActive={waveActive} waveLevels={waveLevels} theme={theme} />
         ) : (
-          <div key={stageKey} className="vc-enter mx-auto flex w-full max-w-[600px] flex-1 flex-col items-center justify-center px-6 pb-8 text-center">
+          <div
+            key={stageKey}
+            className="vc-enter mx-auto flex min-h-0 w-full max-w-[600px] flex-1 flex-col items-center overflow-y-auto px-6 py-2 text-center [justify-content:safe_center]"
+          >
             <StaticStage {...props} />
           </div>
         )}
@@ -211,7 +214,8 @@ function TalkStage(
         />
       </div>
 
-      <div className="flex w-full max-w-[600px] flex-col items-center px-6" style={{ "--i": 1 } as CSSProperties}>
+      {/* never shrinks: when the height is short the wave gives way, the state and the caption do not */}
+      <div className="flex w-full max-w-[600px] shrink-0 flex-col items-center px-6" style={{ "--i": 1 } as CSSProperties}>
         <p role="status" aria-live="polite" aria-atomic="true" className="flex items-center gap-2.5">
           <span
             aria-hidden
@@ -257,7 +261,19 @@ function TalkStage(
   );
 }
 
-/** Only the last sentence, clamped, with a small button to hide it. The space is reserved so nothing jumps. */
+/** Last sentence of a caption ("Hola, soy… ¿La cita es para usted?" -> "¿La cita es para usted?"). */
+export function lastSentence(text: string) {
+  const parts = text.trim().match(/[^.!?…]+[.!?…]*["»)\]]*\s*/g);
+  if (!parts) return text.trim();
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const s = parts[i].trim();
+    if (/[\p{L}\p{N}]/u.test(s)) return s;
+  }
+  return text.trim();
+}
+
+/** The last sentence only (the full turn in the fixed script, where the question needs its context), clamped,
+ *  with a small button to hide it. The space is reserved so nothing jumps and no line is ever cut in half. */
 function CaptionLine({
   last,
   visible,
@@ -273,12 +289,14 @@ function CaptionLine({
 }) {
   return (
     <section aria-label="Subtítulos" className="mt-3 flex w-full max-w-[34rem] flex-col items-center">
-      <div className={`flex w-full flex-col items-center justify-start ${lines === 3 ? "min-h-[6.25rem]" : "min-h-[4.75rem]"}`}>
+      <div className={`flex w-full flex-col items-center justify-start ${lines === 3 ? "h-[6.25rem]" : "h-[4.75rem]"}`}>
         {visible &&
           (last ? (
             <div key={last.id} className="vc-swap w-full text-center" aria-live="polite">
               <p className="text-[12.5px] font-semibold text-vc-text-3">{last.who === "agente" ? "Asistente" : "Usted"}</p>
-              <p className={`mt-0.5 text-pretty text-[18px] leading-snug text-vc-text ${lines === 3 ? "line-clamp-3" : "line-clamp-2"}`}>{last.text}</p>
+              <p className={`mt-0.5 text-pretty text-[18px] leading-snug text-vc-text ${lines === 3 ? "line-clamp-3" : "line-clamp-2"}`}>
+                {lines === 3 ? last.text : lastSentence(last.text)}
+              </p>
             </div>
           ) : (
             live && <p className="pt-4 text-center text-[15px] text-vc-text-3">Aquí verá lo último que se dijo.</p>
@@ -351,16 +369,16 @@ function StaticStage(p: CallViewProps) {
           <Emblem tone="var(--vc-warn)" style={i(0)}>
             <Hourglass className="size-10" aria-hidden />
           </Emblem>
-          <p style={i(1)} role="status" className="mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
+          <p style={i(1)} role="status" className="vc-after-emblem mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
             Todas las líneas están ocupadas
           </p>
           {p.busy?.position != null && p.busy.position > 0 && (
             <p style={i(2)} className="mt-4 flex flex-col items-center">
               <span className="text-[14px] text-vc-text-2">Su lugar en la fila</span>
-              <span className="font-display text-6xl font-bold tabular-nums leading-none">{p.busy.position}</span>
+              <span className="vc-big-number font-display text-6xl font-bold tabular-nums leading-none">{p.busy.position}</span>
             </p>
           )}
-          <p style={i(3)} className="mt-4 max-w-[30ch] text-pretty text-[15px] leading-snug text-vc-text-2">
+          <p style={i(3)} className="vc-optional mt-4 max-w-[30ch] text-pretty text-[15px] leading-snug text-vc-text-2">
             Seguimos intentando. También puede seguir por chat.
           </p>
         </>
@@ -385,7 +403,7 @@ function Message({ icon, title, detail, tone }: { icon: ReactNode; title: string
       <Emblem tone={tone} style={{ "--i": 0 } as CSSProperties}>
         {icon}
       </Emblem>
-      <p role="status" style={{ "--i": 1 } as CSSProperties} className="mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
+      <p role="status" style={{ "--i": 1 } as CSSProperties} className="vc-after-emblem mt-6 text-balance font-display text-[26px] font-bold leading-tight tracking-[-0.01em]">
         {title}
       </p>
       {detail && (
@@ -399,7 +417,7 @@ function Message({ icon, title, detail, tone }: { icon: ReactNode; title: string
 
 function Emblem({ children, tone = "var(--vc-icon)", style }: { children: ReactNode; tone?: string; style?: CSSProperties }) {
   return (
-    <div className="grid size-24 place-items-center rounded-[30px] border border-vc-edge bg-vc-surface" style={{ ...style, color: tone }}>
+    <div className="vc-emblem grid size-24 shrink-0 place-items-center rounded-[30px] border border-vc-edge bg-vc-surface" style={{ ...style, color: tone }}>
       {children}
     </div>
   );
@@ -459,7 +477,7 @@ function PillButton({ label, onClick, tone, icon }: { label: string; onClick: ()
         ? "bg-vc-danger text-vc-on-danger active:bg-vc-danger-press"
         : "border border-vc-edge bg-vc-surface text-vc-text active:bg-vc-surface-press";
   return (
-    <button type="button" onClick={onClick} className={`vc-pill flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-4 text-[17px] font-semibold ${cls}`}>
+    <button type="button" onClick={onClick} className={`vc-pill vc-pill-tall flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-4 text-[17px] font-semibold ${cls}`}>
       {icon}
       {label}
     </button>
@@ -559,5 +577,5 @@ function Row({ children, wide }: { children: ReactNode; wide?: boolean }) {
 }
 
 function Stack({ children }: { children: ReactNode }) {
-  return <div className="mx-auto grid w-full max-w-[400px] gap-2.5">{children}</div>;
+  return <div className="vc-stack mx-auto grid w-full max-w-[400px] gap-2.5">{children}</div>;
 }
