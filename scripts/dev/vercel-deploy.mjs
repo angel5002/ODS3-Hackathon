@@ -1,6 +1,7 @@
 // Production deploy through the Vercel REST API (the CLI rejects team tokens without a user).
 // Uploads the git-tracked files (minus .vercelignore) and creates a production deployment.
-// Usage: node scripts/dev/vercel-deploy.mjs
+// Usage: node scripts/dev/vercel-deploy.mjs            (production)
+//        node scripts/dev/vercel-deploy.mjs --preview  (preview deployment: production is not touched)
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
@@ -9,6 +10,7 @@ config({ path: ".env.local", quiet: true });
 const PROJECT = "prj_nWpsBGNxQuIh1ZVQXyGUFE6CzLQ1";
 const TEAM = "team_JpdkJ5IfWbnjb3KMpsj6ATQl";
 const token = process.env.VERCEL_TOKEN;
+const PREVIEW = process.argv.includes("--preview");
 const q = `teamId=${TEAM}`;
 
 const ignore = readFileSync(".vercelignore", "utf8")
@@ -43,11 +45,11 @@ console.log(`Archivos subidos: ${list.length} (${(bytes / 1e6).toFixed(1)} MB)`)
 const res = await fetch(`https://api.vercel.com/v13/deployments?${q}&forceNew=1`, {
   method: "POST",
   headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-  body: JSON.stringify({ name: "ods3-hackathon", project: PROJECT, target: "production", files: list, projectSettings: { framework: "nextjs" } }),
+  body: JSON.stringify({ name: "ods3-hackathon", project: PROJECT, ...(PREVIEW ? {} : { target: "production" }), files: list, projectSettings: { framework: "nextjs" } }),
 });
 const d = await res.json();
 if (!res.ok) throw new Error(JSON.stringify(d).slice(0, 500));
-console.log("Despliegue:", d.id, d.url, d.readyState);
+console.log(PREVIEW ? "Despliegue de VISTA PREVIA:" : "Despliegue de PRODUCCIÓN:", d.id, d.url, d.readyState);
 for (let i = 0; i < 120; i++) {
   await new Promise((r) => setTimeout(r, 5000));
   const s = await fetch(`https://api.vercel.com/v13/deployments/${d.id}?${q}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json());
