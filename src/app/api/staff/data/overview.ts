@@ -1,6 +1,7 @@
 // /demo control center (read only): one compact answer built from the RPCs and tables the panel and the board
 // already read. No writes, no new database objects. Admisión only (the parent route sits behind the PIN proxy).
 import { rpc, serverDb } from "@/lib/supabase/server";
+import { noisyRoom } from "@/lib/voice/sessions";
 import type { DemoOverview, OverviewEvent, OverviewSlot, OverviewWaitRow } from "@/lib/demo-overview";
 
 type ReqRow = {
@@ -163,6 +164,8 @@ export async function demoOverview(): Promise<DemoOverview> {
   const asg = assignments.data ?? [];
   return {
     rule: rule.data?.value === "primero_acepta" ? "primero_acepta" : "ventana_prioridad",
+    // final day: "sala ruidosa" (push-to-talk on the phones' voice), settings_v51 'sala_ruidosa'; missing = on
+    noisy_room: await noisyRoom().catch(() => true),
     stages: {
       registro: {
         total: reqs.length,

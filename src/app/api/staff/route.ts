@@ -8,6 +8,7 @@ import { scrubReason } from "@/lib/scrub";
 import type { DemoState, Status } from "@/lib/types";
 import { juryFail } from "@/lib/jury/server";
 import { isJuryToken } from "@/lib/jury/tokens";
+import { setNoisyRoom } from "@/lib/voice/sessions";
 
 const STAFF = "Admisión";
 const MANUAL: Status[] = ["confirmada", "liberada", "sin_respuesta", "derivada_a_persona", "pendiente"];
@@ -62,6 +63,11 @@ export async function POST(req: Request) {
       case "params":
         await saveParams(body.params ?? {});
         return ok();
+      case "noisy_room": {
+        // final day: "modo sala ruidosa" (push-to-talk on the phones' voice), settings_v51 'sala_ruidosa'
+        if (typeof body.on !== "boolean") return fail("invalid on");
+        return ok({ noisyRoom: await setNoisyRoom(body.on) });
+      }
       case "assignment_rule": {
         // v5.1: the two assignment variants, stored as text (settings_v51)
         const rule = String(body.rule ?? "");

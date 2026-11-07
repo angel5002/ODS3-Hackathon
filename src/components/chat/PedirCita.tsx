@@ -4,7 +4,7 @@
 // browser, or the front-desk form as a fallback. No third-party logos, no phone number, no e-mail.
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ChevronRight, ClipboardList, MessageCircle, Mic, SendHorizontal, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ClipboardList, MessageCircle, Mic, SendHorizontal, Trash2, TriangleAlert } from "lucide-react";
 import { Bubble, DemoNotice, QuickReplies, SoundButton, ThreadList, TypingBubble } from "./ChatParts";
 import { toast } from "sonner";
 import { Brand } from "@/components/Brand";
@@ -168,14 +168,15 @@ export function PedirCita({ jury, channels, start }: PedirCitaProps = {}) {
   );
 }
 
-// ---------- Presentational pieces (E5 app, E5 estilo): props only, also rendered by /dev/pantallas ----------
-// Sober style (docs/estilo.md): white surfaces, 1 px borders, 4 px controls, no gradients or shadows.
+// ---------- Presentational pieces (E5 app, E5 stoic): props only, also rendered by /dev/pantallas ----------
+// "Stoic, versión salud" (docs/estilo.md): near-white page, white cards with a subtle border, one main action
+// (near-black), short titles in DM Serif Display, one supporting line, nothing else unless tapped.
 
 const stagger = (n: number) => ({ "--i": n }) as CSSProperties;
 const VIEW_TITLE: Record<View, string> = {
   inicio: "Pedir una cita",
   chat: "Asistente de citas",
-  voz: "Llamada con el asistente",
+  voz: "Llamada",
   formulario: "Formulario",
 };
 
@@ -185,7 +186,7 @@ export function PedirCitaFrame({ children }: { children: ReactNode }) {
     <div className="flex h-dvh justify-center bg-vc-bg-2 sm:py-6">
       <div
         data-voice-theme="claro"
-        className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-2xl sm:border sm:border-vc-line"
+        className="relative flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-vc-bg text-vc-text sm:rounded-3xl sm:border sm:border-vc-line"
       >
         {children}
       </div>
@@ -193,26 +194,28 @@ export function PedirCitaFrame({ children }: { children: ReactNode }) {
   );
 }
 
+/** One quiet bar: the brand (home) or Volver + the view's name; who the person appears as, in small text that
+ *  wraps instead of being cut. */
 export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View; subtitle: string; onBack: () => void; onWipe: () => void }) {
   return (
-    <header className="flex shrink-0 items-center gap-2.5 border-b border-vc-line bg-vc-bg px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
+    <header className="flex shrink-0 items-center gap-2 bg-vc-bg px-3 pb-1.5 pt-[calc(0.5rem+env(safe-area-inset-top))]">
       {view !== "inicio" ? (
         <button
           type="button"
           onClick={onBack}
           aria-label="Volver"
-          className="vc-round grid size-11 shrink-0 place-items-center rounded-md border border-vc-edge bg-vc-bg text-vc-text active:bg-vc-surface-press"
+          className="vc-round press grid size-11 shrink-0 place-items-center rounded-full bg-vc-surface text-vc-text active:bg-vc-surface-press"
         >
           <ArrowLeft className="size-5" aria-hidden />
         </button>
       ) : (
-        <span className="shrink-0">
+        <span className="shrink-0 pl-1">
           <Brand />
         </span>
       )}
-      <div className={`min-w-0 flex-1 leading-tight ${view === "inicio" ? "border-l border-vc-line pl-2.5" : ""}`}>
-        <p className="truncate text-[17px] font-bold text-vc-text">{VIEW_TITLE[view]}</p>
-        <p className="truncate text-[13px] text-vc-text-2">{subtitle}</p>
+      <div className={`min-w-0 flex-1 leading-tight ${view === "inicio" ? "text-right" : ""}`}>
+        {view !== "inicio" && <p className="text-[17px] font-semibold text-vc-text">{VIEW_TITLE[view]}</p>}
+        <p className="text-pretty text-[13px] text-vc-text-3">{subtitle}</p>
       </div>
       {view === "chat" && (
         <button
@@ -220,7 +223,7 @@ export function PedirCitaHeader({ view, subtitle, onBack, onWipe }: { view: View
           onClick={onWipe}
           title="Borrar mi conversación"
           aria-label="Borrar mi conversación"
-          className="vc-round grid size-11 shrink-0 place-items-center rounded-md text-vc-text-2 hover:bg-vc-surface active:bg-vc-surface-press"
+          className="vc-round press grid size-11 shrink-0 place-items-center rounded-full text-vc-text-2 hover:bg-vc-surface active:bg-vc-surface-press"
         >
           <Trash2 className="size-5" aria-hidden />
         </button>
@@ -251,15 +254,15 @@ function safeReload() {
 export function ExpiredNotice({ onRestart }: { onRestart: () => void }) {
   return (
     <div className="vc-enter m-auto flex max-w-xs flex-col items-center p-6 text-center">
-      <MessageCircle style={stagger(0)} className="size-8 text-vc-icon" aria-hidden />
-      <p style={stagger(1)} className="mt-3 text-[17px] font-semibold text-vc-text">
-        La conversación se cerró o venció.
+      <MessageCircle style={stagger(0)} className="size-8 text-vc-icon" aria-hidden strokeWidth={1.5} />
+      <p style={stagger(1)} className="mt-3 font-display text-[26px] leading-tight text-vc-text">
+        La conversación venció
       </p>
       <button
         type="button"
         style={stagger(2)}
         onClick={onRestart}
-        className="vc-pill mt-5 min-h-12 rounded-md bg-vc-primary px-6 text-[17px] font-semibold text-vc-on-primary active:bg-vc-primary-press"
+        className="vc-pill press mt-6 min-h-12 rounded-full bg-vc-primary px-7 text-[17px] font-semibold text-vc-on-primary active:bg-vc-primary-press"
       >
         Empezar de nuevo
       </button>
@@ -269,10 +272,12 @@ export function ExpiredNotice({ onRestart }: { onRestart: () => void }) {
 
 export function FormWrapper({ children }: { children: ReactNode }) {
   return (
-    <div className="vc-enter flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-5">
-      <p style={stagger(0)} className="mb-5 flex items-start gap-2.5 border-l-4 border-vc-icon bg-vc-bg-2 p-3 text-[15px] leading-snug text-vc-text-2">
-        <ClipboardList className="mt-0.5 size-4 shrink-0 text-vc-icon" aria-hidden />
-        El mismo formulario de ventanilla. Su respuesta y las ofertas llegarán al chat de esta página.
+    <div className="vc-enter flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-4">
+      <h1 style={stagger(0)} className="font-display text-[30px] leading-tight text-vc-text">
+        Sus datos
+      </h1>
+      <p style={stagger(0)} className="mb-5 mt-1 text-[16px] leading-snug text-vc-text-2">
+        La respuesta le llegará al chat.
       </p>
       <div style={stagger(1)}>{children}</div>
     </div>
@@ -280,51 +285,51 @@ export function FormWrapper({ children }: { children: ReactNode }) {
 }
 
 export function Home({ onPick, sound, channels }: { onPick: (v: View) => void; sound?: ReactNode; channels?: View[] }) {
-  const all = [
-    { id: "chat" as const, icon: MessageCircle, title: "Chatear con el asistente", text: "Le hace unas preguntas y registra su solicitud en unos minutos." },
-    { id: "voz" as const, icon: Mic, title: "Hablar con el asistente", text: "Una llamada de voz aquí mismo, en el navegador. Necesita el micrófono." },
-    { id: "formulario" as const, icon: ClipboardList, title: "Formulario", text: "El mismo formulario de la ventanilla del hospital." },
-  ];
-  const items = channels ? all.filter((i) => channels.includes(i.id)) : all;
+  // one main action (chat, near-black), two quiet alternatives as small cards, one safety line
+  const others = [
+    { id: "voz" as const, icon: Mic, title: "Hablar con el asistente" },
+    { id: "formulario" as const, icon: ClipboardList, title: "Formulario" },
+  ].filter((o) => !channels || channels.includes(o.id)); // E5 final: /pedir-cita?canal=chat hides voice
   return (
-    <main className="vc-enter flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-6">
-      <h1 style={stagger(0)} className="text-balance text-[28px] font-bold leading-tight text-vc-text">
+    <main className="vc-enter flex flex-1 flex-col overflow-y-auto overscroll-contain px-5 pb-5 pt-8">
+      <h1 style={stagger(0)} className="text-balance font-display text-[38px] leading-[1.05] text-vc-text">
         ¿Necesita una cita?
       </h1>
-      <p style={stagger(1)} className="mt-2 max-w-[38ch] text-pretty text-[17px] leading-snug text-vc-text-2">
-        Registramos su solicitud aunque hoy no haya cupo. Un profesional la revisa y le avisamos aquí cuando haya un cupo para usted. No le
-        pedimos su número ni su correo.
+      <p style={stagger(1)} className="mt-3 max-w-[30ch] text-pretty text-[17px] leading-snug text-vc-text-2">
+        Pídala aquí. Le avisamos cuando haya un cupo para usted.
       </p>
-      {sound && <div className="mt-4">{sound}</div>}
-      <ul className="mt-5 space-y-2.5">
-        {items.map(({ id, icon: Icon, title, text }, n) => {
-          const main = n === 0;
-          return (
-            <li key={id} style={stagger(n + 2)}>
+      {sound && <div className="mt-5">{sound}</div>}
+      <div className="mt-auto pt-8">
+        <button
+          type="button"
+          style={stagger(2)}
+          onClick={() => onPick("chat")}
+          className="press flex min-h-16 w-full items-center justify-center gap-3 rounded-full bg-vc-primary px-6 py-3 text-vc-on-primary hover:bg-vc-primary-press active:bg-vc-primary-press"
+        >
+          <MessageCircle className="size-6 shrink-0" aria-hidden strokeWidth={1.75} />
+          <span className="text-[18px] font-semibold leading-tight">Chatear con el asistente</span>
+        </button>
+        {others.length > 0 && (
+        <ul className={`mt-3 grid gap-3 ${others.length > 1 ? "grid-cols-2" : ""}`}>
+          {others.map(({ id, icon: Icon, title }, n) => (
+            <li key={id} style={stagger(n + 3)}>
               <button
                 type="button"
                 onClick={() => onPick(id)}
-                className={`app-lift flex w-full items-center gap-3 rounded-md border p-4 text-left ${
-                  main
-                    ? "border-vc-primary bg-vc-primary text-vc-on-primary hover:bg-vc-primary-press active:bg-vc-primary-press"
-                    : "border-vc-edge bg-vc-bg text-vc-text hover:bg-vc-bg-2 active:bg-vc-surface-press"
-                }`}
+                className="app-lift press flex min-h-[104px] w-full flex-col items-start justify-between gap-3 rounded-3xl border border-vc-line bg-vc-card p-4 text-left text-vc-text hover:bg-vc-bg-2 active:bg-vc-surface-press"
               >
-                <Icon className={`size-6 shrink-0 ${main ? "text-vc-on-primary" : "text-vc-icon"}`} aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[17px] font-semibold leading-tight">{title}</span>
-                  <span className={`mt-1 block text-[15px] leading-snug ${main ? "text-vc-on-primary-2" : "text-vc-text-2"}`}>{text}</span>
-                </span>
-                <ChevronRight className={`size-5 shrink-0 ${main ? "text-vc-on-primary-2" : "text-vc-icon"}`} aria-hidden />
+                <Icon className="size-6 text-vc-icon" aria-hidden strokeWidth={1.5} />
+                <span className="text-[16px] font-semibold leading-tight">{title}</span>
               </button>
             </li>
-          );
-        })}
-      </ul>
-      <p style={stagger(5)} className="mt-6 flex items-start gap-2.5 border-l-4 border-vc-danger bg-vc-danger-soft p-3 text-[15px] leading-snug text-vc-text">
-        <TriangleAlert className="mt-0.5 size-5 shrink-0 text-vc-danger-press" aria-hidden />
-        <span>Si tiene dolor fuerte en el pecho, falta de aire, un desmayo o sangrado abundante, no espere una cita: acuda a emergencia o llame al 106 (SAMU).</span>
-      </p>
+          ))}
+        </ul>
+        )}
+        <p style={stagger(5)} className="mt-5 flex items-start gap-2 text-pretty text-[14px] leading-snug text-vc-text-2">
+          <TriangleAlert className="mt-px size-4 shrink-0 text-vc-danger-press" aria-hidden />
+          <span>¿Es una emergencia? Acuda a emergencia o llame al 106 (SAMU).</span>
+        </p>
+      </div>
     </main>
   );
 }
@@ -400,9 +405,7 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
       <ThreadList listRef={listRef}>
         {sound && <li className="flex justify-center">{sound}</li>}
         {!messages.length && !typing && (
-          <li className="mx-auto mt-8 max-w-[280px] rounded-md border border-vc-line bg-vc-bg p-4 text-center text-[15px] leading-snug text-vc-text-2">
-            Escriba un mensaje para empezar. El asistente le hará unas preguntas, una a la vez.
-          </li>
+          <li className="mx-auto mt-10 max-w-[260px] text-center text-[16px] leading-snug text-vc-text-2">Escriba un mensaje para empezar.</li>
         )}
         {messages.map((m) => (
           <Bubble
@@ -423,11 +426,11 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
           e.preventDefault();
           onSubmit();
         }}
-        className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-t border-vc-line bg-vc-bg px-3 pb-2 pt-2"
+        className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 bg-vc-bg px-3 pb-2 pt-2"
       >
         {/* the PERSONA hint lives above the field: as a placeholder it was cut on a 360 px phone */}
         {consent && (
-          <p id="msg-hint" className="w-full px-1 text-[13px] text-vc-text-3">
+          <p id="msg-hint" className="w-full px-2 text-[13px] text-vc-text-3">
             Para hablar con una persona, escriba PERSONA.
           </p>
         )}
@@ -442,13 +445,13 @@ export function ChatThreadView({ messages, consent, typing, quick, text, listRef
           aria-describedby={consent ? "msg-hint" : undefined}
           autoComplete="off"
           enterKeyHint="send"
-          className="min-h-12 min-w-0 flex-1 rounded-md border border-vc-edge bg-vc-bg px-3 text-[16px] text-vc-text placeholder:text-vc-text-3 focus:border-vc-focus"
+          className="min-h-12 min-w-0 flex-1 rounded-full border border-vc-edge bg-vc-card px-4 text-[16px] text-vc-text placeholder:text-vc-text-3 focus:border-vc-focus"
         />
         <button
           type="submit"
           disabled={!text.trim() || typing}
           aria-label="Enviar"
-          className="vc-round grid size-12 shrink-0 place-items-center rounded-md bg-vc-primary text-vc-on-primary active:bg-vc-primary-press disabled:bg-vc-surface disabled:text-vc-text-3"
+          className="vc-round press grid size-12 shrink-0 place-items-center rounded-full bg-vc-primary text-vc-on-primary active:bg-vc-primary-press disabled:bg-vc-surface disabled:text-vc-text-3"
         >
           <SendHorizontal className="size-5" aria-hidden />
         </button>

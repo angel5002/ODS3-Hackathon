@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Headset, Lock, ShieldCheck, UsersRound } from "lucide-react";
+import { Headset, ShieldCheck, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui";
 import { post } from "@/lib/post";
 import { ROLES, allowed, type Role } from "@/lib/auth";
@@ -37,12 +37,11 @@ function AccessForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-2xl border border-line bg-surface p-6">
-      <Lock className="size-6 text-brand" aria-hidden />
-      <h1 className="mt-3 text-[26px] font-bold leading-tight">{switching ? "Cambiar de rol" : "Acceso del equipo"}</h1>
+    <form onSubmit={submit} className="rounded-3xl border border-line bg-surface p-6 sm:p-8">
+      <h1 className="font-display text-[34px] leading-tight">{switching ? "Cambiar de rol" : "Acceso del equipo"}</h1>
       <p className="mt-1 text-muted">Elija su rol{switching ? "" : " e ingrese el PIN"}.</p>
       <fieldset className="mt-5">
-        <legend className="font-semibold">Rol</legend>
+        <legend className="sr-only">Rol</legend>
         <div className="mt-1.5 grid gap-2">
           {ROLES.map((r) => {
             const Icon = ICON[r.id];
@@ -50,10 +49,10 @@ function AccessForm() {
             return (
               <label
                 key={r.id}
-                className={`press flex min-h-11 cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 ${on ? "border-brand bg-brand-soft shadow-[inset_0_0_0_1px_var(--color-brand)]" : "border-line-strong hover:bg-sunken"}`}
+                className={`press flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 ${on ? "border-ink bg-brand-soft shadow-[inset_0_0_0_1px_var(--color-ink)]" : "border-line hover:bg-sunken"}`}
               >
                 <input type="radio" name="role" value={r.id} checked={on} onChange={() => setRole(r.id)} className="shrink-0" />
-                <Icon className={`size-5 shrink-0 ${on ? "text-brand" : "text-muted"}`} aria-hidden />
+                <Icon className={`size-5 shrink-0 ${on ? "text-ink" : "text-muted"}`} aria-hidden strokeWidth={1.75} />
                 <span className="min-w-0">
                   <span className="block font-semibold">{r.label}</span>
                   <span className="block text-sm text-muted">{r.description}</span>
@@ -79,7 +78,7 @@ function AccessForm() {
             onChange={(e) => setPin(e.target.value)}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? "pin-error" : undefined}
-            className="mt-1.5 w-full rounded-md border border-line-strong bg-surface px-4 py-2.5 text-center text-2xl tracking-[0.5em]"
+            className="mt-1.5 w-full rounded-full border border-line-strong bg-surface px-4 py-2.5 text-center text-2xl tracking-[0.5em]"
           />
         </>
       )}
@@ -88,7 +87,7 @@ function AccessForm() {
           {error}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={busy || (!switching && !pin)} className="mt-5 min-h-12 w-full">
+      <Button type="submit" variant="primary" disabled={busy || (!switching && !pin)} className="mt-6 min-h-12 w-full rounded-full">
         {busy ? "Verificando…" : `Entrar como ${ROLES.find((r) => r.id === role)!.label}`}
       </Button>
     </form>

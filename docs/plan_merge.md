@@ -74,6 +74,7 @@ psql "<cadena de conexión>" -f supabase/data/20261107_breakeven_v51.sql
 1. **`supabase/merge/20261107_v51_switch.sql`:** reemplaza `staff_requests`, `staff_request_detail`, `staff_slots`, `propose_candidates`, `approve_offer`, `close_offer` y `assign_next` para que deleguen en las `_v51`.
    - Así, también los caminos que no llama la app usan el orden y la regla de la v5.1: `respond_offer` cuando todos responden, `validate_assignment` con `ok = false` y las herramientas de voz.
 2. **`supabase/data/20261107_breakeven_v51.sql`:** cambia `breakeven_r` a 0.052.
+3. **Pendiente, sin archivo todavía:** la función `send_reminders` (E4, la usa producción) redacta los recordatorios con «en el Hospital María Auxiliadora». Con la regla del hospital ficticio debe decir «Hospital Mirasur». Se cambia en el merge con un `create or replace` de esa función que solo cambie el texto; no se cambió antes porque producción la comparte.
 
 **Verificación:**
 ```bash

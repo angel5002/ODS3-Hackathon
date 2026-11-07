@@ -29,6 +29,19 @@ export const TOOLS_BY_PURPOSE: Record<CallRow["purpose"], string[]> = {
 
 type Result = { say: string; data?: Record<string, unknown>; done?: string };
 
+/** A test call ("Probar llamada") uses the confirmation agent, which may ask for the appointment: without a
+ *  real one these tools answered 403 and the agent improvised "un problema técnico" (call 4536). They now
+ *  answer one sentence and change nothing. */
+const TEST_CALL_TOOLS = new Set(
+  [...TOOLS_BY_PURPOSE.confirmacion, ...TOOLS_BY_PURPOSE.oferta, ...TOOLS_BY_PURPOSE.validacion].filter((t) => !TOOLS_BY_PURPOSE.prueba.includes(t)),
+);
+export const TEST_CALL_SAY = "Esta es una llamada de prueba: no hay una cita real y no se registró ningún cambio.";
+
+/** The answer of a test call to a tool of a real task, or null when the tool runs normally. */
+export function testCallAnswer(purpose: CallRow["purpose"], tool: string): Result | null {
+  return purpose === "prueba" && TEST_CALL_TOOLS.has(tool) ? { say: TEST_CALL_SAY } : null;
+}
+
 function timeEs(t: string) {
   return t.replace(/^0/, "");
 }
@@ -94,6 +107,11 @@ export async function callContext(call: CallRow) {
 }
 
 export async function runTool(call: CallRow, tool: string, args: Record<string, unknown>): Promise<Result> {
+  const test = testCallAnswer(call.purpose, tool);
+  if (test) {
+    await log(call, tool, test.say);
+    return test;
+  }
   if (!TOOLS_BY_PURPOSE[call.purpose]?.includes(tool)) throw new Error("tool not allowed");
   if (!["sonando", "en_curso"].includes(call.status)) throw new Error("call ended");
   const r = await exec(call, tool, args);
@@ -197,7 +215,7 @@ async function exec(call: CallRow, tool: string, args: Record<string, unknown>):
       if (call.appointment_id) {
         await rpc("patient_reply", { p_appt: call.appointment_id, p_reply: "persona", p_channel: "voz", p_actor: "Asistente automático", p_detail: "Pidió hablar con una persona durante la llamada" }).catch(() => {});
       }
-      return { say: "Una persona del equipo de citas le contactará pronto.", done: "Pidió hablar con una persona" };
+      return { say: "Listo: una persona del equipo de citas le contactará pronto. Gracias por llamar.", done: "Pidió hablar con una persona" };
     case "flag_alarm":
       if (call.request_id) {
         await rpc("derive_emergency", { p_request: call.request_id, p_actor: "Asistente automático", p_source: "agente" });

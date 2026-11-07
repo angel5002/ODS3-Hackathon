@@ -10,7 +10,7 @@ import { CalendarCheck2, CheckCheck, Clock, Volume2 } from "lucide-react";
  *  DISCLAIMER text. It also takes the bottom safe area, so it goes last in the column. */
 export function DemoNotice({ children }: { children: ReactNode }) {
   return (
-    <p className="shrink-0 text-pretty border-t border-vc-line bg-vc-bg px-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-[12px] leading-snug text-vc-text-3">
+    <p className="shrink-0 text-pretty bg-vc-bg px-5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-1.5 text-[12px] leading-snug text-vc-text-3">
       {children}
     </p>
   );
@@ -22,9 +22,10 @@ export function SoundButton({ onEnable, className = "" }: { onEnable: () => void
     <button
       type="button"
       onClick={onEnable}
-      className={`vc-pill inline-flex min-h-11 items-center gap-2 rounded-md border border-vc-edge bg-vc-bg px-3.5 text-[15px] font-semibold text-vc-text active:bg-vc-surface-press ${className}`}
+      aria-label="Activar sonido y llamadas"
+      className={`vc-pill press inline-flex min-h-11 items-center gap-2 rounded-full bg-vc-surface px-4 text-[15px] font-semibold text-vc-text active:bg-vc-surface-press ${className}`}
     >
-      <Volume2 className="size-[18px] text-vc-icon" aria-hidden /> Activar sonido y llamadas
+      <Volume2 className="size-[18px] text-vc-icon" aria-hidden /> Activar sonido
     </button>
   );
 }
@@ -66,11 +67,11 @@ export function Bubble({ mine, highlight, time, answered, sent, children, after 
           className={`rounded-2xl px-3.5 py-2.5 text-[16px] leading-snug ${
             mine
               ? "rounded-br-xs bg-vc-primary text-vc-on-primary"
-              : `rounded-bl-xs bg-vc-bg text-vc-text ${highlight ? "border-2 border-vc-agent" : "border border-vc-line"}`
+              : `rounded-bl-xs bg-vc-card text-vc-text ${highlight ? "border-2 border-vc-accent" : "border border-vc-line"}`
           }`}
         >
           {highlight && (
-            <p className="mb-1 flex items-center gap-1.5 text-[14px] font-semibold text-vc-icon">
+            <p className="mb-1 flex items-center gap-1.5 text-[14px] font-semibold text-vc-accent">
               <CalendarCheck2 className="size-4" aria-hidden />
               {highlight}
             </p>
@@ -119,7 +120,7 @@ export function ReplyButton({ label, disabled, onPress }: { label: string; disab
       type="button"
       disabled={disabled}
       onClick={onPress}
-      className="vc-pill min-h-12 select-none rounded-md border border-vc-edge bg-vc-bg px-3 text-[16px] font-semibold text-vc-text active:bg-vc-surface-press disabled:opacity-60"
+      className="vc-pill press min-h-12 select-none rounded-full border border-vc-edge bg-vc-card px-4 text-[16px] font-semibold text-vc-text active:bg-vc-surface-press disabled:opacity-60"
     >
       {label}
     </button>
@@ -129,14 +130,14 @@ export function ReplyButton({ label, disabled, onPress }: { label: string; disab
 /** Quick answers above the composer (/pedir-cita chat). */
 export function QuickReplies({ options, disabled, onPick }: { options: string[]; disabled?: boolean; onPick: (label: string) => void }) {
   return (
-    <div className="flex shrink-0 flex-wrap gap-2 border-t border-vc-line bg-vc-bg-2 px-3 py-2">
+    <div className="flex shrink-0 flex-wrap gap-2 bg-vc-bg-2 px-3 py-2">
       {options.map((b) => (
         <button
           key={b}
           type="button"
           disabled={disabled}
           onClick={() => onPick(b)}
-          className="vc-pill min-h-11 rounded-md border border-vc-edge bg-vc-bg px-3.5 text-[15px] font-semibold text-vc-text active:bg-vc-surface-press disabled:opacity-50"
+          className="vc-pill press min-h-11 rounded-full border border-vc-edge bg-vc-card px-4 text-[15px] font-semibold text-vc-text active:bg-vc-surface-press disabled:opacity-50"
         >
           {b}
         </button>

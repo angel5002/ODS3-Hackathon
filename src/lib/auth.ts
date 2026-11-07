@@ -8,7 +8,7 @@ export type Role = "admision" | "regulador" | "callcenter";
 export const ROLES: { id: Role; label: string; home: string; description: string }[] = [
   { id: "admision", label: "Admisión", home: "/panel", description: "Citas, lista de espera, reasignación y tablero" },
   { id: "regulador", label: "Regulador", home: "/regulador", description: "Asigna la categoría clínica sin ver la identidad" },
-  { id: "callcenter", label: "Call center", home: "/callcenter", description: "Tareas que necesitan a una persona" },
+  { id: "callcenter", label: "Central de llamadas", home: "/callcenter", description: "Tareas que necesitan a una persona" },
 ];
 
 async function sha256Hex(text: string) {
@@ -49,4 +49,4 @@ export function allowed(path: string, role: Role | null) {
   return role === "admision";
 }
 
-export const ROLE_LABEL: Record<Role, string> = { admision: "Admisión", regulador: "Regulador", callcenter: "Call center" };
+export const ROLE_LABEL: Record<Role, string> = { admision: "Admisión", regulador: "Regulador", callcenter: "Central de llamadas" };

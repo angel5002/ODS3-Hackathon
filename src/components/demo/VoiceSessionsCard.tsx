@@ -30,10 +30,10 @@ export function VoiceSessionsView({ data }: { data: VoiceOverview | null }) {
         <AudioLines className="size-5 text-(--cc-accent)" aria-hidden /> Voz en vivo
       </h2>
       <p className="mt-1 text-[14px] text-(--cc-text-2)">
-        {data ? `${data.active} llamada${data.active === 1 ? "" : "s"} de voz activa${data.active === 1 ? "" : "s"} · ${data.queued} en la fila` : "Cargando…"}
+        {data ? `${data.active} llamada${data.active === 1 ? "" : "s"} de voz activa${data.active === 1 ? "" : "s"} · ${data.queued} en la fila` : "Cargando"}
       </p>
       {!!data?.sessions.length && (
-        <ul className="mt-3 divide-y divide-(--cc-border) rounded-[4px] border border-(--cc-border) text-[14px]">
+        <ul className="mt-3 divide-y divide-(--cc-border) rounded-md border border-(--cc-border) text-[14px]">
           {data.sessions.slice(0, 8).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2">
               <span className="font-mono text-[12px] text-(--cc-text-2)">{s.id}</span>
@@ -49,7 +49,7 @@ export function VoiceSessionsView({ data }: { data: VoiceOverview | null }) {
       {!!data?.events.length && (
         <details className="mt-3 text-[12px]">
           <summary className="cursor-pointer font-semibold text-(--cc-text-2)">Eventos de voz recientes ({data.events.length})</summary>
-          <ol className="mt-1.5 max-h-56 space-y-0.5 overflow-y-auto overscroll-contain font-mono text-(--cc-text-2)">
+          <ol className="mt-1.5 max-h-56 space-y-0.5 overflow-y-auto overscroll-contain font-mono text-(--cc-text-2) [overflow-wrap:anywhere]">
             {data.events.map((e, i) => (
               <li key={i}>
                 {time(e.at)} · {e.session ?? "—"} · {e.source} · {e.kind}

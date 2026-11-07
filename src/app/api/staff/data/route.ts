@@ -4,8 +4,10 @@ import { NextResponse } from "next/server";
 import { fail } from "@/lib/api";
 import { rpc, serverDb } from "@/lib/supabase/server";
 import { demoOverview } from "./overview";
-import { buildJuryOverview } from "@/lib/jury/overview";
+import { buildJuryOps, buildJuryOverview } from "@/lib/jury/overview";
 import { jurySnapshot } from "@/lib/jury/server";
+import { reservedForCards } from "@/lib/voice/capacity";
+import { maxConcurrent, noisyRoom } from "@/lib/voice/sessions";
 
 export const dynamic = "force-dynamic";
 
@@ -105,8 +107,12 @@ export async function GET(req: Request) {
         ]);
         return NextResponse.json({ board, statuses: lite.data ?? [], calls: calls.count ?? 0, metrics: metrics.data ?? [] });
       }
-      case "voice":
-        return NextResponse.json(await rpc("voice_overview"));
+      case "voice": {
+        // + the final day's voice settings: noisy-room mode and the lines reserved for the jury cards
+        const [overview, salaRuidosa] = await Promise.all([rpc<Record<string, unknown>>("voice_overview"), noisyRoom().catch(() => true)]);
+        const max = maxConcurrent();
+        return NextResponse.json({ ...overview, salaRuidosa, lineasReservadasTarjetas: reservedForCards(process.env.VOICE_RESERVED_FOR_CARDS, max) });
+      }
       case "overview":
         // /demo control center: stages, waiting list, slots and the assignment rule in one read
         return NextResponse.json(await demoOverview());
@@ -116,6 +122,9 @@ export async function GET(req: Request) {
         // E5 final: what the jury does with their cards (JuryOverview, src/lib/demo/contract.ts). Read only.
         // ?test=1 also shows the temporary cards of tests/e2e/jurado_circuito.py.
         return NextResponse.json(buildJuryOverview(await jurySnapshot(url.searchParams.get("test") === "1")));
+      case "jurado_ops":
+        // /demo OPERAR: the next one-click step of each printed card (categorize, offer, close)
+        return NextResponse.json({ ops: buildJuryOps(await jurySnapshot(false)) });
       case "params": {
         const [{ data }, { data: rule }] = await Promise.all([
           db.from("params").select("*").order("sort"),

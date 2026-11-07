@@ -50,6 +50,24 @@ export async function signedUrl(key: AgentKey, diag = "-") {
   return data.signed_url ?? null;
 }
 
+/** WebRTC credential (E5, voice quality): a conversation token for ONE session, per request, never cached.
+ *  https://elevenlabs.io/docs/eleven-agents/libraries/java-script (private agents: token from
+ *  GET /v1/convai/conversation/token?agent_id=…, then startSession({ conversationToken }) uses WebRTC). */
+export async function conversationToken(key: AgentKey, diag = "-") {
+  const id = agentId(key);
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!id || !apiKey) return null;
+  const t = Date.now();
+  const res = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${encodeURIComponent(id)}`, {
+    headers: { "xi-api-key": apiKey },
+    cache: "no-store",
+  });
+  console.info(`[voz ${diag}] servidor elevenlabs.token agent=${key} http=${res.status} ms=${Date.now() - t}`);
+  if (!res.ok) throw Object.assign(new Error(`ElevenLabs ${res.status}`), { status: res.status });
+  const data = (await res.json()) as { token?: string };
+  return data.token ?? null;
+}
+
 /** ElevenLabs post-call webhook signature: header "t=<unix>,v0=<hex>", HMAC-SHA256 of `${t}.${body}`. */
 export function verifyWebhook(raw: string, header: string | null, secret: string | undefined, toleranceSec = 30 * 60) {
   if (!header || !secret) return false;
