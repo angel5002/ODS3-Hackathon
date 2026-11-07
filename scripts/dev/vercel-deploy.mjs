@@ -18,7 +18,8 @@ const ignore = readFileSync(".vercelignore", "utf8")
   .map((l) => l.trim())
   .filter((l) => l && !l.startsWith("#"));
 const neg = ignore.filter((l) => l.startsWith("!")).map((l) => l.slice(1));
-const toRe = (g) => new RegExp("^" + g.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*") + (g.endsWith("/") ? "" : "($|/)"));
+// a leading "/" anchors the pattern at the root (as Vercel and git read it): drop it, toRe already anchors at the root
+const toRe = (g) => new RegExp("^" + g.replace(/^\//, "").replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*") + (g.endsWith("/") ? "" : "($|/)"));
 const pats = ignore.filter((l) => !l.startsWith("!")).map(toRe);
 const files = execSync("git ls-files", { encoding: "utf8" })
   .split("\n")

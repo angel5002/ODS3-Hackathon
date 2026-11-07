@@ -13,7 +13,7 @@ ml/cache/
 node_modules/
 .next/
 capturas/
-video/
+/video/
 tests/
 scripts/dev/
 .claude/
