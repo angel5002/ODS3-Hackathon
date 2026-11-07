@@ -232,16 +232,15 @@ function NoisyRoomToggle({ busy, run, server }: { busy: string; run: Run; server
           setMissing(true);
         }
       }}
-      className={`cc-press inline-flex min-h-11 items-center gap-2 rounded-md border px-3 text-[14px] font-semibold disabled:opacity-50 2xl:text-[15px] ${
+      className={`cc-press inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-md border px-3 text-[14px] font-semibold disabled:opacity-50 2xl:text-[15px] ${
         on ? "border-(--cc-accent) bg-(--cc-subtle) text-(--cc-text)" : "border-(--cc-control) bg-(--cc-surface) text-(--cc-text) hover:bg-(--cc-subtle)"
       }`}
     >
       <Volume2 className="size-4 text-(--cc-accent)" aria-hidden />
       Sala ruidosa
       <span className={`relative h-5 w-9 rounded-full transition-colors duration-150 ${on ? "bg-(--cc-accent)" : "bg-(--cc-control)"}`} aria-hidden>
-        <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-transform duration-150 ${on ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+        <span className={`absolute left-0 top-0.5 size-4 rounded-full bg-white transition-transform duration-150 ${on ? "translate-x-[18px]" : "translate-x-0.5"}`} />
       </span>
-      <span className="sr-only">{on ? "activada" : "desactivada"}</span>
     </button>
   );
 }
